@@ -15,6 +15,9 @@ public class RabbitConfig {
     @Value("${app.rabbitmq.rsvp-exchange}")
     private String rsvpExchange;
 
+    @Value("${app.rabbitmq.invitations-exchange}")
+    private String invitationsExchange;
+
     @Bean
     TopicExchange ordersTopicExchange() {
         return new TopicExchange(ordersExchange, true, false);
@@ -23,6 +26,11 @@ public class RabbitConfig {
     @Bean
     TopicExchange rsvpTopicExchange() {
         return new TopicExchange(rsvpExchange, true, false);
+    }
+
+    @Bean
+    TopicExchange invitationsTopicExchange() {
+        return new TopicExchange(invitationsExchange, true, false);
     }
 
     @Bean

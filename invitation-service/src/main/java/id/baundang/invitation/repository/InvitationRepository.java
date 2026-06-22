@@ -21,4 +21,8 @@ public interface InvitationRepository extends JpaRepository<Invitation, UUID> {
 
     @Query("SELECT i FROM Invitation i WHERE i.status = 'ACTIVE' AND i.activeUntil BETWEEN :from AND :to")
     List<Invitation> findExpiringBetween(LocalDate from, LocalDate to);
+
+    @Modifying
+    @Query("UPDATE Invitation i SET i.status = :expired WHERE i.status = :active AND i.activeUntil < :today")
+    int expireOverdue(InvitationStatus active, InvitationStatus expired, LocalDate today);
 }

@@ -13,6 +13,6 @@ COPY --from=builder --chown=appuser:appgroup /build/invitation-service/target/ex
 COPY --from=builder --chown=appuser:appgroup /build/invitation-service/target/extracted/application/ ./
 USER appuser
 EXPOSE 8084
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD wget -qO- http://localhost:8084/actuator/health || exit 1
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

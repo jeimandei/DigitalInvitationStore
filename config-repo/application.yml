@@ -33,6 +33,12 @@ management:
     health:
       show-details: when-authorized
 
+spring:
+  task:
+    scheduling:
+      pool:
+        size: 3
+
 logging:
   level:
     root: INFO
