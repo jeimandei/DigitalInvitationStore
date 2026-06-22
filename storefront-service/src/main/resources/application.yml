@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: storefront-service
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URI:http://config-server:8888}"
+  thymeleaf:
+    cache: false
+    encoding: UTF-8
+    mode: HTML
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+app:
+  services:
+    template: http://template-service:8083
+  pricing:
+    tiers:
+      - name: Dasar
+        price: 119000
+        description: Cocok untuk pasangan yang ingin undangan simpel dan elegan.
+        features:
+          - 1 pilihan template
+          - Informasi acara lengkap
+          - Konfirmasi kehadiran (RSVP)
+          - Tautan undangan unik
+        highlight: false
+      - name: Standar
+        price: 199000
+        description: Pilihan terpopuler dengan fitur lengkap untuk hari spesialmu.
+        features:
+          - Semua template tersedia
+          - RSVP & buku tamu digital
+          - Galeri foto
+          - Countdown hari pernikahan
+          - Peta lokasi interaktif
+        highlight: true
+      - name: Premium
+        price: 249000
+        description: Pengalaman undangan digital terlengkap tanpa kompromi.
+        features:
+          - Semua fitur Standar
+          - Musik latar pilihan
+          - Daftar hadiah (gift registry)
+          - 2x revisi desain
+          - Prioritas dukungan
+        highlight: false
