@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: notification-service
+  config:
+    import: "configserver:http://config-server:8888"
+
+server:
+  port: 8087
+
+app:
+  fonnte:
+    token: ${FONNTE_TOKEN}
+    url: https://api.fonnte.com/send
+  admin:
+    whatsapp: ${ADMIN_WHATSAPP:6281234567890}
+  rabbitmq:
+    orders-exchange: baundang.orders
+    invitations-exchange: baundang.invitations
+    rsvp-exchange: baundang.rsvp
