@@ -15,3 +15,4 @@ app:
     invitation-service: ${INVITATION_SERVICE_URL:http://invitation-service:8084}
     template-service: ${TEMPLATE_SERVICE_URL:http://template-service:8083}
     auth-service: ${AUTH_SERVICE_URL:http://auth-service:8081}
+    notification-service: ${NOTIFICATION_SERVICE_URL:http://notification-service:8087}

@@ -1,6 +1,7 @@
 package id.baundang.admin.controller;
 
 import id.baundang.admin.client.InvitationAdminClient;
+import id.baundang.admin.client.NotificationAdminClient;
 import id.baundang.admin.client.OrderAdminClient;
 import id.baundang.admin.client.TemplateAdminClient;
 import id.baundang.admin.dto.*;
@@ -28,6 +29,7 @@ public class AdminController {
     private final OrderAdminClient orderClient;
     private final InvitationAdminClient invitationClient;
     private final TemplateAdminClient templateClient;
+    private final NotificationAdminClient notificationClient;
     private final AdminNoteRepository noteRepository;
     private final CsvExportService csvExportService;
 
@@ -186,6 +188,27 @@ public class AdminController {
         }
 
         return "redirect:/admin/orders/" + orderId;
+    }
+
+    // ─── Broadcast WA ────────────────────────────────────────────────────────
+
+    @GetMapping("/broadcast/wa")
+    public String broadcastForm() {
+        return "admin/broadcast/wa";
+    }
+
+    @PostMapping("/broadcast/wa")
+    public String sendBroadcast(
+            @RequestParam String targetGroup,
+            @RequestParam String message,
+            Model model) {
+        try {
+            notificationClient.broadcast(new BroadcastRequest(targetGroup, message));
+            model.addAttribute("success", "Broadcast berhasil dikirim ke grup " + targetGroup);
+        } catch (Exception e) {
+            model.addAttribute("error", "Gagal mengirim broadcast: " + e.getMessage());
+        }
+        return "admin/broadcast/wa";
     }
 
     // ─── Buyers ───────────────────────────────────────────────────────────────

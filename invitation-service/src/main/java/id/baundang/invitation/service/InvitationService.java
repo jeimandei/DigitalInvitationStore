@@ -226,4 +226,17 @@ public class InvitationService {
             log.error("Failed to publish gift.confirmed: {}", e.getMessage());
         }
     }
+
+    @Transactional(readOnly = true)
+    public List<String> listActivePhones() {
+        return invitationRepository.findByStatus(InvitationStatus.ACTIVE).stream()
+                .map(inv -> {
+                    JsonNode c = inv.getContent();
+                    return c != null && c.hasNonNull("contactWhatsapp")
+                            ? c.get("contactWhatsapp").asText("") : "";
+                })
+                .filter(wa -> !wa.isBlank())
+                .distinct()
+                .toList();
+    }
 }

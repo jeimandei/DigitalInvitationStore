@@ -51,6 +51,12 @@ public class InvitationApiController {
         return invitationService.findExpiring(days);
     }
 
+    // Internal — returns WhatsApp numbers for all ACTIVE invitations (used by broadcast)
+    @GetMapping("/api/v1/admin/invitations/active-phones")
+    public List<String> listActivePhones() {
+        return invitationService.listActivePhones();
+    }
+
     // --- Admin ---
 
     @PutMapping("/api/v1/admin/invitations/{id}/approve-guestbook/{entryId}")

@@ -27,4 +27,9 @@ public class ServiceClientsConfig {
     RestClient authRestClient(@Value("${app.services.auth-service}") String baseUrl) {
         return RestClient.builder().baseUrl(baseUrl).build();
     }
+
+    @Bean("notificationRestClient")
+    RestClient notificationRestClient(@Value("${app.services.notification-service}") String baseUrl) {
+        return RestClient.builder().baseUrl(baseUrl).build();
+    }
 }
