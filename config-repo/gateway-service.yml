@@ -1,0 +1,43 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth
+          uri: http://auth:8081
+          predicates:
+            - Path=/api/auth/**
+        - id: storefront
+          uri: http://storefront:8082
+          predicates:
+            - Path=/api/storefront/**
+        - id: template
+          uri: http://template:8083
+          predicates:
+            - Path=/api/templates/**
+        - id: invitation
+          uri: http://invitation:8084
+          predicates:
+            - Path=/api/invitations/**
+        - id: order
+          uri: http://order:8085
+          predicates:
+            - Path=/api/orders/**
+        - id: payment
+          uri: http://payment:8086
+          predicates:
+            - Path=/api/payments/**
+        - id: notification
+          uri: http://notification:8087
+          predicates:
+            - Path=/api/notifications/**
+        - id: admin
+          uri: http://admin:8088
+          predicates:
+            - Path=/api/admin/**
+        - id: media
+          uri: http://media:8089
+          predicates:
+            - Path=/api/media/**

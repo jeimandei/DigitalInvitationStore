@@ -1,0 +1,8 @@
+server:
+  port: 8086
+
+midtrans:
+  server-key: ${MIDTRANS_SERVER_KEY}
+  client-key: ${MIDTRANS_CLIENT_KEY}
+  sandbox: ${MIDTRANS_SANDBOX:true}
+  snap-url: ${MIDTRANS_SNAP_URL:https://app.sandbox.midtrans.com/snap/v1}

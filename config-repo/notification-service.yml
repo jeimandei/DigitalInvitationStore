@@ -1,0 +1,18 @@
+server:
+  port: 8087
+
+spring:
+  mail:
+    host: ${EMAIL_HOST}
+    port: ${EMAIL_PORT}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+whatsapp:
+  api-token: ${WHATSAPP_API_TOKEN}

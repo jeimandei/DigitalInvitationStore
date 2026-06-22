@@ -1,0 +1,458 @@
+version: "3.9"
+
+networks:
+  backend-net:
+    internal: true
+
+volumes:
+  postgres-auth-data:
+  postgres-storefront-data:
+  postgres-template-data:
+  postgres-invitation-data:
+  postgres-order-data:
+  postgres-payment-data:
+  postgres-notification-data:
+  postgres-admin-data:
+  postgres-media-data:
+  minio-data:
+  rabbitmq-data:
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  postgres-auth:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${AUTH_DB:-auth}
+      POSTGRES_USER: ${AUTH_DB_USER}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+    volumes:
+      - postgres-auth-data:/var/lib/postgresql/data
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER} -d ${AUTH_DB:-auth}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-storefront:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${STOREFRONT_DB:-storefront}
+      POSTGRES_USER: ${STOREFRONT_DB_USER}
+      POSTGRES_PASSWORD: ${STOREFRONT_DB_PASSWORD}
+    volumes:
+      - postgres-storefront-data:/var/lib/postgresql/data
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${STOREFRONT_DB_USER} -d ${STOREFRONT_DB:-storefront}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-template:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${TEMPLATE_DB:-template}
+      POSTGRES_USER: ${TEMPLATE_DB_USER}
+      POSTGRES_PASSWORD: ${TEMPLATE_DB_PASSWORD}
+    volumes:
+      - postgres-template-data:/var/lib/postgresql/data
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TEMPLATE_DB_USER} -d ${TEMPLATE_DB:-template}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-invitation:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${INVITATION_DB:-invitation}
+      POSTGRES_USER: ${INVITATION_DB_USER}
+      POSTGRES_PASSWORD: ${INVITATION_DB_PASSWORD}
+    volumes:
+      - postgres-invitation-data:/var/lib/postgresql/data
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${INVITATION_DB_USER} -d ${INVITATION_DB:-invitation}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-order:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${ORDER_DB:-order}
+      POSTGRES_USER: ${ORDER_DB_USER}
+      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD}
+    volumes:
+      - postgres-order-data:/var/lib/postgresql/data
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ORDER_DB_USER} -d ${ORDER_DB:-order}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-payment:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${PAYMENT_DB:-payment}
+      POSTGRES_USER: ${PAYMENT_DB_USER}
+      POSTGRES_PASSWORD: ${PAYMENT_DB_PASSWORD}
+    volumes:
+      - postgres-payment-data:/var/lib/postgresql/data
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PAYMENT_DB_USER} -d ${PAYMENT_DB:-payment}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-notification:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${NOTIFICATION_DB:-notification}
+      POSTGRES_USER: ${NOTIFICATION_DB_USER}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+    volumes:
+      - postgres-notification-data:/var/lib/postgresql/data
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${NOTIFICATION_DB_USER} -d ${NOTIFICATION_DB:-notification}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-admin:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${ADMIN_DB:-admin}
+      POSTGRES_USER: ${ADMIN_DB_USER}
+      POSTGRES_PASSWORD: ${ADMIN_DB_PASSWORD}
+    volumes:
+      - postgres-admin-data:/var/lib/postgresql/data
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ADMIN_DB_USER} -d ${ADMIN_DB:-admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-media:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${MEDIA_DB:-media}
+      POSTGRES_USER: ${MEDIA_DB_USER}
+      POSTGRES_PASSWORD: ${MEDIA_DB_PASSWORD}
+    volumes:
+      - postgres-media-data:/var/lib/postgresql/data
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MEDIA_DB_USER} -d ${MEDIA_DB:-media}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-baundang}
+    ports:
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ── Platform ──────────────────────────────────────────────────────────────
+
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Containerfile
+    environment:
+      SERVER_PORT: 8888
+      CONFIG_GIT_URI: ${CONFIG_GIT_URI:-file:///config-repo}
+      CONFIG_GIT_DEFAULT_LABEL: ${CONFIG_GIT_DEFAULT_LABEL:-main}
+      SPRING_SECURITY_USER_NAME: ${CONFIG_SERVER_USER}
+      SPRING_SECURITY_USER_PASSWORD: ${CONFIG_SERVER_PASSWORD}
+    ports:
+      - "8888:8888"
+    networks: [backend-net]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  auth:
+    build:
+      context: ./auth-service
+      dockerfile: Containerfile
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/${AUTH_DB:-auth}
+      SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "8081:8081"
+    networks: [backend-net]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres-auth:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  storefront:
+    build:
+      context: ./storefront-service
+      dockerfile: Containerfile
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-storefront:5432/${STOREFRONT_DB:-storefront}
+      SPRING_DATASOURCE_USERNAME: ${STOREFRONT_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${STOREFRONT_DB_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    ports:
+      - "8082:8082"
+    networks: [backend-net]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres-storefront:
+        condition: service_healthy
+
+  template:
+    build:
+      context: ./template-service
+      dockerfile: Containerfile
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-template:5432/${TEMPLATE_DB:-template}
+      SPRING_DATASOURCE_USERNAME: ${TEMPLATE_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${TEMPLATE_DB_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "8083:8083"
+    networks: [backend-net]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres-template:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  invitation:
+    build:
+      context: ./invitation-service
+      dockerfile: Containerfile
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-invitation:5432/${INVITATION_DB:-invitation}
+      SPRING_DATASOURCE_USERNAME: ${INVITATION_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${INVITATION_DB_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    ports:
+      - "8084:8084"
+    networks: [backend-net]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres-invitation:
+        condition: service_healthy
+
+  order:
+    build:
+      context: ./order-service
+      dockerfile: Containerfile
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/${ORDER_DB:-order}
+      SPRING_DATASOURCE_USERNAME: ${ORDER_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${ORDER_DB_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    ports:
+      - "8085:8085"
+    networks: [backend-net]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres-order:
+        condition: service_healthy
+
+  payment:
+    build:
+      context: ./payment-service
+      dockerfile: Containerfile
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-payment:5432/${PAYMENT_DB:-payment}
+      SPRING_DATASOURCE_USERNAME: ${PAYMENT_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY}
+      MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
+    ports:
+      - "8086:8086"
+    networks: [backend-net]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres-payment:
+        condition: service_healthy
+
+  notification:
+    build:
+      context: ./notification-service
+      dockerfile: Containerfile
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notification:5432/${NOTIFICATION_DB:-notification}
+      SPRING_DATASOURCE_USERNAME: ${NOTIFICATION_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USERNAME: ${EMAIL_USERNAME}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+    ports:
+      - "8087:8087"
+    networks: [backend-net]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres-notification:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  admin:
+    build:
+      context: ./admin-service
+      dockerfile: Containerfile
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-admin:5432/${ADMIN_DB:-admin}
+      SPRING_DATASOURCE_USERNAME: ${ADMIN_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${ADMIN_DB_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "8088:8088"
+    networks: [backend-net]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres-admin:
+        condition: service_healthy
+
+  media:
+    build:
+      context: ./media-service
+      dockerfile: Containerfile
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-media:5432/${MEDIA_DB:-media}
+      SPRING_DATASOURCE_USERNAME: ${MEDIA_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MEDIA_DB_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "8089:8089"
+    networks: [backend-net]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres-media:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: ./gateway-service
+      dockerfile: Containerfile
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "8080:8080"
+    networks: [backend-net]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      auth:
+        condition: service_started
+      storefront:
+        condition: service_started
+      template:
+        condition: service_started
+      invitation:
+        condition: service_started
+      order:
+        condition: service_started
+      payment:
+        condition: service_started
+      notification:
+        condition: service_started
+      admin:
+        condition: service_started
+      media:
+        condition: service_started
