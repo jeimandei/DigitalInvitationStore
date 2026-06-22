@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import id.baundang.common.dto.ApiResponse;
 import id.baundang.invitation.domain.Invitation.InvitationStatus;
 import id.baundang.invitation.dto.*;
-import id.baundang.invitation.service.InvitationService;
 import jakarta.validation.Valid;
+import id.baundang.invitation.service.InvitationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -65,5 +65,27 @@ public class InvitationApiController {
                                           @RequestParam InvitationStatus status) {
         invitationService.updateStatus(id, status);
         return ApiResponse.ok(null, "Status undangan diperbarui");
+    }
+
+    // --- Gift Registry ---
+
+    @GetMapping("/api/v1/invitations/{slug}/gift-accounts")
+    public ApiResponse<GiftAccountDTO> getGiftAccount(@PathVariable String slug) {
+        return ApiResponse.ok(invitationService.getGiftAccount(slug));
+    }
+
+    @PostMapping("/api/v1/invitations/{slug}/gift-confirm")
+    public ResponseEntity<ApiResponse<Void>> submitGiftConfirmation(
+            @PathVariable String slug,
+            @Valid @RequestBody GiftConfirmRequest req) {
+        invitationService.submitGiftConfirmation(slug, req);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Konfirmasi hadiah berhasil dikirim"));
+    }
+
+    @PutMapping("/api/v1/admin/invitations/{id}/gift-accounts")
+    public ApiResponse<Void> setGiftAccount(@PathVariable UUID id,
+                                             @RequestBody GiftAccountRequest req) {
+        invitationService.setGiftAccount(id, req);
+        return ApiResponse.ok(null, "Informasi hadiah diperbarui");
     }
 }

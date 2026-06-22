@@ -40,6 +40,7 @@ public class QueueConfig {
     @Bean Queue notifOrderRevisedQueue()     { return QueueBuilder.durable("notification.order.revised").build(); }
     @Bean Queue notifRsvpSubmittedQueue()    { return QueueBuilder.durable("notification.rsvp.submitted").build(); }
     @Bean Queue notifInvitationExpiringQueue() { return QueueBuilder.durable("notification.invitation.expiring").build(); }
+    @Bean Queue notifGiftConfirmedQueue()      { return QueueBuilder.durable("notification.gift.confirmed").build(); }
 
     // --- bindings ---
 
@@ -61,5 +62,10 @@ public class QueueConfig {
     @Bean
     Binding invitationExpiringBinding(Queue notifInvitationExpiringQueue, TopicExchange invitationsTopicExchange) {
         return BindingBuilder.bind(notifInvitationExpiringQueue).to(invitationsTopicExchange).with("invitation.expiring");
+    }
+
+    @Bean
+    Binding giftConfirmedBinding(Queue notifGiftConfirmedQueue, TopicExchange rsvpTopicExchange) {
+        return BindingBuilder.bind(notifGiftConfirmedQueue).to(rsvpTopicExchange).with("gift.confirmed");
     }
 }

@@ -2,11 +2,15 @@ package id.baundang.invitation.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import id.baundang.common.exception.NotFoundException;
+import id.baundang.invitation.domain.GiftAccount;
+import id.baundang.invitation.domain.GiftConfirmation;
 import id.baundang.invitation.domain.GuestbookEntry;
 import id.baundang.invitation.domain.Invitation;
 import id.baundang.invitation.domain.Invitation.InvitationStatus;
 import id.baundang.invitation.domain.RsvpResponse;
 import id.baundang.invitation.dto.*;
+import id.baundang.invitation.repository.GiftAccountRepository;
+import id.baundang.invitation.repository.GiftConfirmationRepository;
 import id.baundang.invitation.repository.GuestbookEntryRepository;
 import id.baundang.invitation.repository.InvitationRepository;
 import id.baundang.invitation.repository.RsvpResponseRepository;
@@ -31,6 +35,8 @@ public class InvitationService {
     private final InvitationRepository invitationRepository;
     private final RsvpResponseRepository rsvpRepository;
     private final GuestbookEntryRepository guestbookRepository;
+    private final GiftAccountRepository giftAccountRepository;
+    private final GiftConfirmationRepository giftConfirmationRepository;
     private final RabbitTemplate rabbitTemplate;
 
     @Value("${app.rabbitmq.rsvp-exchange}")
@@ -138,5 +144,62 @@ public class InvitationService {
         LocalDate to   = from.plusDays(days);
         return invitationRepository.findExpiringBetween(from, to)
                 .stream().map(ExpiringInvitationDTO::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public GiftAccountDTO getGiftAccount(String slug) {
+        Invitation inv = getBySlug(slug);
+        return giftAccountRepository.findByInvitationId(inv.getId())
+                .map(GiftAccountDTO::from)
+                .orElse(new GiftAccountDTO(null, null, null, null, null, null));
+    }
+
+    @Transactional
+    public void setGiftAccount(UUID invitationId, GiftAccountRequest req) {
+        Invitation inv = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> new NotFoundException("Invitation not found: " + invitationId));
+        GiftAccount account = giftAccountRepository.findByInvitationId(invitationId)
+                .orElseGet(() -> { GiftAccount a = new GiftAccount(); a.setInvitation(inv); return a; });
+        account.setBankName(req.bankName());
+        account.setAccountNumber(req.accountNumber());
+        account.setAccountHolder(req.accountHolder());
+        account.setGopayNumber(req.gopayNumber());
+        account.setOvoNumber(req.ovoNumber());
+        account.setQrisImageUrl(req.qrisImageUrl());
+        giftAccountRepository.save(account);
+    }
+
+    @Transactional
+    public void submitGiftConfirmation(String slug, GiftConfirmRequest req) {
+        Invitation inv = getBySlug(slug);
+
+        GiftConfirmation confirmation = new GiftConfirmation();
+        confirmation.setInvitation(inv);
+        confirmation.setSenderName(req.senderName());
+        confirmation.setAmount(req.amount());
+        confirmation.setBankFrom(req.bankFrom());
+        confirmation.setTransferProofUrl(req.proofUrl());
+        confirmation.setMessage(req.message());
+        giftConfirmationRepository.save(confirmation);
+
+        JsonNode content  = inv.getContent();
+        String coupleWa   = content != null && content.hasNonNull("contactWhatsapp")
+                ? content.get("contactWhatsapp").asText("") : "";
+        String coupleName = content != null && content.hasNonNull("coupleName")
+                ? content.get("coupleName").asText(slug) : slug;
+
+        try {
+            rabbitTemplate.convertAndSend("baundang.rsvp", "gift.confirmed", Map.of(
+                    "invitationSlug", slug,
+                    "coupleName", coupleName,
+                    "coupleWhatsapp", coupleWa,
+                    "senderName", req.senderName(),
+                    "amount", req.amount(),
+                    "bankFrom", req.bankFrom() != null ? req.bankFrom() : "",
+                    "occurredAt", Instant.now().toString()
+            ));
+        } catch (Exception e) {
+            log.error("Failed to publish gift.confirmed: {}", e.getMessage());
+        }
     }
 }

@@ -64,6 +64,21 @@ public final class MessageTemplates {
                 """.formatted(guestName, attendanceLabel, invitationTitle, guestCount);
     }
 
+    public static String giftConfirmedCouple(String coupleName, String senderName,
+                                              long amount, String bankFrom) {
+        String from = (bankFrom != null && !bankFrom.isBlank()) ? " via " + bankFrom : "";
+        return """
+                💝 *Konfirmasi Hadiah Diterima!*
+
+                Halo *%s*,
+
+                *%s* telah mengirimkan hadiah uang sebesar *Rp %,d*%s.
+
+                Cek dashboard undangan Anda untuk detail konfirmasi.
+                baundang.id ❤️
+                """.formatted(coupleName, senderName, amount, from);
+    }
+
     public static String invitationExpiring(String coupleName, String invitationTitle, int daysLeft) {
         return """
                 ⚠️ *Pengingat: Undangan Hampir Kedaluwarsa*
