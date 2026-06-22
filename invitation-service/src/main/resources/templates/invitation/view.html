@@ -3,8 +3,22 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title th:text="|Undangan Pernikahan ${coupleName}|">Undangan Pernikahan</title>
+    <title th:text="|${groomFullName} &amp; ${brideFullName} — Undangan Pernikahan|">Undangan Pernikahan</title>
     <meta name="description" th:content="|Undangan pernikahan digital ${coupleName} — baundang.id|"/>
+
+    <!-- Open Graph -->
+    <meta property="og:type"        content="website"/>
+    <meta property="og:site_name"   content="baundang.id"/>
+    <meta property="og:title"       th:content="|${groomFullName} &amp; ${brideFullName} — Undangan Pernikahan|"/>
+    <meta property="og:description" content="Kami mengundang Anda untuk hadir di pernikahan kami"/>
+    <meta property="og:image"       th:content="${coverPhotoUrl}"/>
+    <meta property="og:url"         th:content="|https://baundang.id/i/${slug}|"/>
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card"        content="summary_large_image"/>
+    <meta name="twitter:title"       th:content="|${groomFullName} &amp; ${brideFullName} — Undangan Pernikahan|"/>
+    <meta name="twitter:description" content="Kami mengundang Anda untuk hadir di pernikahan kami"/>
+    <meta name="twitter:image"       th:content="${coverPhotoUrl}"/>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>

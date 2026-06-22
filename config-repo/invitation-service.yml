@@ -1,2 +1,8 @@
 server:
   port: 8084
+
+spring:
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000

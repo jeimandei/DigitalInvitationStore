@@ -19,7 +19,11 @@ import id.baundang.invitation.repository.RsvpResponseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,13 +46,18 @@ public class InvitationService {
     private final GiftConfirmationRepository giftConfirmationRepository;
     private final RabbitTemplate rabbitTemplate;
 
+    // Self-injection so @Cacheable on getBySlug is honoured when called internally
+    @Autowired @Lazy
+    private InvitationService self;
+
     @Value("${app.rabbitmq.rsvp-exchange}")
     private String rsvpExchange;
 
     @Value("${app.base-url}")
     private String baseUrl;
 
-    @Transactional
+    @Transactional(readOnly = true)
+    @Cacheable(value = "invitations", key = "'inv:' + #slug")
     public Invitation getBySlug(String slug) {
         return invitationRepository.findByCoupleSlug(slug)
                 .orElseThrow(() -> new NotFoundException("Invitation not found: " + slug));
@@ -56,7 +65,7 @@ public class InvitationService {
 
     @Transactional
     public Invitation getBySlugAndIncrementView(String slug) {
-        Invitation inv = getBySlug(slug);
+        Invitation inv = self.getBySlug(slug); // via proxy to hit cache
         invitationRepository.incrementViewCount(inv.getId());
         return inv;
     }
@@ -96,8 +105,9 @@ public class InvitationService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "guestbooks", key = "'gb:' + #slug")
     public List<GuestbookEntryDTO> listApprovedGuestbook(String slug) {
-        Invitation inv = getBySlug(slug);
+        Invitation inv = self.getBySlug(slug);
         return guestbookRepository
                 .findAllByInvitationIdAndApprovedTrueOrderByCreatedAtDesc(inv.getId())
                 .stream().map(GuestbookEntryDTO::from).toList();
@@ -115,6 +125,7 @@ public class InvitationService {
     }
 
     @Transactional
+    @CacheEvict(value = "guestbooks", allEntries = true)
     public void approveGuestbook(UUID invitationId, UUID entryId) {
         GuestbookEntry entry = guestbookRepository.findById(entryId)
                 .orElseThrow(() -> new NotFoundException("Guestbook entry not found: " + entryId));
@@ -126,6 +137,7 @@ public class InvitationService {
     }
 
     @Transactional
+    @CacheEvict(value = {"invitations", "guestbooks"}, allEntries = true)
     public Invitation updateContent(UUID id, JsonNode patch) {
         Invitation inv = invitationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
