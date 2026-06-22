@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import id.baundang.common.exception.NotFoundException;
 import id.baundang.invitation.domain.GiftAccount;
 import id.baundang.invitation.domain.GiftConfirmation;
+import id.baundang.invitation.dto.EventDTO;
 import id.baundang.invitation.domain.GuestbookEntry;
 import id.baundang.invitation.domain.Invitation;
 import id.baundang.invitation.domain.Invitation.InvitationStatus;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -144,6 +146,20 @@ public class InvitationService {
         LocalDate to   = from.plusDays(days);
         return invitationRepository.findExpiringBetween(from, to)
                 .stream().map(ExpiringInvitationDTO::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventDTO> getEvents(String slug) {
+        Invitation inv = getBySlug(slug);
+        JsonNode content = inv.getContent();
+        if (content == null || !content.hasNonNull("events") || !content.get("events").isArray()) {
+            return List.of();
+        }
+        List<EventDTO> events = new ArrayList<>();
+        for (JsonNode node : content.get("events")) {
+            events.add(EventDTO.from(node));
+        }
+        return events;
     }
 
     @Transactional(readOnly = true)

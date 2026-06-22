@@ -128,8 +128,12 @@
         </div>
     </section>
 
-    <!-- Event details -->
-    <section style="background:#fff; max-width:100%; padding: 5rem 1.5rem;">
+    <!-- Venue map cards (structured events from content.events[]) -->
+    <div th:replace="~{fragments/venue-map :: venue-map(${events})}"></div>
+
+    <!-- Fallback: legacy flat fields rendered when events[] is absent -->
+    <section th:if="${(events == null or #lists.isEmpty(events)) and (akadDate != '' or receptionDate != '')}"
+             style="background:#fff; max-width:100%; padding: 5rem 1.5rem;">
         <div style="max-width:720px; margin:0 auto; text-align:center">
             <p class="ornament">﹡</p>
             <h2>Detail Acara</h2>
@@ -151,7 +155,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Maps embed -->
             <div th:if="${mapsEmbedUrl != ''}" style="margin-top:2rem">
                 <iframe th:src="${mapsEmbedUrl}" width="100%" height="300"
                         style="border:0" allowfullscreen loading="lazy"

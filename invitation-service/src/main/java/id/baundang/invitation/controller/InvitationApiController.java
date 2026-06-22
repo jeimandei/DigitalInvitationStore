@@ -40,6 +40,11 @@ public class InvitationApiController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Ucapan berhasil dikirim, menunggu persetujuan"));
     }
 
+    @GetMapping("/api/v1/invitations/{slug}/events")
+    public ApiResponse<List<EventDTO>> listEvents(@PathVariable String slug) {
+        return ApiResponse.ok(invitationService.getEvents(slug));
+    }
+
     // Internal — called by notification-service scheduler (no JWT, internal network only)
     @GetMapping("/api/v1/invitations/expiring")
     public List<ExpiringInvitationDTO> listExpiring(@RequestParam(defaultValue = "7") int days) {

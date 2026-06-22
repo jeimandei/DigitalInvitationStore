@@ -2,6 +2,7 @@ package id.baundang.invitation.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import id.baundang.invitation.domain.Invitation;
+import id.baundang.invitation.dto.EventDTO;
 import id.baundang.invitation.service.InvitationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -9,6 +10,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 @RequestMapping("/i")
@@ -43,11 +47,23 @@ public class InvitationPageController {
         model.addAttribute("loveStory",     textOf(content, "loveStory", ""));
         model.addAttribute("coverPhotoUrl", textOf(content, "coverPhotoUrl", ""));
         model.addAttribute("mapsEmbedUrl",  textOf(content, "mapsEmbedUrl", ""));
+        model.addAttribute("events", extractEvents(content));
 
         return "invitation/view";
     }
 
     private String textOf(JsonNode node, String field, String fallback) {
         return node != null && node.hasNonNull(field) ? node.get(field).asText(fallback) : fallback;
+    }
+
+    private List<EventDTO> extractEvents(JsonNode content) {
+        List<EventDTO> events = new ArrayList<>();
+        if (content == null || !content.hasNonNull("events")) return events;
+        JsonNode arr = content.get("events");
+        if (!arr.isArray()) return events;
+        for (JsonNode item : arr) {
+            events.add(EventDTO.from(item));
+        }
+        return events;
     }
 }
