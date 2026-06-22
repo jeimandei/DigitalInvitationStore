@@ -1,0 +1,39 @@
+package id.baundang.order.domain;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.Type;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(name = "order_revisions")
+@Getter
+@Setter
+public class OrderRevision {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
+
+    @Column(name = "requested_by", nullable = false)
+    private UUID requestedBy;
+
+    @Type(JsonBinaryType.class)
+    @Column(columnDefinition = "jsonb")
+    private JsonNode changes;
+
+    @Column(nullable = false, length = 20)
+    private String status = "PENDING";
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
+}

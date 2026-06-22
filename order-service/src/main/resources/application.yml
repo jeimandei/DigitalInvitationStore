@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: order-service
+  config:
+    import: "configserver:http://config-server:8888"
+
+server:
+  port: 8085
+
+app:
+  rabbitmq:
+    exchange: baundang.orders
+    routing-key:
+      created: order.created
+      paid: order.paid
+      revised: order.revised
