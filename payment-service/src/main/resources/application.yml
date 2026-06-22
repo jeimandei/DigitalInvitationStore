@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: payment-service
+  config:
+    import: "configserver:http://config-server:8888"
+
+server:
+  port: 8086
+
+app:
+  midtrans:
+    server-key: ${MIDTRANS_SERVER_KEY}
+    is-production: ${MIDTRANS_IS_PRODUCTION:false}
+  rabbitmq:
+    orders-exchange: baundang.orders
+    routing-key:
+      paid: order.paid
+      payment-failed: order.payment_failed
