@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Fragment: christian-block
+  Usage in parent template:
+    <div th:replace="~{fragments/christian-block :: christian-block(${christian})}"></div>
+  Renders nothing when the 'christian' model attribute is null (non-Christian invitation).
+-->
+<section th:fragment="christian-block(christian)"
+         th:if="${christian != null}"
+         class="christian-section">
+
+    <style>
+        .christian-section {
+            padding: 5rem 1.5rem;
+            background: linear-gradient(180deg, #f8f4ef 0%, #fefcf9 100%);
+        }
+        .christian-inner {
+            max-width: 680px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        /* ── Cross ornament ── */
+        .christian-cross {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+            color: #b0956a;
+        }
+        .christian-cross svg { opacity: .55; }
+        .christian-cross-symbol {
+            font-size: 2rem;
+            color: #8b6f47;
+        }
+
+        /* ── Bible verse blockquote ── */
+        .verse-blockquote {
+            position: relative;
+            margin: 0 auto 2.5rem;
+            padding: 2rem 2rem 1.5rem;
+            background: #fff;
+            border-left: 4px solid #c9a96e;
+            box-shadow: 0 2px 16px rgba(140, 100, 60, .08);
+            text-align: left;
+        }
+        .verse-blockquote::before {
+            content: '\201C';
+            position: absolute;
+            top: -0.25rem;
+            left: 1rem;
+            font-family: 'Georgia', serif;
+            font-size: 4rem;
+            line-height: 1;
+            color: #e8d5b0;
+        }
+        .verse-text {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 1.05rem;
+            line-height: 1.85;
+            color: #3d2b1a;
+            font-style: italic;
+            margin: 0 0 .75rem;
+        }
+        .verse-reference {
+            display: block;
+            font-size: .78rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: #9e8060;
+            font-style: normal;
+        }
+        .verse-translation-badge {
+            display: inline-block;
+            margin-left: .5rem;
+            padding: .1rem .45rem;
+            background: #f5ede0;
+            border: 1px solid #d6c4a8;
+            font-size: .7rem;
+            letter-spacing: .06em;
+            color: #7a5c3a;
+            vertical-align: middle;
+        }
+
+        /* ── Church ceremony card ── */
+        .church-card {
+            background: #fff;
+            border: 1px solid #e8d8c4;
+            padding: 1.75rem 2rem;
+            margin-top: 1.5rem;
+            text-align: left;
+        }
+        .church-card-header {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin-bottom: 1.25rem;
+        }
+        .church-card-header svg { color: #b0956a; flex-shrink: 0; }
+        .church-ceremony-type {
+            font-family: 'Playfair Display', 'Georgia', serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #3d2b1a;
+            letter-spacing: .03em;
+        }
+        .church-meta { font-size: .9rem; color: #5a3e2b; line-height: 1.8; }
+        .church-meta .label {
+            display: block;
+            font-size: .68rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: #9e8060;
+            margin-top: .8rem;
+            margin-bottom: .15rem;
+        }
+        .church-meta strong { color: #3d2b1a; font-weight: 600; }
+    </style>
+
+    <div class="christian-inner">
+
+        <!-- Cross ornament divider -->
+        <div class="christian-cross" aria-hidden="true">
+            <svg width="60" height="1" viewBox="0 0 60 1"><rect width="60" height="1" fill="currentColor"/></svg>
+            <span class="christian-cross-symbol">✝</span>
+            <svg width="60" height="1" viewBox="0 0 60 1"><rect width="60" height="1" fill="currentColor"/></svg>
+        </div>
+
+        <!-- Bible verse blockquote -->
+        <blockquote th:if="${christian.hasVerse()}" class="verse-blockquote">
+            <p class="verse-text" th:text="${christian.verseText()}"></p>
+            <cite class="verse-reference">
+                <span th:text="${christian.verseReference()}"></span>
+                <span th:if="${!#strings.isEmpty(christian.verseTranslation())}"
+                      class="verse-translation-badge"
+                      th:text="${christian.verseTranslation()}"></span>
+            </cite>
+        </blockquote>
+
+        <!-- Church ceremony detail card -->
+        <div th:if="${christian.hasChurchInfo()}" class="church-card">
+            <div class="church-card-header">
+                <!-- Church building icon (inline SVG, no external dependency) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                    <path d="M12 2v4M10 4h4"/>
+                    <path d="M4 22V10l8-6 8 6v12H4z"/>
+                    <rect x="9" y="14" width="6" height="8"/>
+                </svg>
+                <span class="church-ceremony-type"
+                      th:text="${christian.ceremonyType()}">Holy Matrimony</span>
+            </div>
+            <div class="church-meta">
+                <span class="label">Gereja</span>
+                <strong th:text="${christian.churchName()}"></strong>
+
+                <span class="label" th:if="${!#strings.isEmpty(christian.churchAddress())}">Alamat</span>
+                <span th:text="${christian.churchAddress()}"></span>
+
+                <span class="label" th:if="${!#strings.isEmpty(christian.churchTime())}">Waktu</span>
+                <strong th:text="${christian.churchTime()}"></strong>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+</body>
+</html>

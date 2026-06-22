@@ -2,6 +2,7 @@ package id.baundang.invitation.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import id.baundang.invitation.domain.Invitation;
+import id.baundang.invitation.dto.ChristianContentSchema;
 import id.baundang.invitation.dto.EventDTO;
 import id.baundang.invitation.service.InvitationService;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,7 @@ public class InvitationPageController {
         model.addAttribute("coverPhotoUrl", textOf(content, "coverPhotoUrl", ""));
         model.addAttribute("mapsEmbedUrl",  textOf(content, "mapsEmbedUrl", ""));
         model.addAttribute("events", extractEvents(content));
+        model.addAttribute("christian", ChristianContentSchema.from(content));
 
         return "invitation/view";
     }

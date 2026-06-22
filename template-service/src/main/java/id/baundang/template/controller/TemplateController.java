@@ -2,9 +2,12 @@ package id.baundang.template.controller;
 
 import id.baundang.common.ApiResponse;
 import id.baundang.common.PagedResponse;
+import id.baundang.template.domain.BibleVerse;
+import id.baundang.template.dto.BibleVerseDTO;
 import id.baundang.template.dto.TemplateDTO;
 import id.baundang.template.dto.TemplateListDTO;
 import id.baundang.template.dto.TemplateRequest;
+import id.baundang.template.repository.BibleVerseRepository;
 import id.baundang.template.service.TemplateService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
@@ -14,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -21,9 +25,11 @@ import java.util.UUID;
 public class TemplateController {
 
     private final TemplateService service;
+    private final BibleVerseRepository bibleVerseRepository;
 
-    public TemplateController(TemplateService service) {
+    public TemplateController(TemplateService service, BibleVerseRepository bibleVerseRepository) {
         this.service = service;
+        this.bibleVerseRepository = bibleVerseRepository;
     }
 
     @GetMapping
@@ -71,5 +77,37 @@ public class TemplateController {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         service.softDelete(id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Template deactivated"));
+    }
+
+    @GetMapping("/christian/verses")
+    public ResponseEntity<ApiResponse<List<BibleVerseDTO>>> listVerses(
+            @RequestParam(required = false) String translation,
+            @RequestParam(required = false) String category) {
+
+        List<BibleVerse> verses;
+        BibleVerse.Translation t = parseEnum(BibleVerse.Translation.class, translation);
+        BibleVerse.Category    c = parseEnum(BibleVerse.Category.class, category);
+
+        if (t != null && c != null) {
+            verses = bibleVerseRepository.findByTranslationAndCategory(t, c);
+        } else if (t != null) {
+            verses = bibleVerseRepository.findByTranslation(t);
+        } else if (c != null) {
+            verses = bibleVerseRepository.findByCategory(c);
+        } else {
+            verses = bibleVerseRepository.findAll();
+        }
+
+        return ResponseEntity.ok(ApiResponse.ok(
+                verses.stream().map(BibleVerseDTO::from).toList()));
+    }
+
+    private <E extends Enum<E>> E parseEnum(Class<E> cls, String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Enum.valueOf(cls, value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }
