@@ -1,0 +1,18 @@
+FROM eclipse-temurin:25-jdk-alpine AS builder
+WORKDIR /build
+COPY . .
+RUN ./mvnw -pl media-service -am -q -DskipTests package && \
+    java -Djarmode=layertools -jar media-service/target/media-service-*.jar extract --destination media-service/target/extracted
+
+FROM eclipse-temurin:25-jre-alpine
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+WORKDIR /app
+COPY --from=builder --chown=appuser:appgroup /build/media-service/target/extracted/dependencies/ ./
+COPY --from=builder --chown=appuser:appgroup /build/media-service/target/extracted/spring-boot-loader/ ./
+COPY --from=builder --chown=appuser:appgroup /build/media-service/target/extracted/snapshot-dependencies/ ./
+COPY --from=builder --chown=appuser:appgroup /build/media-service/target/extracted/application/ ./
+USER appuser
+EXPOSE 8089
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD wget -qO- http://localhost:8089/actuator/health || exit 1
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
