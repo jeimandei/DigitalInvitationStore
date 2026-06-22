@@ -50,6 +50,28 @@ public class OrderEventConsumer {
         }
     }
 
+    @RabbitListener(queues = "notification.revision.completed")
+    public void onRevisionCompleted(Map<String, Object> event) {
+        try {
+            String orderNumber   = event.get("orderNumber").toString();
+            String contactWa     = event.getOrDefault("contactWhatsapp", "").toString();
+            String coupleSlug    = event.getOrDefault("coupleSlug", "").toString();
+            String invitationUrl = coupleSlug.isBlank()
+                    ? "https://baundang.id"
+                    : "https://baundang.id/i/" + coupleSlug;
+
+            if (!contactWa.isBlank()) {
+                notificationService.sendWhatsApp(
+                        "revision.completed.buyer", contactWa,
+                        MessageTemplates.revisionCompleted(orderNumber, invitationUrl),
+                        event
+                );
+            }
+        } catch (Exception e) {
+            log.error("Failed to handle revision.completed event: {}", e.getMessage(), e);
+        }
+    }
+
     @RabbitListener(queues = "notification.order.revised")
     public void onOrderRevised(Map<String, Object> event) {
         try {

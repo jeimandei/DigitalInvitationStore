@@ -79,6 +79,19 @@ public final class MessageTemplates {
                 """.formatted(coupleName, senderName, amount, from);
     }
 
+    public static String revisionCompleted(String orderNumber, String invitationUrl) {
+        return """
+                ✅ *Revisi Undangan Selesai!*
+
+                Halo, revisi untuk pesanan *%s* telah selesai diproses.
+
+                Lihat undangan Anda yang sudah diperbarui di:
+                %s
+
+                Terima kasih telah memilih baundang.id ❤️
+                """.formatted(orderNumber, invitationUrl);
+    }
+
     public static String invitationExpiring(String coupleName, String invitationTitle, int daysLeft) {
         return """
                 ⚠️ *Pengingat: Undangan Hampir Kedaluwarsa*

@@ -152,6 +152,42 @@ public class AdminController {
         csvExportService.exportRsvp(response.getWriter(), invitationId);
     }
 
+    // ─── Revisions ────────────────────────────────────────────────────────────
+
+    @PostMapping("/revisions/{revisionId}/complete")
+    public String completeRevision(
+            @PathVariable UUID revisionId,
+            @RequestParam UUID orderId,
+            @RequestParam(required = false) UUID invitationId,
+            @RequestParam(required = false) String contentJson,
+            @RequestParam(required = false) String note,
+            HttpServletRequest request) {
+
+        orderClient.completeRevision(revisionId);
+
+        if (invitationId != null && contentJson != null && !contentJson.isBlank()) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                Object patch = mapper.readValue(contentJson, Object.class);
+                invitationClient.updateContent(invitationId, patch);
+            } catch (Exception e) {
+                // invalid JSON — skip content update
+            }
+        }
+
+        if (note != null && !note.isBlank()) {
+            String adminId = (String) request.getAttribute("userId");
+            AdminNote n = new AdminNote();
+            n.setEntityType("ORDER");
+            n.setEntityId(orderId.toString());
+            n.setNote(note);
+            n.setCreatedBy(adminId != null ? adminId : "admin");
+            noteRepository.save(n);
+        }
+
+        return "redirect:/admin/orders/" + orderId;
+    }
+
     // ─── Buyers ───────────────────────────────────────────────────────────────
 
     @GetMapping("/buyers")

@@ -1,6 +1,7 @@
 package id.baundang.invitation.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import id.baundang.common.exception.NotFoundException;
 import id.baundang.invitation.domain.GiftAccount;
 import id.baundang.invitation.domain.GiftConfirmation;
@@ -125,10 +126,17 @@ public class InvitationService {
     }
 
     @Transactional
-    public Invitation updateContent(UUID id, JsonNode content) {
+    public Invitation updateContent(UUID id, JsonNode patch) {
         Invitation inv = invitationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
-        inv.setContent(content);
+        JsonNode existing = inv.getContent();
+        if (existing != null && existing.isObject() && patch.isObject()) {
+            ObjectNode merged = (ObjectNode) existing.deepCopy();
+            merged.setAll((ObjectNode) patch);
+            inv.setContent(merged);
+        } else {
+            inv.setContent(patch);
+        }
         return invitationRepository.save(inv);
     }
 

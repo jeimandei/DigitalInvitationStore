@@ -83,6 +83,20 @@ public class OrderAdminClient {
         }
     }
 
+    public Optional<OrderRevisionDTO> completeRevision(UUID revisionId) {
+        try {
+            JsonNode root = restClient.put()
+                    .uri("/api/v1/orders/revisions/" + revisionId + "/complete")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .retrieve().body(JsonNode.class);
+            return Optional.of(objectMapper.convertValue(root.path("data"), OrderRevisionDTO.class));
+        } catch (RestClientException e) {
+            log.error("Failed to complete revision {}: {}", revisionId, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
     public boolean updateStatus(UUID id, String status, String midtransId) {
         try {
             Map<String, Object> body = midtransId != null

@@ -29,6 +29,9 @@ public class OrderEventPublisher {
     @Value("${app.rabbitmq.routing-key.revised}")
     private String revisedKey;
 
+    @Value("${app.rabbitmq.routing-key.revision-completed}")
+    private String revisionCompletedKey;
+
     public void publishOrderCreated(Order order) {
         publish(createdKey, Map.of(
                 "orderId", order.getId(),
@@ -63,6 +66,18 @@ public class OrderEventPublisher {
                 "orderNumber", order.getOrderNumber(),
                 "buyerId", order.getBuyerId(),
                 "revisionCount", order.getRevisionCount(),
+                "occurredAt", Instant.now()
+        ));
+    }
+
+    public void publishRevisionCompleted(Order order, id.baundang.order.domain.OrderRevision revision) {
+        publish(revisionCompletedKey, Map.of(
+                "revisionId", revision.getId(),
+                "orderId", order.getId(),
+                "orderNumber", order.getOrderNumber(),
+                "buyerId", order.getBuyerId(),
+                "coupleSlug", order.getCoupleSlug() != null ? order.getCoupleSlug() : "",
+                "contactWhatsapp", order.getContactWhatsapp(),
                 "occurredAt", Instant.now()
         ));
     }

@@ -61,6 +61,21 @@ public class InvitationAdminClient {
         }
     }
 
+    public boolean updateContent(UUID invitationId, Object contentPatch) {
+        try {
+            restClient.put()
+                    .uri("/api/v1/admin/invitations/" + invitationId + "/content")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .body(contentPatch)
+                    .retrieve().toBodilessEntity();
+            return true;
+        } catch (RestClientException e) {
+            log.error("Failed to update invitation content {}: {}", invitationId, e.getMessage());
+            return false;
+        }
+    }
+
     public boolean approveGuestbook(UUID invitationId, UUID entryId) {
         try {
             restClient.put()

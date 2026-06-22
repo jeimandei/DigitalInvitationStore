@@ -17,7 +17,7 @@ public record OrderRevisionDTO(
     public static OrderRevisionDTO from(OrderRevision r) {
         return new OrderRevisionDTO(
                 r.getId(), r.getOrder().getId(), r.getRequestedBy(),
-                r.getChanges(), r.getStatus(), r.getCreatedAt()
+                r.getChanges(), r.getStatus().name(), r.getCreatedAt()
         );
     }
 }

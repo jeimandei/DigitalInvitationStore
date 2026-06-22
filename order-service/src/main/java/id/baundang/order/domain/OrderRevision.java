@@ -31,8 +31,9 @@ public class OrderRevision {
     @Column(columnDefinition = "jsonb")
     private JsonNode changes;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status = "PENDING";
+    private RevisionStatus status = RevisionStatus.REQUESTED;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();

@@ -2,10 +2,8 @@ package id.baundang.order.service;
 
 import id.baundang.common.exception.NotFoundException;
 import id.baundang.common.exception.UnauthorizedException;
-import id.baundang.common.exception.ValidationException;
 import id.baundang.order.domain.Order;
 import id.baundang.order.domain.Order.OrderStatusPg;
-import id.baundang.order.domain.OrderRevision;
 import id.baundang.order.dto.*;
 import id.baundang.order.messaging.OrderEventPublisher;
 import id.baundang.order.repository.OrderRepository;
@@ -81,33 +79,6 @@ public class OrderService {
             eventPublisher.publishOrderPaid(order);
         }
         return OrderDTO.from(orderRepository.save(order));
-    }
-
-    @Transactional
-    public OrderRevisionDTO requestRevision(UUID orderId, RevisionRequest req, UUID requestedBy) {
-        Order order = findOrThrow(orderId);
-
-        if (order.getStatus() != OrderStatusPg.PAID && order.getStatus() != OrderStatusPg.IN_REVISION) {
-            throw new ValidationException("Revisions can only be requested on PAID or IN_REVISION orders");
-        }
-        if (order.getRevisionCount() >= order.getMaxRevisions()) {
-            throw new ValidationException("Maximum revisions (" + order.getMaxRevisions() + ") reached");
-        }
-
-        OrderRevision revision = new OrderRevision();
-        revision.setOrder(order);
-        revision.setRequestedBy(requestedBy);
-        revision.setChanges(req.changes());
-        revision.setStatus("PENDING");
-        revision = revisionRepository.save(revision);
-
-        order.setRevisionCount((short) (order.getRevisionCount() + 1));
-        order.setStatus(OrderStatusPg.IN_REVISION);
-        orderRepository.save(order);
-
-        eventPublisher.publishOrderRevised(order);
-
-        return OrderRevisionDTO.from(revision);
     }
 
     @Transactional(readOnly = true)

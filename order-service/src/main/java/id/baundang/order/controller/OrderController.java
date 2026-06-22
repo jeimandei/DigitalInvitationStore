@@ -4,6 +4,7 @@ import id.baundang.common.dto.ApiResponse;
 import id.baundang.common.dto.PagedResponse;
 import id.baundang.order.dto.*;
 import id.baundang.order.service.OrderService;
+import id.baundang.order.service.RevisionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class OrderController {
 
     private final OrderService orderService;
+    private final RevisionService revisionService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<CreateOrderResponse>> create(
@@ -64,7 +66,13 @@ public class OrderController {
                                                          @Valid @RequestBody RevisionRequest req,
                                                          Authentication auth) {
         UUID callerId = UUID.fromString(auth.getName());
-        return ApiResponse.ok(orderService.requestRevision(id, req, callerId));
+        return ApiResponse.ok(revisionService.requestRevision(id, req, callerId));
+    }
+
+    @PutMapping("/revisions/{revisionId}/complete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<OrderRevisionDTO> completeRevision(@PathVariable UUID revisionId) {
+        return ApiResponse.ok(revisionService.completeRevision(revisionId));
     }
 
     @GetMapping("/{id}/revisions")
