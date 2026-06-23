@@ -1,2 +1,50 @@
 server:
   port: 8082
+
+spring:
+  thymeleaf:
+    cache: true
+    encoding: UTF-8
+    mode: HTML
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+
+app:
+  services:
+    template: ${TEMPLATE_SERVICE_URL:http://template-service:8083}
+  pricing:
+    tiers:
+      - name: Dasar
+        price: 119000
+        description: Cocok untuk pasangan yang ingin undangan simpel dan elegan.
+        features:
+          - 1 pilihan template
+          - Informasi acara lengkap
+          - Konfirmasi kehadiran (RSVP)
+          - Tautan undangan unik
+        highlight: false
+      - name: Standar
+        price: 199000
+        description: Pilihan terpopuler dengan fitur lengkap untuk hari spesialmu.
+        features:
+          - Semua template tersedia
+          - RSVP & buku tamu digital
+          - Galeri foto
+          - Countdown hari pernikahan
+          - Peta lokasi interaktif
+        highlight: true
+      - name: Premium
+        price: 249000
+        description: Pengalaman undangan digital terlengkap tanpa kompromi.
+        features:
+          - Semua fitur Standar
+          - Musik latar pilihan
+          - Daftar hadiah (gift registry)
+          - 2x revisi desain
+          - Prioritas dukungan
+        highlight: false

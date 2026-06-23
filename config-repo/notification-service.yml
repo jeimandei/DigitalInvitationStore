@@ -4,7 +4,7 @@ server:
 spring:
   mail:
     host: ${EMAIL_HOST}
-    port: ${EMAIL_PORT}
+    port: ${EMAIL_PORT:587}
     username: ${EMAIL_USERNAME}
     password: ${EMAIL_PASSWORD}
     properties:
@@ -14,5 +14,15 @@ spring:
           starttls:
             enable: true
 
-whatsapp:
-  api-token: ${WHATSAPP_API_TOKEN}
+app:
+  fonnte:
+    token: ${WHATSAPP_API_TOKEN}
+    url: https://api.fonnte.com/send
+  admin:
+    whatsapp: ${ADMIN_WHATSAPP:6281234567890}
+  services:
+    invitation-service: ${INVITATION_SERVICE_URL:http://invitation-service:8084}
+  rabbitmq:
+    orders-exchange: baundang.orders
+    invitations-exchange: baundang.invitations
+    rsvp-exchange: baundang.rsvp

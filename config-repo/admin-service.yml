@@ -1,2 +1,21 @@
 server:
   port: 8088
+
+spring:
+  thymeleaf:
+    cache: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+app:
+  services:
+    order-service: ${ORDER_SERVICE_URL:http://order-service:8085}
+    invitation-service: ${INVITATION_SERVICE_URL:http://invitation-service:8084}
+    template-service: ${TEMPLATE_SERVICE_URL:http://template-service:8083}
+    auth-service: ${AUTH_SERVICE_URL:http://auth-service:8081}
+    notification-service: ${NOTIFICATION_SERVICE_URL:http://notification-service:8087}

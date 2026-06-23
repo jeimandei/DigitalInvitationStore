@@ -2,7 +2,18 @@ server:
   port: 8084
 
 spring:
+  thymeleaf:
+    cache: true
+    encoding: UTF-8
+    mode: HTML
   cache:
     type: redis
     redis:
       time-to-live: 300000
+
+app:
+  rabbitmq:
+    orders-exchange: baundang.orders
+    rsvp-exchange: baundang.rsvp
+    invitations-exchange: baundang.invitations
+  base-url: ${APP_BASE_URL:https://baundang.id}

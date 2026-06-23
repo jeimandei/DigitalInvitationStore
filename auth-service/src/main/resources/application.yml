@@ -2,42 +2,4 @@ spring:
   application:
     name: auth-service
   config:
-    import: "optional:configserver:${CONFIG_SERVER_URI:http://config-server:8888}"
-
-  datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASS}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
-
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-
-server:
-  port: 8081
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: when-authorized
-
-app:
-  jwt:
-    keys-dir: /secrets/auth
-    admin-expiry-hours: 8
-    buyer-expiry-hours: 24
-    order-token-expiry-minutes: 60
-    refresh-expiry-days: 30
+    import: "configserver:http://config-server:8888"

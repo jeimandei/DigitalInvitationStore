@@ -1,3 +1,6 @@
+# Shared config — applied to every service.
+# Datasource URL/user/password are injected per-service via SPRING_DATASOURCE_* env vars in podman-compose.
+
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
@@ -5,6 +8,15 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 2
       connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
   rabbitmq:
     host: rabbitmq
@@ -24,6 +36,11 @@ spring:
           max-active: 8
           max-idle: 4
 
+  task:
+    scheduling:
+      pool:
+        size: 3
+
 management:
   endpoints:
     web:
@@ -32,12 +49,6 @@ management:
   endpoint:
     health:
       show-details: when-authorized
-
-spring:
-  task:
-    scheduling:
-      pool:
-        size: 3
 
 logging:
   level:

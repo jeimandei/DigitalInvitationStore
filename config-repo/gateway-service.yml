@@ -2,42 +2,90 @@ server:
   port: 8080
 
 spring:
+  # Gateway has no JPA/Flyway — exclude to avoid startup errors
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
   cloud:
     gateway:
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 200
+            redis-rate-limiter.burstCapacity: 400
+            key-resolver: "#{@ipKeyResolver}"
+
       routes:
-        - id: auth
-          uri: http://auth:8081
+        - id: invitation-viewer
+          uri: http://invitation-service:8084
           predicates:
-            - Path=/api/auth/**
+            - Path=/i/**
+
         - id: storefront
-          uri: http://storefront:8082
+          uri: http://storefront-service:8082
           predicates:
-            - Path=/api/storefront/**
-        - id: template
-          uri: http://template:8083
+            - Path=/, /templates/**, /pesan/**, /tentang/**, /sitemap.xml, /robots.txt
+
+        - id: template-service
+          uri: http://template-service:8083
           predicates:
-            - Path=/api/templates/**
-        - id: invitation
-          uri: http://invitation:8084
+            - Path=/api/v1/templates/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 100
+                key-resolver: "#{@ipKeyResolver}"
+
+        - id: auth-service
+          uri: http://auth-service:8081
           predicates:
-            - Path=/api/invitations/**
-        - id: order
-          uri: http://order:8085
+            - Path=/api/v1/auth/**
+
+        - id: order-service
+          uri: http://order-service:8085
           predicates:
-            - Path=/api/orders/**
-        - id: payment
-          uri: http://payment:8086
+            - Path=/api/v1/orders/**
+          filters:
+            - JwtAuth
+
+        - id: payment-service
+          uri: http://payment-service:8086
           predicates:
-            - Path=/api/payments/**
-        - id: notification
-          uri: http://notification:8087
+            - Path=/api/v1/payments/**
+          filters:
+            - JwtAuth
+
+        - id: media-service
+          uri: http://media-service:8089
           predicates:
-            - Path=/api/notifications/**
-        - id: admin
-          uri: http://admin:8088
+            - Path=/api/v1/media/**
+          filters:
+            - JwtAuth
+
+        - id: admin-api
+          uri: http://admin-service:8088
           predicates:
-            - Path=/api/admin/**
-        - id: media
-          uri: http://media:8089
+            - Path=/api/v1/admin/**
+          filters:
+            - "JwtAuth=ROLE_ADMIN"
+
+        - id: notification-service
+          uri: http://notification-service:8087
           predicates:
-            - Path=/api/media/**
+            - Path=/api/v1/notifications/**
+          filters:
+            - "JwtAuth=ROLE_ADMIN"
+
+        - id: invitation-api
+          uri: http://invitation-service:8084
+          predicates:
+            - Path=/api/v1/invitations/**
+
+app:
+  auth:
+    public-key-uri: http://auth-service:8081/api/v1/auth/public-key

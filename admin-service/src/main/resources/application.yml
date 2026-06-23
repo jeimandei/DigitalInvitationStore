@@ -3,16 +3,3 @@ spring:
     name: admin-service
   config:
     import: "configserver:http://config-server:8888"
-  thymeleaf:
-    cache: false
-
-server:
-  port: 8088
-
-app:
-  services:
-    order-service: ${ORDER_SERVICE_URL:http://order-service:8085}
-    invitation-service: ${INVITATION_SERVICE_URL:http://invitation-service:8084}
-    template-service: ${TEMPLATE_SERVICE_URL:http://template-service:8083}
-    auth-service: ${AUTH_SERVICE_URL:http://auth-service:8081}
-    notification-service: ${NOTIFICATION_SERVICE_URL:http://notification-service:8087}

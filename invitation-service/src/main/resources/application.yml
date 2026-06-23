@@ -3,13 +3,3 @@ spring:
     name: invitation-service
   config:
     import: "configserver:http://config-server:8888"
-
-server:
-  port: 8084
-
-app:
-  rabbitmq:
-    orders-exchange: baundang.orders
-    rsvp-exchange: baundang.rsvp
-    invitations-exchange: baundang.invitations
-  base-url: ${APP_BASE_URL:https://baundang.id}

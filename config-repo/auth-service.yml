@@ -1,2 +1,12 @@
 server:
   port: 8081
+
+# spring.datasource.url/username/password are injected via SPRING_DATASOURCE_* in podman-compose
+
+app:
+  jwt:
+    keys-dir: /secrets/auth
+    admin-expiry-hours: 8
+    buyer-expiry-hours: 24
+    order-token-expiry-minutes: 60
+    refresh-expiry-days: 30
