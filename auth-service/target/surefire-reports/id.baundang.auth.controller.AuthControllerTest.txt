@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: id.baundang.auth.controller.AuthControllerTest
+-------------------------------------------------------------------------------
+Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.495 s -- in id.baundang.auth.controller.AuthControllerTest

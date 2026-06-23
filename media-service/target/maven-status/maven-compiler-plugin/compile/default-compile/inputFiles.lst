@@ -1,0 +1,11 @@
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/MediaServiceApplication.java
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/config/GatewayHeaderFilter.java
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/config/MediaProperties.java
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/config/MinioConfig.java
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/config/SecurityConfig.java
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/controller/MediaController.java
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/dto/PresignDownloadResponse.java
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/dto/PresignUploadRequest.java
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/dto/PresignUploadResponse.java
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/dto/UploadedObjectResponse.java
+/home/user/DigitalInvitationStore/media-service/src/main/java/id/baundang/media/service/MinioService.java

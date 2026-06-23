@@ -1,6 +1,7 @@
 package id.baundang.invitation.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import id.baundang.invitation.config.GatewayHeaderFilter;
 import id.baundang.invitation.dto.*;
 import id.baundang.invitation.service.InvitationService;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,9 @@ class InvitationApiControllerTest {
 
     @MockBean
     InvitationService invitationService;
+
+    @MockBean
+    GatewayHeaderFilter gatewayHeaderFilter;
 
     @Test
     void submitRsvp_returns200() throws Exception {
@@ -104,7 +108,7 @@ class InvitationApiControllerTest {
     @Test
     void updateContent_returns200() throws Exception {
         UUID id = UUID.randomUUID();
-        doNothing().when(invitationService).updateContent(eq(id), any());
+        when(invitationService.updateContent(eq(id), any())).thenReturn(null);
 
         mockMvc.perform(put("/api/v1/admin/invitations/" + id + "/content")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -115,7 +119,7 @@ class InvitationApiControllerTest {
     @Test
     void updateStatus_returns200() throws Exception {
         UUID id = UUID.randomUUID();
-        doNothing().when(invitationService).updateStatus(any(), any());
+        when(invitationService.updateStatus(any(), any())).thenReturn(null);
 
         mockMvc.perform(put("/api/v1/admin/invitations/" + id + "/status?status=ACTIVE"))
                 .andExpect(status().isOk());

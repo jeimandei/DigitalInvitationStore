@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: id.baundang.template.controller.TemplateControllerTest
+-------------------------------------------------------------------------------
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.467 s -- in id.baundang.template.controller.TemplateControllerTest

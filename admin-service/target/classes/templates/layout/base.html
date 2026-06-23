@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${title} + ' — Baundang Admin'">Baundang Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<nav th:fragment="sidebar(active)">
+    <aside class="w-64 bg-gray-900 text-white flex flex-col min-h-screen fixed top-0 left-0">
+        <div class="px-6 py-5 border-b border-gray-700">
+            <span class="text-xl font-bold text-rose-400">Baundang</span>
+            <span class="ml-2 text-gray-400 text-sm">Admin</span>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-1">
+            <a th:href="@{/admin/}"
+               th:classappend="${active == 'dashboard'} ? ' bg-gray-700' : ' hover:bg-gray-800'"
+               class="flex items-center gap-3 px-3 py-2 rounded text-sm font-medium">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a th:href="@{/admin/orders}"
+               th:classappend="${active == 'orders'} ? ' bg-gray-700' : ' hover:bg-gray-800'"
+               class="flex items-center gap-3 px-3 py-2 rounded text-sm font-medium">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Pesanan
+            </a>
+            <a th:href="@{/admin/buyers}"
+               th:classappend="${active == 'buyers'} ? ' bg-gray-700' : ' hover:bg-gray-800'"
+               class="flex items-center gap-3 px-3 py-2 rounded text-sm font-medium">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Pembeli
+            </a>
+            <a th:href="@{/admin/invitations}"
+               th:classappend="${active == 'invitations'} ? ' bg-gray-700' : ' hover:bg-gray-800'"
+               class="flex items-center gap-3 px-3 py-2 rounded text-sm font-medium">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                Undangan
+            </a>
+            <a th:href="@{/admin/templates}"
+               th:classappend="${active == 'templates'} ? ' bg-gray-700' : ' hover:bg-gray-800'"
+               class="flex items-center gap-3 px-3 py-2 rounded text-sm font-medium">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+                Template
+            </a>
+            <a th:href="@{/admin/broadcast/wa}"
+               th:classappend="${active == 'broadcast'} ? ' bg-gray-700' : ' hover:bg-gray-800'"
+               class="flex items-center gap-3 px-3 py-2 rounded text-sm font-medium">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 3H3a2 2 0 00-2 2v14l4-4h16a2 2 0 002-2V5a2 2 0 00-2-2z"/></svg>
+                Broadcast WA
+            </a>
+        </nav>
+    </aside>
+</nav>
+</html>

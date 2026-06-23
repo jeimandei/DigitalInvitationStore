@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /actuator/
+
+Sitemap: https://baundang.id/sitemap.xml

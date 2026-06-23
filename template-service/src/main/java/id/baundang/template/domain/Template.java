@@ -57,7 +57,7 @@ public class Template {
     public enum Category { GENERAL, CHRISTIAN }
     public enum StylePreset { GRACE, COVENANT, EDEN, GLORIA }
 
-    protected Template() {}
+    public Template() {}
 
     public UUID getId()                        { return id; }
     public String getName()                    { return name; }
