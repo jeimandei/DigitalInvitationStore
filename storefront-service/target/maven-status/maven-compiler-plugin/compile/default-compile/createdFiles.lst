@@ -1,9 +1,0 @@
-id/baundang/storefront/client/TemplateApiClient.class
-id/baundang/storefront/config/PricingProperties.class
-id/baundang/storefront/controller/StorefrontController.class
-id/baundang/storefront/client/TemplateApiClient$TemplatePage.class
-id/baundang/storefront/client/TemplateSummaryDTO.class
-id/baundang/storefront/controller/SitemapController.class
-id/baundang/storefront/config/AppConfig.class
-id/baundang/storefront/StorefrontApplication.class
-id/baundang/storefront/config/PricingProperties$Tier.class

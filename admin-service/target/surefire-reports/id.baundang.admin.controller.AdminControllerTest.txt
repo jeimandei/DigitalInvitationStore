@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: id.baundang.admin.controller.AdminControllerTest
--------------------------------------------------------------------------------
-Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.512 s -- in id.baundang.admin.controller.AdminControllerTest

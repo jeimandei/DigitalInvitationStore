@@ -1,7 +1,0 @@
-/home/user/DigitalInvitationStore/storefront-service/src/main/java/id/baundang/storefront/StorefrontApplication.java
-/home/user/DigitalInvitationStore/storefront-service/src/main/java/id/baundang/storefront/client/TemplateApiClient.java
-/home/user/DigitalInvitationStore/storefront-service/src/main/java/id/baundang/storefront/client/TemplateSummaryDTO.java
-/home/user/DigitalInvitationStore/storefront-service/src/main/java/id/baundang/storefront/config/AppConfig.java
-/home/user/DigitalInvitationStore/storefront-service/src/main/java/id/baundang/storefront/config/PricingProperties.java
-/home/user/DigitalInvitationStore/storefront-service/src/main/java/id/baundang/storefront/controller/SitemapController.java
-/home/user/DigitalInvitationStore/storefront-service/src/main/java/id/baundang/storefront/controller/StorefrontController.java

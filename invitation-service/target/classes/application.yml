@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: invitation-service
-  config:
-    import: "configserver:http://config-server:8888"
