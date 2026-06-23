@@ -27,6 +27,12 @@
     <property name="eachLine" value="true"/>
   </module>
 
+  <!-- ── Line length (Checker-level check) ── -->
+  <module name="LineLength">
+    <property name="max" value="120"/>
+    <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
+  </module>
+
   <module name="TreeWalker">
 
     <!-- ── Naming ── -->
@@ -51,12 +57,6 @@
     <module name="RedundantImport"/>
     <module name="UnusedImports"/>
     <module name="IllegalImport"/>
-
-    <!-- ── Line length ── -->
-    <module name="LineLength">
-      <property name="max" value="120"/>
-      <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
-    </module>
 
     <!-- ── Whitespace ── -->
     <module name="GenericWhitespace"/>
