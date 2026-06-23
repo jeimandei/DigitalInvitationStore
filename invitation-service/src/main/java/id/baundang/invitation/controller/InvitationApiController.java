@@ -1,7 +1,7 @@
 package id.baundang.invitation.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import id.baundang.common.dto.ApiResponse;
+import id.baundang.common.ApiResponse;
 import id.baundang.invitation.domain.Invitation.InvitationStatus;
 import id.baundang.invitation.dto.*;
 import jakarta.validation.Valid;

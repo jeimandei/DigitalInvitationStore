@@ -1,7 +1,7 @@
 package id.baundang.payment.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import id.baundang.common.dto.ApiResponse;
+import id.baundang.common.ApiResponse;
 import id.baundang.payment.dto.ChargeRequest;
 import id.baundang.payment.dto.ChargeResponse;
 import id.baundang.payment.dto.SnapTokenResponse;

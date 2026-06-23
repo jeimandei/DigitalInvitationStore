@@ -1,7 +1,7 @@
 package id.baundang.order.controller;
 
-import id.baundang.common.dto.ApiResponse;
-import id.baundang.common.dto.PagedResponse;
+import id.baundang.common.ApiResponse;
+import id.baundang.common.PagedResponse;
 import id.baundang.order.dto.*;
 import id.baundang.order.service.OrderService;
 import id.baundang.order.service.RevisionService;

@@ -1,6 +1,6 @@
 package id.baundang.media.controller;
 
-import id.baundang.common.dto.ApiResponse;
+import id.baundang.common.ApiResponse;
 import id.baundang.media.dto.*;
 import id.baundang.media.service.MinioService;
 import jakarta.validation.Valid;
