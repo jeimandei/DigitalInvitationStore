@@ -1,8 +1,9 @@
 version: "3.9"
 
 networks:
-  backend-net:
-    internal: true
+  baundang-network:
+    driver: bridge
+    enable_ipv6: false
 
 volumes:
   postgres-data:
@@ -23,7 +24,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    networks: [backend-net]
+    networks: [baundang-network]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d baundang"]
       interval: 10s
@@ -33,7 +34,7 @@ services:
   redis:
     image: redis:7-alpine
     command: redis-server --requirepass ${REDIS_PASSWORD}
-    networks: [backend-net]
+    networks: [baundang-network]
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
@@ -50,7 +51,7 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
-    networks: [backend-net]
+    networks: [baundang-network]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 15s
@@ -68,7 +69,7 @@ services:
       - "9001:9001"
     volumes:
       - minio-data:/data
-    networks: [backend-net]
+    networks: [baundang-network]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 15s
@@ -89,7 +90,7 @@ services:
       SPRING_SECURITY_USER_PASSWORD: ${CONFIG_SERVER_PASSWORD}
     ports:
       - "8888:8888"
-    networks: [backend-net]
+    networks: [baundang-network]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health | grep -q UP"]
       interval: 15s
@@ -111,7 +112,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8081:8081"
-    networks: [backend-net]
+    networks: [baundang-network]
     depends_on:
       config-server:
         condition: service_healthy
@@ -130,7 +131,7 @@ services:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
     ports:
       - "8082:8082"
-    networks: [backend-net]
+    networks: [baundang-network]
     depends_on:
       config-server:
         condition: service_healthy
@@ -148,7 +149,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "8083:8083"
-    networks: [backend-net]
+    networks: [baundang-network]
     depends_on:
       config-server:
         condition: service_healthy
@@ -171,7 +172,7 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "8084:8084"
-    networks: [backend-net]
+    networks: [baundang-network]
     depends_on:
       config-server:
         condition: service_healthy
@@ -195,7 +196,7 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "8085:8085"
-    networks: [backend-net]
+    networks: [baundang-network]
     depends_on:
       config-server:
         condition: service_healthy
@@ -219,7 +220,7 @@ services:
       MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
     ports:
       - "8086:8086"
-    networks: [backend-net]
+    networks: [baundang-network]
     depends_on:
       config-server:
         condition: service_healthy
@@ -246,7 +247,7 @@ services:
       EMAIL_PASSWORD: ${EMAIL_PASSWORD}
     ports:
       - "8087:8087"
-    networks: [backend-net]
+    networks: [baundang-network]
     depends_on:
       config-server:
         condition: service_healthy
@@ -266,7 +267,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
     ports:
       - "8088:8088"
-    networks: [backend-net]
+    networks: [baundang-network]
     depends_on:
       config-server:
         condition: service_healthy
@@ -286,7 +287,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "8089:8089"
-    networks: [backend-net]
+    networks: [baundang-network]
     depends_on:
       config-server:
         condition: service_healthy
@@ -304,7 +305,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8080:8080"
-    networks: [backend-net]
+    networks: [baundang-network]
     depends_on:
       config-server:
         condition: service_healthy
