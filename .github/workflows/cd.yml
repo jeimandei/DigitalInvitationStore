@@ -1,0 +1,51 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add server to known_hosts
+        run: ssh-keyscan -H ${{ secrets.SSH_URL }} >> ~/.ssh/known_hosts
+
+      - name: Deploy over SSH
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_URL:  ${{ secrets.SSH_URL }}
+          SSH_PATH: ${{ secrets.SSH_PATH }}
+        run: |
+          ssh "$SSH_USER@$SSH_URL" DEPLOY_PATH="$SSH_PATH" 'bash -s' << 'DEPLOY'
+            set -euo pipefail
+
+            cd "$DEPLOY_PATH"
+
+            echo "==> Pulling latest code"
+            git pull origin main
+
+            echo "==> Building all modules (tests skipped — already passed in CI)"
+            ./mvnw -q -DskipTests clean package
+
+            echo "==> Pulling updated container images"
+            podman compose -f podman-compose.yml pull
+
+            echo "==> Restarting services"
+            podman compose -f podman-compose.yml up -d --remove-orphans
+
+            echo "==> Pruning unused images"
+            podman image prune -f
+
+            echo "==> Deploy complete at $(date) — path: $DEPLOY_PATH"
+          DEPLOY
