@@ -9,3 +9,13 @@ app:
       paid: order.paid
       revised: order.revised
       revision-completed: revision.completed
+
+spring:
+  flyway:
+    default-schema: orders
+    schemas: orders
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: orders

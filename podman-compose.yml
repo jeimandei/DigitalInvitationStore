@@ -5,15 +5,7 @@ networks:
     internal: true
 
 volumes:
-  postgres-auth-data:
-  postgres-storefront-data:
-  postgres-template-data:
-  postgres-invitation-data:
-  postgres-order-data:
-  postgres-payment-data:
-  postgres-notification-data:
-  postgres-admin-data:
-  postgres-media-data:
+  postgres-data:
   minio-data:
   rabbitmq-data:
 
@@ -21,137 +13,19 @@ services:
 
   # ── Infrastructure ────────────────────────────────────────────────────────
 
-  postgres-auth:
+  postgres:
     image: postgres:16-alpine
+    # Raise max_connections to 200 (9 services × pool-size 5 = 45 active, headroom for spikes)
+    command: postgres -N 200
     environment:
-      POSTGRES_DB: ${AUTH_DB:-auth}
-      POSTGRES_USER: ${AUTH_DB_USER}
-      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+      POSTGRES_DB: baundang
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - postgres-auth-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     networks: [backend-net]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER} -d ${AUTH_DB:-auth}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  postgres-storefront:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${STOREFRONT_DB:-storefront}
-      POSTGRES_USER: ${STOREFRONT_DB_USER}
-      POSTGRES_PASSWORD: ${STOREFRONT_DB_PASSWORD}
-    volumes:
-      - postgres-storefront-data:/var/lib/postgresql/data
-    networks: [backend-net]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${STOREFRONT_DB_USER} -d ${STOREFRONT_DB:-storefront}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  postgres-template:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${TEMPLATE_DB:-template}
-      POSTGRES_USER: ${TEMPLATE_DB_USER}
-      POSTGRES_PASSWORD: ${TEMPLATE_DB_PASSWORD}
-    volumes:
-      - postgres-template-data:/var/lib/postgresql/data
-    networks: [backend-net]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${TEMPLATE_DB_USER} -d ${TEMPLATE_DB:-template}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  postgres-invitation:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${INVITATION_DB:-invitation}
-      POSTGRES_USER: ${INVITATION_DB_USER}
-      POSTGRES_PASSWORD: ${INVITATION_DB_PASSWORD}
-    volumes:
-      - postgres-invitation-data:/var/lib/postgresql/data
-    networks: [backend-net]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${INVITATION_DB_USER} -d ${INVITATION_DB:-invitation}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  postgres-order:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${ORDER_DB:-order}
-      POSTGRES_USER: ${ORDER_DB_USER}
-      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD}
-    volumes:
-      - postgres-order-data:/var/lib/postgresql/data
-    networks: [backend-net]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${ORDER_DB_USER} -d ${ORDER_DB:-order}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  postgres-payment:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${PAYMENT_DB:-payment}
-      POSTGRES_USER: ${PAYMENT_DB_USER}
-      POSTGRES_PASSWORD: ${PAYMENT_DB_PASSWORD}
-    volumes:
-      - postgres-payment-data:/var/lib/postgresql/data
-    networks: [backend-net]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${PAYMENT_DB_USER} -d ${PAYMENT_DB:-payment}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  postgres-notification:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${NOTIFICATION_DB:-notification}
-      POSTGRES_USER: ${NOTIFICATION_DB_USER}
-      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
-    volumes:
-      - postgres-notification-data:/var/lib/postgresql/data
-    networks: [backend-net]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${NOTIFICATION_DB_USER} -d ${NOTIFICATION_DB:-notification}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  postgres-admin:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${ADMIN_DB:-admin}
-      POSTGRES_USER: ${ADMIN_DB_USER}
-      POSTGRES_PASSWORD: ${ADMIN_DB_PASSWORD}
-    volumes:
-      - postgres-admin-data:/var/lib/postgresql/data
-    networks: [backend-net]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${ADMIN_DB_USER} -d ${ADMIN_DB:-admin}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  postgres-media:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${MEDIA_DB:-media}
-      POSTGRES_USER: ${MEDIA_DB_USER}
-      POSTGRES_PASSWORD: ${MEDIA_DB_PASSWORD}
-    volumes:
-      - postgres-media-data:/var/lib/postgresql/data
-    networks: [backend-net]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${MEDIA_DB_USER} -d ${MEDIA_DB:-media}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d baundang"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -228,9 +102,9 @@ services:
       dockerfile: Containerfile
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/${AUTH_DB:-auth}
-      SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=auth
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
@@ -241,7 +115,7 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      postgres-auth:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -254,19 +128,11 @@ services:
       dockerfile: Containerfile
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-storefront:5432/${STOREFRONT_DB:-storefront}
-      SPRING_DATASOURCE_USERNAME: ${STOREFRONT_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${STOREFRONT_DB_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      RABBITMQ_USER: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "8082:8082"
     networks: [backend-net]
     depends_on:
       config-server:
-        condition: service_healthy
-      postgres-storefront:
         condition: service_healthy
 
   template:
@@ -275,10 +141,9 @@ services:
       dockerfile: Containerfile
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-template:5432/${TEMPLATE_DB:-template}
-      SPRING_DATASOURCE_USERNAME: ${TEMPLATE_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${TEMPLATE_DB_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=template
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
@@ -287,7 +152,7 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      postgres-template:
+      postgres:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -298,9 +163,9 @@ services:
       dockerfile: Containerfile
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-invitation:5432/${INVITATION_DB:-invitation}
-      SPRING_DATASOURCE_USERNAME: ${INVITATION_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${INVITATION_DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=invitation
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
@@ -310,7 +175,11 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      postgres-invitation:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   order:
@@ -319,10 +188,9 @@ services:
       dockerfile: Containerfile
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/${ORDER_DB:-order}
-      SPRING_DATASOURCE_USERNAME: ${ORDER_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${ORDER_DB_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=orders
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
@@ -331,7 +199,9 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      postgres-order:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   payment:
@@ -340,10 +210,9 @@ services:
       dockerfile: Containerfile
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-payment:5432/${PAYMENT_DB:-payment}
-      SPRING_DATASOURCE_USERNAME: ${PAYMENT_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${PAYMENT_DB_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=payment
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY}
@@ -354,7 +223,9 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      postgres-payment:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   notification:
@@ -363,9 +234,9 @@ services:
       dockerfile: Containerfile
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notification:5432/${NOTIFICATION_DB:-notification}
-      SPRING_DATASOURCE_USERNAME: ${NOTIFICATION_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=notification
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN}
@@ -379,7 +250,7 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      postgres-notification:
+      postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -390,17 +261,16 @@ services:
       dockerfile: Containerfile
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-admin:5432/${ADMIN_DB:-admin}
-      SPRING_DATASOURCE_USERNAME: ${ADMIN_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${ADMIN_DB_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=admin
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
     ports:
       - "8088:8088"
     networks: [backend-net]
     depends_on:
       config-server:
         condition: service_healthy
-      postgres-admin:
+      postgres:
         condition: service_healthy
 
   media:
@@ -409,9 +279,9 @@ services:
       dockerfile: Containerfile
     environment:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-media:5432/${MEDIA_DB:-media}
-      SPRING_DATASOURCE_USERNAME: ${MEDIA_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${MEDIA_DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=media
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
@@ -420,7 +290,7 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      postgres-media:
+      postgres:
         condition: service_healthy
       minio:
         condition: service_healthy

@@ -18,3 +18,13 @@ app:
     secret-key: ${MINIO_ROOT_PASSWORD}
     bucket: ${MINIO_BUCKET:baundang-templates}
     presign-expiry-minutes: 60
+
+spring:
+  flyway:
+    default-schema: template
+    schemas: template
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: template

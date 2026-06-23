@@ -10,3 +10,13 @@ app:
     buyer-expiry-hours: 24
     order-token-expiry-minutes: 60
     refresh-expiry-days: 30
+
+spring:
+  flyway:
+    default-schema: auth
+    schemas: auth
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: auth

@@ -10,3 +10,13 @@ app:
     routing-key:
       paid: order.paid
       payment-failed: order.payment_failed
+
+spring:
+  flyway:
+    default-schema: payment
+    schemas: payment
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: payment
