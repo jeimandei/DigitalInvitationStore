@@ -6,7 +6,7 @@
 
   <groupId>id.baundang</groupId>
   <artifactId>baundang-platform</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>baundang-platform</name>
   <description>baundang.id — digital wedding invitation platform</description>
