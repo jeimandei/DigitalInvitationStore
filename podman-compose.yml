@@ -16,7 +16,7 @@ services:
   # ── Infrastructure ────────────────────────────────────────────────────────
 
   postgres:
-    image: postgres:16-alpine
+    image: docker.io/postgres:16-alpine
     # Raise max_connections to 200 (9 services × pool-size 5 = 45 active, headroom for spikes)
     command: postgres -N 200
     environment:
@@ -40,7 +40,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: docker.io/redis:7-alpine
     command: redis-server --requirepass ${REDIS_PASSWORD}
     security_opt:
       - label=disable
@@ -57,7 +57,7 @@ services:
       retries: 5
 
   rabbitmq:
-    image: rabbitmq:3.13-management-alpine
+    image: docker.io/rabbitmq:3.13-management-alpine
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
@@ -170,13 +170,13 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_healthy
+        condition: service_started
       postgres:
-        condition: service_healthy
+        condition: service_started
       redis:
-        condition: service_healthy
+        condition: service_started
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
 
   storefront:
     build:
@@ -206,7 +206,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_healthy
+        condition: service_started
 
   template:
     build:
@@ -241,11 +241,11 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_healthy
+        condition: service_started
       postgres:
-        condition: service_healthy
+        condition: service_started
       minio:
-        condition: service_healthy
+        condition: service_started
 
   invitation:
     build:
@@ -282,13 +282,13 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_healthy
+        condition: service_started
       postgres:
-        condition: service_healthy
+        condition: service_started
       redis:
-        condition: service_healthy
+        condition: service_started
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
 
   order:
     build:
@@ -323,11 +323,11 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_healthy
+        condition: service_started
       postgres:
-        condition: service_healthy
+        condition: service_started
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
 
   payment:
     build:
@@ -364,11 +364,11 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_healthy
+        condition: service_started
       postgres:
-        condition: service_healthy
+        condition: service_started
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
 
   notification:
     build:
@@ -408,11 +408,11 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_healthy
+        condition: service_started
       postgres:
-        condition: service_healthy
+        condition: service_started
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
 
   admin:
     build:
@@ -445,9 +445,9 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_healthy
+        condition: service_started
       postgres:
-        condition: service_healthy
+        condition: service_started
 
   media:
     build:
@@ -479,9 +479,9 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_healthy
+        condition: service_started
       minio:
-        condition: service_healthy
+        condition: service_started
 
   gateway:
     build:
@@ -512,22 +512,22 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_healthy
+        condition: service_started
       auth:
-        condition: service_healthy
+        condition: service_started
       storefront:
-        condition: service_healthy
+        condition: service_started
       template:
-        condition: service_healthy
+        condition: service_started
       invitation:
-        condition: service_healthy
+        condition: service_started
       order:
-        condition: service_healthy
+        condition: service_started
       payment:
-        condition: service_healthy
+        condition: service_started
       notification:
-        condition: service_healthy
+        condition: service_started
       admin:
-        condition: service_healthy
+        condition: service_started
       media:
-        condition: service_healthy
+        condition: service_started
