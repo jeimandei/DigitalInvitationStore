@@ -1,24 +1,18 @@
-FROM docker.io/eclipse-temurin:21-jdk-alpine AS builder
-WORKDIR /build
-COPY pom.xml .
-COPY src ./src
-COPY ../pom.xml ../pom.xml
-RUN --mount=type=cache,target=/root/.m2 \
-    cd .. && mvn -pl admin-service -am -q -DskipTests package && \
-    java -Djarmode=layertools -jar admin-service/target/admin-service-*.jar extract --destination admin-service/layers
-
 FROM docker.io/eclipse-temurin:21-jre-alpine
-RUN addgroup -S app && adduser -S app -G app
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 WORKDIR /app
 
 RUN mkdir -p /app/logs/admin-service && chown appuser:appgroup /app/logs/admin-service
-COPY --from=builder /build/layers/dependencies/ ./
-COPY --from=builder /build/layers/spring-boot-loader/ ./
-COPY --from=builder /build/layers/snapshot-dependencies/ ./
-COPY --from=builder /build/layers/application/ ./
-USER app
+
+COPY --chown=appuser:appgroup target/*.jar app.jar
+
+USER appuser
+
 EXPOSE 8088
+
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD wget -qO- http://localhost:8088/actuator/health || exit 1
-ENV SPRING_PROFILES_ACTIVE=prod
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+  CMD wget -qO- http://localhost:8088/actuator/health || exit 1
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

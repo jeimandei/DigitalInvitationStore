@@ -1,20 +1,18 @@
-FROM docker.io/eclipse-temurin:21-jdk-alpine AS builder
-WORKDIR /build
-COPY . .
-RUN ./mvnw -pl payment-service -am -q -DskipTests package && \
-    java -Djarmode=layertools -jar payment-service/target/payment-service-*.jar extract --destination payment-service/target/extracted
-
 FROM docker.io/eclipse-temurin:21-jre-alpine
+
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 WORKDIR /app
 
 RUN mkdir -p /app/logs/payment-service && chown appuser:appgroup /app/logs/payment-service
-COPY --from=builder --chown=appuser:appgroup /build/payment-service/target/extracted/dependencies/ ./
-COPY --from=builder --chown=appuser:appgroup /build/payment-service/target/extracted/spring-boot-loader/ ./
-COPY --from=builder --chown=appuser:appgroup /build/payment-service/target/extracted/snapshot-dependencies/ ./
-COPY --from=builder --chown=appuser:appgroup /build/payment-service/target/extracted/application/ ./
+
+COPY --chown=appuser:appgroup target/*.jar app.jar
+
 USER appuser
+
 EXPOSE 8086
+
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD wget -qO- http://localhost:8086/actuator/health || exit 1
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+  CMD wget -qO- http://localhost:8086/actuator/health || exit 1
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
