@@ -19,15 +19,16 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Add server to known_hosts
-        run: ssh-keyscan -H ${{ secrets.SSH_URL }} >> ~/.ssh/known_hosts
+        run: ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_URL }} >> ~/.ssh/known_hosts
 
       - name: Deploy over SSH
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_URL:  ${{ secrets.SSH_URL }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
           SSH_PATH: ${{ secrets.SSH_PATH }}
         run: |
-          ssh "$SSH_USER@$SSH_URL" DEPLOY_PATH="$SSH_PATH" 'bash -s' << 'DEPLOY'
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_URL" DEPLOY_PATH="$SSH_PATH" 'bash -s' << 'DEPLOY'
             set -euo pipefail
 
             cd "$DEPLOY_PATH"
