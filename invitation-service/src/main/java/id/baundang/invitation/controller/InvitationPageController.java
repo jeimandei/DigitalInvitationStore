@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import id.baundang.invitation.domain.Invitation;
 import id.baundang.invitation.dto.ChristianContentSchema;
 import id.baundang.invitation.dto.EventDTO;
+import id.baundang.invitation.dto.GuestDTO;
 import id.baundang.invitation.service.InvitationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -21,6 +22,12 @@ import java.util.List;
 public class InvitationPageController {
 
     private final InvitationService invitationService;
+
+    @org.springframework.beans.factory.annotation.Value("${app.midtrans.snap-js-url}")
+    private String snapJsUrl;
+
+    @org.springframework.beans.factory.annotation.Value("${app.midtrans.client-key}")
+    private String midtransClientKey;
 
     @GetMapping("/{slug}")
     public String viewInvitation(@PathVariable String slug, Model model) {
@@ -52,6 +59,36 @@ public class InvitationPageController {
         model.addAttribute("christian", ChristianContentSchema.from(content));
 
         return "invitation/view";
+    }
+
+    @GetMapping("/{slug}/gift")
+    public String giftPage(@PathVariable String slug, Model model) {
+        Invitation inv = invitationService.getBySlugAndIncrementView(slug);
+        JsonNode content = inv.getContent();
+        model.addAttribute("slug", slug);
+        model.addAttribute("invitationId", inv.getId());
+        model.addAttribute("coupleName", textOf(content, "coupleName", slug));
+        model.addAttribute("snapJsUrl", snapJsUrl);
+        model.addAttribute("midtransClientKey", midtransClientKey);
+        return "invitation/gift";
+    }
+
+    @GetMapping("/{slug}/checkin/{code}")
+    public String checkInPage(@PathVariable String slug, @PathVariable String code, Model model) {
+        Invitation inv = invitationService.getBySlugAndIncrementView(slug);
+        GuestDTO guest = invitationService.getGuestByCode(code);
+        JsonNode content = inv.getContent();
+
+        model.addAttribute("slug", slug);
+        model.addAttribute("coupleName", textOf(content, "coupleName", slug));
+        model.addAttribute("inviteCode", code);
+        model.addAttribute("guestName", guest.name());
+        model.addAttribute("groupLabel", guest.groupLabel());
+        model.addAttribute("tableNo", guest.tableNo());
+        model.addAttribute("allottedCount", guest.allottedCount());
+        model.addAttribute("alreadyCheckedIn", guest.checkedIn());
+        model.addAttribute("checkedInCount", guest.checkedInCount());
+        return "invitation/checkin";
     }
 
     private String textOf(JsonNode node, String field, String fallback) {

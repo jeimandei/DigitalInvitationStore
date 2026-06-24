@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="|Check-in — ${coupleName}|">Check-in Tamu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Lato', sans-serif; background: #fdfaf6; color: #3d2b1f;
+               min-height: 100svh; display: flex; flex-direction: column;
+               align-items: center; justify-content: center; padding: 2rem; }
+        h1 { font-family: 'Playfair Display', serif; font-size: 1.75rem;
+             color: #2d4a3e; margin-bottom: .5rem; }
+        .card {
+            background: #fff; border: 1px solid #d6c4a8;
+            padding: 2.5rem 2rem; max-width: 420px; width: 100%;
+            text-align: center;
+        }
+        .ornament { color: #c9a96e; font-size: 1.5rem; margin-bottom: 1rem; }
+        .couple-name { font-family: 'Playfair Display', serif; font-size: 1.1rem;
+                       color: #5a3e30; margin-bottom: 2rem; }
+        .guest-name { font-size: 1.4rem; font-weight: 700; color: #2d4a3e;
+                      margin: 1rem 0 .25rem; }
+        .guest-meta { font-size: .9rem; color: #9e8678; margin-bottom: 1.5rem; }
+        label { display: block; text-align: left; font-size: .85rem;
+                color: #5a3e30; margin-bottom: .35rem; }
+        input[type=number] {
+            width: 100%; padding: .7rem 1rem; border: 1px solid #d6c4a8;
+            font-size: 1.1rem; text-align: center; color: #3d2b1f;
+            margin-bottom: 1.25rem;
+        }
+        .btn-gold {
+            width: 100%; padding: .85rem; background: #2d4a3e; color: #f5ede0;
+            border: none; cursor: pointer; font-family: inherit;
+            letter-spacing: .1em; font-size: .95rem; transition: background .3s;
+        }
+        .btn-gold:hover { background: #1a2e26; }
+        .btn-gold:disabled { background: #9e8678; cursor: default; }
+        .success-state { display: none; }
+        .alert { padding: 1rem; margin-top: 1rem; font-size: .9rem; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .already-checked { background: #fff3cd; color: #856404;
+                           border: 1px solid #ffc107; padding: 1rem; }
+        footer { margin-top: 2rem; font-size: .8rem; color: #9e8678; }
+        footer a { color: #2d4a3e; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="ornament">✦</div>
+    <p class="couple-name" th:text="${coupleName}">Nama Pasangan</p>
+    <h1>Selamat Datang</h1>
+    <p class="guest-name" th:text="${guestName}">Nama Tamu</p>
+    <p class="guest-meta"
+       th:text="${groupLabel != null ? groupLabel + (tableNo != null ? ' · Meja ' + tableNo : '') : (tableNo != null ? 'Meja ' + tableNo : '')}">
+        Grup · Meja
+    </p>
+
+    <!-- Already checked in -->
+    <div th:if="${alreadyCheckedIn}" class="already-checked">
+        <p>✅ Anda sudah check-in sebelumnya.</p>
+        <p style="margin-top:.5rem; font-size:.85rem"
+           th:text="|Tercatat: ${checkedInCount} orang|">Tercatat: 1 orang</p>
+    </div>
+
+    <!-- Check-in form -->
+    <div th:unless="${alreadyCheckedIn}" id="checkin-section">
+        <form id="checkin-form"
+              th:attr="hx-post=|/api/v1/invitations/${slug}/checkin/${inviteCode}|"
+              hx-target="#checkin-result"
+              hx-swap="innerHTML">
+            <label>Jumlah tamu yang hadir
+                <input type="number" name="actualCount"
+                       th:value="${allottedCount}"
+                       min="1" th:max="${allottedCount}" required/>
+            </label>
+            <button type="submit" class="btn-gold" id="checkin-btn">
+                Konfirmasi Kehadiran ✓
+            </button>
+        </form>
+        <div id="checkin-result"></div>
+    </div>
+</div>
+
+<footer>
+    <p>Dibuat dengan ❤ oleh <a href="https://baundang.id" target="_blank">baundang.id</a></p>
+</footer>
+
+<script>
+    document.body.addEventListener('htmx:afterRequest', function (e) {
+        if (e.detail.elt.id === 'checkin-form') {
+            if (e.detail.successful) {
+                document.getElementById('checkin-form').style.display = 'none';
+                document.getElementById('checkin-result').innerHTML =
+                    '<div class="alert alert-success">' +
+                    '🎉 Check-in berhasil! Terima kasih sudah hadir. Selamat menyaksikan momen bahagia ini.' +
+                    '</div>';
+                document.getElementById('checkin-btn').disabled = true;
+            } else {
+                document.getElementById('checkin-result').innerHTML =
+                    '<div class="alert alert-error">Terjadi kesalahan. Silakan minta bantuan panitia.</div>';
+            }
+        }
+    });
+</script>
+</body>
+</html>

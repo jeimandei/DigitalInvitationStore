@@ -170,6 +170,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
     ports:
       - "8084:8084"
     networks: [baundang-network]

@@ -27,6 +27,7 @@ public class PaymentService {
     private final MidtransClient midtransClient;
     private final PaymentEventPublisher eventPublisher;
     private final SignatureValidator signatureValidator;
+    private final GiftPaymentService giftPaymentService;
 
     @Transactional
     public ChargeResponse charge(ChargeRequest req) {
@@ -64,9 +65,13 @@ public class PaymentService {
 
     @Transactional
     public void handleWebhook(JsonNode notification) {
-        String orderId      = notification.path("order_id").asText();
-        String statusCode   = notification.path("status_code").asText();
-        String grossAmount  = notification.path("gross_amount").asText();
+        String orderId = notification.path("order_id").asText();
+        if (orderId.startsWith("GIFT-")) {
+            giftPaymentService.handleWebhook(notification);
+            return;
+        }
+        String statusCode = notification.path("status_code").asText();
+        String grossAmount = notification.path("gross_amount").asText();
         String signatureKey = notification.path("signature_key").asText();
 
         if (!signatureValidator.isValid(orderId, statusCode, grossAmount, signatureKey)) {

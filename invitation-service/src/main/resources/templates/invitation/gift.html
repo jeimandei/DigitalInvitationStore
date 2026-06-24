@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="|Kirim Hadiah — ${coupleName}|">Kirim Hadiah Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Lato', sans-serif; background: #fdfaf6; color: #3d2b1f;
+               min-height: 100svh; display: flex; flex-direction: column;
+               align-items: center; justify-content: center; padding: 2rem; }
+        .card { background: #fff; border: 1px solid #d6c4a8;
+                padding: 2.5rem 2rem; max-width: 440px; width: 100%; }
+        .ornament { color: #c9a96e; font-size: 1.5rem; text-align: center; margin-bottom: .75rem; }
+        h1 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #2d4a3e;
+             text-align: center; margin-bottom: .5rem; }
+        .couple-sub { text-align: center; color: #5a3e30; font-size: .95rem; margin-bottom: 2rem; }
+        label { display: block; font-size: .85rem; color: #5a3e30; margin-bottom: .35rem; }
+        input, textarea {
+            width: 100%; padding: .7rem 1rem; border: 1px solid #d6c4a8;
+            font-size: 1rem; margin-bottom: 1.25rem; color: #3d2b1f; font-family: inherit;
+        }
+        textarea { resize: vertical; min-height: 80px; }
+        .amounts { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-bottom: 1.25rem; }
+        .amount-btn {
+            padding: .6rem; border: 1px solid #d6c4a8; background: #fff;
+            cursor: pointer; font-family: inherit; font-size: .85rem; color: #3d2b1f;
+            transition: all .2s;
+        }
+        .amount-btn.active { border-color: #2d4a3e; background: #2d4a3e; color: #f5ede0; }
+        .btn-gold {
+            width: 100%; padding: .85rem; background: #2d4a3e; color: #f5ede0;
+            border: none; cursor: pointer; font-family: inherit;
+            letter-spacing: .1em; font-size: .95rem; transition: background .3s;
+        }
+        .btn-gold:hover { background: #1a2e26; }
+        .note { font-size: .8rem; color: #9e8678; text-align: center; margin-top: 1rem; }
+        footer { margin-top: 2rem; font-size: .8rem; color: #9e8678; text-align: center; }
+        footer a { color: #2d4a3e; text-decoration: none; }
+    </style>
+    <!-- Midtrans Snap.js -->
+    <script th:src="${snapJsUrl}" data-client-key="${midtransClientKey}"></script>
+</head>
+<body>
+
+<div class="card">
+    <div class="ornament">🎁</div>
+    <h1>Kirim Hadiah Digital</h1>
+    <p class="couple-sub" th:text="|untuk ${coupleName}|">untuk Pasangan</p>
+
+    <form id="gift-form">
+        <label>Nama Anda *
+            <input type="text" id="senderName" required placeholder="Nama lengkap Anda"/>
+        </label>
+        <label>Nominal Hadiah (min. Rp 20.000) *</label>
+        <div class="amounts">
+            <button type="button" class="amount-btn" data-amount="50000">Rp 50.000</button>
+            <button type="button" class="amount-btn" data-amount="100000">Rp 100.000</button>
+            <button type="button" class="amount-btn" data-amount="200000">Rp 200.000</button>
+            <button type="button" class="amount-btn" data-amount="300000">Rp 300.000</button>
+            <button type="button" class="amount-btn" data-amount="500000">Rp 500.000</button>
+            <button type="button" class="amount-btn" data-amount="1000000">Rp 1.000.000</button>
+        </div>
+        <label>Atau masukkan nominal lain (Rp)
+            <input type="number" id="customAmount" min="20000" step="1000" placeholder="Contoh: 150000"/>
+        </label>
+        <label>Pesan / Ucapan (opsional)
+            <textarea id="message" placeholder="Selamat menempuh hidup baru..."></textarea>
+        </label>
+        <button type="submit" class="btn-gold">Lanjut Pembayaran →</button>
+    </form>
+    <p class="note">Pembayaran aman via Midtrans · QRIS, GoPay, OVO, Transfer Bank</p>
+</div>
+
+<footer>
+    <p>Dibuat dengan ❤ oleh <a href="https://baundang.id" target="_blank">baundang.id</a></p>
+</footer>
+
+<script th:inline="javascript">
+    const INVITATION_ID = /*[[${invitationId}]]*/ '';
+    const GIFT_CHARGE_URL = '/api/v1/payments/gifts/charge';
+
+    let selectedAmount = 0;
+
+    document.querySelectorAll('.amount-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            selectedAmount = parseInt(this.dataset.amount);
+            document.getElementById('customAmount').value = '';
+        });
+    });
+
+    document.getElementById('customAmount').addEventListener('input', function () {
+        document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
+        selectedAmount = 0;
+    });
+
+    document.getElementById('gift-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const senderName = document.getElementById('senderName').value.trim();
+        const customAmt  = parseInt(document.getElementById('customAmount').value) || 0;
+        const amount     = selectedAmount || customAmt;
+        const message    = document.getElementById('message').value.trim();
+
+        if (!senderName) { alert('Masukkan nama Anda.'); return; }
+        if (amount < 20000) { alert('Nominal minimum Rp 20.000.'); return; }
+
+        const submitBtn = this.querySelector('button[type=submit]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Memproses...';
+
+        try {
+            const res = await fetch(GIFT_CHARGE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ invitationId: INVITATION_ID, senderName, message, amount })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Gagal membuat transaksi');
+
+            window.snap.pay(data.data.snapToken, {
+                onSuccess: () => {
+                    document.getElementById('gift-form').innerHTML =
+                        '<div style="text-align:center; padding:2rem">' +
+                        '<p style="font-size:2rem">🎉</p>' +
+                        '<h2 style="font-family:Playfair Display,serif;color:#2d4a3e;margin:.5rem 0">' +
+                        'Terima kasih!</h2>' +
+                        '<p style="color:#5a3e30">Hadiah Anda telah terkirim. Semoga menjadi berkah.</p>' +
+                        '</div>';
+                },
+                onPending: () => {
+                    submitBtn.textContent = 'Menunggu Pembayaran...';
+                },
+                onError: () => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Lanjut Pembayaran →';
+                    alert('Pembayaran gagal. Silakan coba lagi.');
+                },
+                onClose: () => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Lanjut Pembayaran →';
+                }
+            });
+        } catch (err) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Lanjut Pembayaran →';
+            alert('Terjadi kesalahan: ' + err.message);
+        }
+    });
+</script>
+</body>
+</html>
