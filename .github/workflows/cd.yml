@@ -126,6 +126,14 @@ jobs:
         run: |
           ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
             set -e
+
+            # ── Pre-flight checks ──────────────────────────────────────────
+            echo "→ Checking required tools"
+            command -v java    >/dev/null 2>&1 || { echo "✗ java not found — install JDK 21"; exit 1; }
+            command -v podman  >/dev/null 2>&1 || { echo "✗ podman not found"; exit 1; }
+            podman compose version >/dev/null 2>&1 || { echo "✗ podman compose plugin not found — install podman-compose or the compose plugin"; exit 1; }
+
+            # ── Repo bootstrap or update ───────────────────────────────────
             if [ ! -d "${{ env.DEPLOY_DIR }}/.git" ]; then
               echo "→ No git repo found — initialising in ${{ env.DEPLOY_DIR }}"
               mkdir -p "${{ env.DEPLOY_DIR }}"
@@ -141,12 +149,37 @@ jobs:
               git reset --hard origin/${{ inputs.branch }}
               git clean -fd
             fi
-            cd "${{ env.DEPLOY_DIR }}"
-            mkdir -p logs && chmod 777 logs
 
+            cd "${{ env.DEPLOY_DIR }}"
+
+            # ── .env guard ─────────────────────────────────────────────────
+            if [ ! -f .env ]; then
+              echo "✗ .env not found in ${{ env.DEPLOY_DIR }} — run deploy-env action first"
+              exit 1
+            fi
+
+            # ── Log directories ────────────────────────────────────────────
+            echo "→ Initialising log directories"
+            for svc in auth-service storefront-service template-service invitation-service \
+                       order-service payment-service notification-service media-service \
+                       gateway-service admin-service; do
+              mkdir -p "logs/\$svc"
+              chmod 777 "logs/\$svc"
+            done
+
+            # ── Podman networks ────────────────────────────────────────────
+            echo "→ Ensuring podman networks exist"
+            podman network exists baundang-network || podman network create baundang-network
+            podman network exists public           || podman network create public
+
+            # ── Maven wrapper executable bit ───────────────────────────────
+            chmod +x ./mvnw
+
+            # ── Build JARs ─────────────────────────────────────────────────
             echo "→ Building all JARs (tests already passed in CI)"
             ./mvnw -q -DskipTests clean package
 
+            # ── Build container images ─────────────────────────────────────
             echo "→ Building container images one by one"
             for svc in \
               config-server \
@@ -164,9 +197,11 @@ jobs:
               podman compose --env-file .env build \$svc
             done
 
+            # ── Start stack ────────────────────────────────────────────────
             echo "→ Starting all containers"
             podman compose --env-file .env up -d --remove-orphans
 
+            # ── Cleanup ────────────────────────────────────────────────────
             echo "→ Pruning unused images"
             podman image prune -f
 
@@ -182,11 +217,25 @@ jobs:
           ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
             set -e
             cd "${{ env.DEPLOY_DIR }}"
+
+            [ -f .env ] || { echo "✗ .env not found — run deploy-env first"; exit 1; }
+
             echo "→ Pulling branch ${{ inputs.branch }}"
             git fetch origin
             git checkout ${{ inputs.branch }}
             git reset --hard origin/${{ inputs.branch }}
 
+            echo "→ Ensuring log directories exist"
+            for svc in auth-service storefront-service template-service invitation-service \
+                       order-service payment-service notification-service media-service \
+                       gateway-service admin-service; do
+              mkdir -p "logs/\$svc" && chmod 777 "logs/\$svc"
+            done
+
+            podman network exists baundang-network || podman network create baundang-network
+            podman network exists public           || podman network create public
+
+            chmod +x ./mvnw
             echo "→ Building JARs (tests skipped)"
             ./mvnw -q -DskipTests clean package
 
