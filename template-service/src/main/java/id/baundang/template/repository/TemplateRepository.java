@@ -23,6 +23,16 @@ public interface TemplateRepository extends JpaRepository<Template, UUID> {
             @Param("priceLevel") Short priceLevel,
             Pageable pageable);
 
+    @Query("""
+            SELECT t FROM Template t
+            WHERE (:category IS NULL OR t.category = :category)
+              AND (:priceLevel IS NULL OR t.priceLevel = :priceLevel)
+            """)
+    Page<Template> findAllIncludingInactive(
+            @Param("category")   Template.Category category,
+            @Param("priceLevel") Short priceLevel,
+            Pageable pageable);
+
     Optional<Template> findBySlugAndActiveTrue(String slug);
 
     boolean existsBySlug(String slug);

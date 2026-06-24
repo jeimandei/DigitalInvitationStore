@@ -61,9 +61,11 @@ public class OrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PagedResponse<OrderDTO>> listAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search) {
         var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return ApiResponse.ok(PagedResponse.from(orderService.listAllOrders(pageable)));
+        return ApiResponse.ok(PagedResponse.from(orderService.listAllOrders(status, search, pageable)));
     }
 
     @PutMapping("/{id}/status")

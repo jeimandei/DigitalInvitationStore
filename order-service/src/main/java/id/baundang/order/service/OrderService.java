@@ -68,8 +68,17 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderDTO> listAllOrders(Pageable pageable) {
-        return orderRepository.findAll(pageable).map(OrderDTO::from);
+    public Page<OrderDTO> listAllOrders(String status, String search, Pageable pageable) {
+        OrderStatusPg statusFilter = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                statusFilter = OrderStatusPg.valueOf(status.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new ValidationException("Invalid status: " + status);
+            }
+        }
+        String searchFilter = (search != null && !search.isBlank()) ? search.trim() : null;
+        return orderRepository.search(statusFilter, searchFilter, pageable).map(OrderDTO::from);
     }
 
     @Transactional

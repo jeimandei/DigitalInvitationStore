@@ -33,7 +33,8 @@ public class TemplateService {
         this.objectMapper   = objectMapper;
     }
 
-    public Page<TemplateListDTO> list(String categoryParam, Short priceLevel, Pageable pageable) {
+    public Page<TemplateListDTO> list(String categoryParam, Short priceLevel,
+                                      boolean includeInactive, Pageable pageable) {
         Template.Category category = null;
         if (categoryParam != null && !categoryParam.isBlank()) {
             try {
@@ -42,8 +43,10 @@ public class TemplateService {
                 throw new ValidationException("Invalid category: " + categoryParam);
             }
         }
-        return repo.findAllActive(category, priceLevel, pageable)
-                   .map(TemplateListDTO::from);
+        Page<Template> page = includeInactive
+                ? repo.findAllIncludingInactive(category, priceLevel, pageable)
+                : repo.findAllActive(category, priceLevel, pageable);
+        return page.map(TemplateListDTO::from);
     }
 
     public TemplateDTO getBySlug(String slug) {
@@ -81,6 +84,14 @@ public class TemplateService {
         Template t = repo.findById(id)
                          .orElseThrow(() -> new NotFoundException("Template", id));
         t.setActive(false);
+    }
+
+    @Transactional
+    public TemplateDTO setActive(UUID id, boolean active) {
+        Template t = repo.findById(id)
+                         .orElseThrow(() -> new NotFoundException("Template", id));
+        t.setActive(active);
+        return TemplateDTO.from(repo.save(t));
     }
 
     private Template applyRequest(Template t, TemplateRequest req) {

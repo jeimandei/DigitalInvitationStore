@@ -103,7 +103,7 @@ class OrderControllerTest {
 
     @Test
     void listAll_returns200() throws Exception {
-        when(orderService.listAllOrders(any())).thenReturn(Page.empty());
+        when(orderService.listAllOrders(any(), any(), any())).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/v1/orders"))
                 .andExpect(status().isOk());

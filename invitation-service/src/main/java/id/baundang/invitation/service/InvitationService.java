@@ -11,6 +11,7 @@ import id.baundang.invitation.domain.GuestbookEntry;
 import id.baundang.invitation.domain.Invitation;
 import id.baundang.invitation.domain.Invitation.InvitationStatus;
 import id.baundang.invitation.domain.RsvpResponse;
+import id.baundang.invitation.dto.AdminGuestbookEntryDTO;
 import id.baundang.invitation.dto.AttendanceDTO;
 import id.baundang.invitation.dto.CheckInRequest;
 import id.baundang.invitation.dto.EventDTO;
@@ -18,11 +19,15 @@ import id.baundang.invitation.dto.ExpiringInvitationDTO;
 import id.baundang.invitation.dto.GiftAccountDTO;
 import id.baundang.invitation.dto.GiftAccountRequest;
 import id.baundang.invitation.dto.GiftConfirmRequest;
+import id.baundang.invitation.dto.GiftEntryDTO;
+import id.baundang.invitation.dto.GiftSummaryDTO;
 import id.baundang.invitation.dto.GuestDTO;
 import id.baundang.invitation.dto.GuestRequest;
 import id.baundang.invitation.dto.GuestbookEntryDTO;
 import id.baundang.invitation.dto.GuestbookRequest;
+import id.baundang.invitation.dto.InvitationSummaryDTO;
 import id.baundang.invitation.dto.RsvpRequest;
+import id.baundang.invitation.dto.RsvpResponseDTO;
 import id.baundang.invitation.repository.GiftAccountRepository;
 import id.baundang.invitation.repository.GiftConfirmationRepository;
 import id.baundang.invitation.repository.GiftRepository;
@@ -38,6 +43,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -274,6 +281,25 @@ public class InvitationService {
                 .filter(wa -> !wa.isBlank())
                 .distinct()
                 .toList();
+    }
+
+    // ── Admin listings ────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public Page<InvitationSummaryDTO> listInvitations(Pageable pageable) {
+        return invitationRepository.findAll(pageable).map(InvitationSummaryDTO::from);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminGuestbookEntryDTO> listAllGuestbook(UUID invitationId) {
+        return guestbookRepository.findAllByInvitationIdOrderByCreatedAtDesc(invitationId)
+                .stream().map(AdminGuestbookEntryDTO::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RsvpResponseDTO> listRsvp(UUID invitationId) {
+        return rsvpRepository.findByInvitationIdOrderBySubmittedAtDesc(invitationId)
+                .stream().map(RsvpResponseDTO::from).toList();
     }
 
     // ── Guest list & check-in ─────────────────────────────────────────────────

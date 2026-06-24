@@ -44,12 +44,13 @@ public class TemplateController {
     public ResponseEntity<ApiResponse<PagedResponse<TemplateListDTO>>> list(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Short priceLevel,
+            @RequestParam(defaultValue = "false") boolean includeInactive,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size) {
 
         var pageable = PageRequest.of(page, Math.min(size, 50),
                 Sort.by("createdAt").descending());
-        var result = service.list(category, priceLevel, pageable);
+        var result = service.list(category, priceLevel, includeInactive, pageable);
         return ResponseEntity.ok(ApiResponse.ok(PagedResponse.from(result)));
     }
 
@@ -85,6 +86,15 @@ public class TemplateController {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         service.softDelete(id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Template deactivated"));
+    }
+
+    @PutMapping("/{id}/active")
+    public ResponseEntity<ApiResponse<TemplateDTO>> setActive(
+            @PathVariable UUID id,
+            @RequestParam boolean active) {
+        TemplateDTO dto = service.setActive(id, active);
+        return ResponseEntity.ok(ApiResponse.ok(dto,
+                active ? "Template activated" : "Template deactivated"));
     }
 
     @GetMapping("/christian/verses")

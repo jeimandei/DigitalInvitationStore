@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -153,6 +154,32 @@ class InvitationApiControllerTest {
         mockMvc.perform(put("/api/v1/admin/invitations/" + id + "/gift-accounts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void listInvitations_returns200() throws Exception {
+        when(invitationService.listInvitations(any())).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/admin/invitations"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void listAllGuestbook_returns200() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(invitationService.listAllGuestbook(id)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/admin/invitations/" + id + "/guestbook"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void listRsvp_returns200() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(invitationService.listRsvp(id)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/admin/invitations/" + id + "/rsvp"))
                 .andExpect(status().isOk());
     }
 }

@@ -46,8 +46,8 @@ public class TemplateAdminClient {
 
     public boolean toggleActive(String id, boolean active) {
         try {
-            restClient.delete()
-                    .uri("/api/v1/templates/" + id)
+            restClient.put()
+                    .uri("/api/v1/templates/" + id + "/active?active=" + active)
                     .header("X-User-Role", "ADMIN")
                     .header("X-User-Id", "admin")
                     .retrieve().toBodilessEntity();

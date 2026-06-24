@@ -2,7 +2,9 @@ package id.baundang.invitation.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import id.baundang.common.ApiResponse;
+import id.baundang.common.PagedResponse;
 import id.baundang.invitation.domain.Invitation.InvitationStatus;
+import id.baundang.invitation.dto.AdminGuestbookEntryDTO;
 import id.baundang.invitation.dto.AttendanceDTO;
 import id.baundang.invitation.dto.CheckInRequest;
 import id.baundang.invitation.dto.EventDTO;
@@ -15,10 +17,14 @@ import id.baundang.invitation.dto.GuestDTO;
 import id.baundang.invitation.dto.GuestRequest;
 import id.baundang.invitation.dto.GuestbookEntryDTO;
 import id.baundang.invitation.dto.GuestbookRequest;
+import id.baundang.invitation.dto.InvitationSummaryDTO;
 import id.baundang.invitation.dto.RsvpRequest;
+import id.baundang.invitation.dto.RsvpResponseDTO;
 import id.baundang.invitation.service.InvitationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -77,6 +83,24 @@ public class InvitationApiController {
     }
 
     // --- Admin ---
+
+    @GetMapping("/api/v1/admin/invitations")
+    public ApiResponse<PagedResponse<InvitationSummaryDTO>> listInvitations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return ApiResponse.ok(PagedResponse.from(invitationService.listInvitations(pageable)));
+    }
+
+    @GetMapping("/api/v1/admin/invitations/{id}/guestbook")
+    public ApiResponse<List<AdminGuestbookEntryDTO>> listAllGuestbook(@PathVariable UUID id) {
+        return ApiResponse.ok(invitationService.listAllGuestbook(id));
+    }
+
+    @GetMapping("/api/v1/admin/invitations/{id}/rsvp")
+    public ApiResponse<List<RsvpResponseDTO>> listRsvp(@PathVariable UUID id) {
+        return ApiResponse.ok(invitationService.listRsvp(id));
+    }
 
     @PutMapping("/api/v1/admin/invitations/{id}/approve-guestbook/{entryId}")
     public ApiResponse<Void> approveGuestbook(@PathVariable UUID id, @PathVariable UUID entryId) {

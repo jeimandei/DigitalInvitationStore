@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -61,7 +62,7 @@ class TemplateControllerTest {
 
     @Test
     void listTemplates_returns200() throws Exception {
-        when(templateService.list(any(), any(), any())).thenReturn(Page.empty());
+        when(templateService.list(any(), any(), anyBoolean(), any())).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/v1/templates"))
                 .andExpect(status().isOk());
@@ -122,6 +123,15 @@ class TemplateControllerTest {
         doNothing().when(templateService).softDelete(any());
 
         mockMvc.perform(delete("/api/v1/templates/" + id))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void setActive_returns200() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(templateService.setActive(any(), anyBoolean())).thenReturn(sampleDTO());
+
+        mockMvc.perform(put("/api/v1/templates/" + id + "/active").param("active", "true"))
                 .andExpect(status().isOk());
     }
 
