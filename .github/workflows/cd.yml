@@ -127,21 +127,19 @@ jobs:
           ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
             set -e
 
-            # ── Install OpenJDK 21 if missing ──────────────────────────────
-            if ! /usr/lib/jvm/java-21-openjdk-amd64/bin/java -version >/dev/null 2>&1 && \
-               ! command -v java >/dev/null 2>&1; then
+            # ── Ensure OpenJDK 21 is available ────────────────────────────
+            if ! command -v java >/dev/null 2>&1; then
               echo "→ OpenJDK 21 not found — installing"
-              if command -v apt-get >/dev/null 2>&1; then
-                sudo apt-get update -q
-                sudo apt-get install -y -q openjdk-21-jdk
-              elif command -v dnf >/dev/null 2>&1; then
+              if command -v dnf >/dev/null 2>&1; then
                 sudo dnf install -y java-21-openjdk-devel
+              elif command -v apt-get >/dev/null 2>&1; then
+                sudo apt-get update -q && sudo apt-get install -y -q openjdk-21-jdk
               else
                 echo "✗ Cannot auto-install Java — unsupported package manager"
                 exit 1
               fi
             fi
-            export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+            export JAVA_HOME=\$(dirname \$(dirname \$(readlink -f \$(which java))))
             export PATH="\$JAVA_HOME/bin:\$PATH"
             echo "→ Java: \$(java -version 2>&1 | head -1)"
 
@@ -236,9 +234,9 @@ jobs:
 
             [ -f .env ] || { echo "✗ .env not found — run deploy-env first"; exit 1; }
 
-            export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+            command -v java >/dev/null 2>&1 || { echo "✗ Java not found — run full-deploy first to auto-install"; exit 1; }
+            export JAVA_HOME=\$(dirname \$(dirname \$(readlink -f \$(which java))))
             export PATH="\$JAVA_HOME/bin:\$PATH"
-            command -v java >/dev/null 2>&1 || { echo "✗ Java 21 not found at \$JAVA_HOME — run full-deploy first to auto-install"; exit 1; }
 
             echo "→ Pulling branch ${{ inputs.branch }}"
             git fetch origin
