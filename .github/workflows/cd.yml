@@ -129,8 +129,29 @@ jobs:
 
             # ── Pre-flight checks ──────────────────────────────────────────
             echo "→ Checking required tools"
-            command -v java    >/dev/null 2>&1 || { echo "✗ java not found — install JDK 21"; exit 1; }
-            command -v podman  >/dev/null 2>&1 || { echo "✗ podman not found"; exit 1; }
+
+            # Source login profile so PATH picks up Java/SDKMAN installed by the user
+            [ -f /etc/profile ] && . /etc/profile || true
+            [ -f "$HOME/.profile" ] && . "$HOME/.profile" || true
+            [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc" || true
+            # Also add common JDK locations explicitly
+            export PATH="$PATH:/usr/lib/jvm/java-21-openjdk-amd64/bin:/usr/lib/jvm/temurin-21/bin:$HOME/.sdkman/candidates/java/current/bin"
+
+            if ! command -v java >/dev/null 2>&1; then
+              echo "→ Java not found — installing JDK 21"
+              if command -v apt-get >/dev/null 2>&1; then
+                sudo apt-get update -q
+                sudo apt-get install -y -q openjdk-21-jdk
+              elif command -v dnf >/dev/null 2>&1; then
+                sudo dnf install -y java-21-openjdk-devel
+              else
+                echo "✗ Cannot auto-install Java — unsupported package manager. Install JDK 21 manually."
+                exit 1
+              fi
+            fi
+            java -version
+
+            command -v podman >/dev/null 2>&1 || { echo "✗ podman not found"; exit 1; }
             podman compose version >/dev/null 2>&1 || { echo "✗ podman compose plugin not found — install podman-compose or the compose plugin"; exit 1; }
 
             # ── Repo bootstrap or update ───────────────────────────────────
@@ -219,6 +240,12 @@ jobs:
             cd "${{ env.DEPLOY_DIR }}"
 
             [ -f .env ] || { echo "✗ .env not found — run deploy-env first"; exit 1; }
+
+            [ -f /etc/profile ] && . /etc/profile || true
+            [ -f "$HOME/.profile" ] && . "$HOME/.profile" || true
+            [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc" || true
+            export PATH="$PATH:/usr/lib/jvm/java-21-openjdk-amd64/bin:/usr/lib/jvm/temurin-21/bin:$HOME/.sdkman/candidates/java/current/bin"
+            command -v java >/dev/null 2>&1 || { echo "✗ Java not found — run full-deploy first to auto-install"; exit 1; }
 
             echo "→ Pulling branch ${{ inputs.branch }}"
             git fetch origin
