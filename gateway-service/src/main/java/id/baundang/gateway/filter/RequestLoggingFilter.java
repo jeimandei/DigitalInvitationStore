@@ -27,7 +27,14 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String method = request.getMethod().name();
         String path = request.getURI().getRawPath();
+        String userId = header(request, "X-User-Id");
+        String role = header(request, "X-User-Role");
         long start = System.currentTimeMillis();
+
+        LOG.info(">>> {} {} | handler={}#{} | user={} role={}",
+                method, path,
+                RequestLoggingFilter.class.getSimpleName(), "filter",
+                userId, role);
 
         return chain.filter(exchange).doFinally(signal -> {
             Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
@@ -35,10 +42,17 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
             int status = exchange.getResponse().getStatusCode() != null
                     ? exchange.getResponse().getStatusCode().value()
                     : 0;
-            long latencyMs = System.currentTimeMillis() - start;
+            long durationMs = System.currentTimeMillis() - start;
 
-            LOG.info("{} {} -> {} | status={} latency={}ms",
-                    method, path, upstream, status, latencyMs);
+            LOG.info("<<< {} {} -> {} | handler={}#{} | status={} | {}ms",
+                    method, path, upstream,
+                    RequestLoggingFilter.class.getSimpleName(), "filter",
+                    status, durationMs);
         });
+    }
+
+    private String header(ServerHttpRequest request, String name) {
+        String val = request.getHeaders().getFirst(name);
+        return val != null ? val : "-";
     }
 }

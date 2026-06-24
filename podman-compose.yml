@@ -112,6 +112,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8081:8081"
+    volumes:
+      - ./logs/auth-service:/app/logs/auth-service
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -131,6 +133,8 @@ services:
       SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
     ports:
       - "8082:8082"
+    volumes:
+      - ./logs/storefront-service:/app/logs/storefront-service
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -149,6 +153,8 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "8083:8083"
+    volumes:
+      - ./logs/template-service:/app/logs/template-service
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -173,6 +179,8 @@ services:
       MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
     ports:
       - "8084:8084"
+    volumes:
+      - ./logs/invitation-service:/app/logs/invitation-service
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -197,6 +205,8 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "8085:8085"
+    volumes:
+      - ./logs/order-service:/app/logs/order-service
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -221,6 +231,8 @@ services:
       MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
     ports:
       - "8086:8086"
+    volumes:
+      - ./logs/payment-service:/app/logs/payment-service
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -248,6 +260,8 @@ services:
       EMAIL_PASSWORD: ${EMAIL_PASSWORD}
     ports:
       - "8087:8087"
+    volumes:
+      - ./logs/notification-service:/app/logs/notification-service
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -268,6 +282,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
     ports:
       - "8088:8088"
+    volumes:
+      - ./logs/admin-service:/app/logs/admin-service
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -288,6 +304,8 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "8089:8089"
+    volumes:
+      - ./logs/media-service:/app/logs/media-service
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -306,6 +324,8 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8080:8080"
+    volumes:
+      - ./logs/gateway-service:/app/logs/gateway-service
     networks: [baundang-network]
     depends_on:
       config-server:
