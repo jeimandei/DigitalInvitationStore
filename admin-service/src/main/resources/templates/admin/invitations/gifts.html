@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id">
+<head th:replace="~{layout/base :: head('Amplop Digital')}"></head>
+<body class="bg-gray-100 min-h-screen flex">
+
+<div th:replace="~{layout/base :: sidebar('invitations')}"></div>
+
+<div class="flex-1 flex flex-col ml-64">
+    <header class="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
+        <div>
+            <a th:href="@{/admin/invitations/{id}(id=${invitationId})}"
+               class="text-gray-400 hover:text-gray-600 text-sm">← Detail Undangan</a>
+            <h1 class="text-lg font-semibold text-gray-800 mt-1">Amplop Digital</h1>
+        </div>
+        <a th:href="@{/admin/invitations/{id}/gift-account(id=${invitationId})}"
+           class="border border-rose-600 text-rose-600 px-4 py-2 rounded text-sm hover:bg-rose-50">
+            Kelola Rekening
+        </a>
+    </header>
+    <main class="flex-1 p-8 space-y-6">
+
+        <div th:if="${gifts != null}">
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <div class="bg-white rounded-xl shadow p-6 text-center">
+                    <p class="text-3xl font-bold text-gray-800" th:text="${gifts.totalGifts()}">0</p>
+                    <p class="text-xs text-gray-500 mt-1 uppercase">Total Kiriman</p>
+                </div>
+                <div class="bg-white rounded-xl shadow p-6 text-center">
+                    <p class="text-3xl font-bold text-green-600"
+                       th:text="'Rp ' + ${#numbers.formatInteger(gifts.totalAmount(), 1, 'COMMA')}">Rp 0</p>
+                    <p class="text-xs text-gray-500 mt-1 uppercase">Total Nominal</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3 text-left">Pengirim</th>
+                        <th class="px-4 py-3 text-left">Nominal</th>
+                        <th class="px-4 py-3 text-left">Pesan</th>
+                        <th class="px-4 py-3 text-left">Waktu</th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                    <tr th:each="e : ${gifts.entries()}" class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium" th:text="${e.senderName()}"></td>
+                        <td class="px-4 py-3 text-green-700 font-medium"
+                            th:text="'Rp ' + ${#numbers.formatInteger(e.amount(), 1, 'COMMA')}"></td>
+                        <td class="px-4 py-3 text-gray-500 max-w-xs truncate" th:text="${e.message()}"></td>
+                        <td class="px-4 py-3 text-gray-400 text-xs"
+                            th:text="${e.createdAt() != null ? #temporals.format(e.createdAt(), 'dd MMM yyyy HH:mm') : '-'}"></td>
+                    </tr>
+                    <tr th:if="${gifts.entries().isEmpty()}">
+                        <td colspan="4" class="px-4 py-8 text-center text-gray-400">Belum ada amplop digital.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div th:if="${gifts == null}" class="bg-white rounded-xl shadow p-12 text-center text-gray-400">
+            Data amplop digital tidak tersedia.
+        </div>
+
+    </main>
+</div>
+
+</body>
+</html>

@@ -5,8 +5,12 @@ import id.baundang.admin.client.NotificationAdminClient;
 import id.baundang.admin.client.OrderAdminClient;
 import id.baundang.admin.client.TemplateAdminClient;
 import id.baundang.admin.dto.BroadcastRequest;
+import id.baundang.admin.dto.GiftAccountDTO;
+import id.baundang.admin.dto.InvitationDTO;
 import id.baundang.admin.dto.OrderDTO;
 import id.baundang.admin.dto.PagedResult;
+import id.baundang.admin.dto.TemplateCreateRequest;
+import id.baundang.admin.dto.TemplateDTO;
 import id.baundang.admin.entity.AdminNote;
 import id.baundang.admin.repository.AdminNoteRepository;
 import id.baundang.admin.service.AdminDashboardService;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
@@ -122,6 +127,71 @@ public class AdminController {
         return "admin/templates/list";
     }
 
+    @GetMapping("/templates/create")
+    public String templateCreateForm() {
+        return "admin/templates/create";
+    }
+
+    @PostMapping("/templates/create")
+    public String templateCreate(
+            @RequestParam String name,
+            @RequestParam String slug,
+            @RequestParam(required = false) String description,
+            @RequestParam String category,
+            @RequestParam(required = false) String stylePreset,
+            @RequestParam short priceLevel,
+            @RequestParam(required = false) String thumbnailUrl,
+            Model model) {
+        TemplateCreateRequest req = new TemplateCreateRequest(
+                name, slug, description, category, stylePreset, priceLevel, thumbnailUrl);
+        boolean ok = templateClient.createTemplate(req);
+        if (ok) {
+            return "redirect:/admin/templates";
+        }
+        model.addAttribute("error", "Gagal membuat template. Periksa data dan coba lagi.");
+        model.addAttribute("form", req);
+        return "admin/templates/create";
+    }
+
+    @GetMapping("/templates/{id}/edit")
+    public String templateEditForm(@PathVariable String id, Model model) {
+        TemplateDTO t = templateClient.getTemplate(id);
+        if (t == null) {
+            return "redirect:/admin/templates";
+        }
+        model.addAttribute("template", t);
+        return "admin/templates/edit";
+    }
+
+    @PostMapping("/templates/{id}/edit")
+    public String templateEdit(
+            @PathVariable UUID id,
+            @RequestParam String name,
+            @RequestParam String slug,
+            @RequestParam(required = false) String description,
+            @RequestParam String category,
+            @RequestParam(required = false) String stylePreset,
+            @RequestParam short priceLevel,
+            @RequestParam(required = false) String thumbnailUrl,
+            Model model) {
+        TemplateCreateRequest req = new TemplateCreateRequest(
+                name, slug, description, category, stylePreset, priceLevel, thumbnailUrl);
+        boolean ok = templateClient.updateTemplate(id, req);
+        if (ok) {
+            return "redirect:/admin/templates";
+        }
+        model.addAttribute("error", "Gagal memperbarui template.");
+        model.addAttribute("template", new TemplateDTO(id, name, slug, description, category, stylePreset,
+                priceLevel, thumbnailUrl, true));
+        return "admin/templates/edit";
+    }
+
+    @PostMapping("/templates/{id}/delete")
+    public String templateDelete(@PathVariable UUID id) {
+        templateClient.deleteTemplate(id);
+        return "redirect:/admin/templates";
+    }
+
     @PostMapping("/templates/{id}/toggle")
     public String toggleTemplate(@PathVariable String id, @RequestParam boolean active) {
         templateClient.toggleActive(id, active);
@@ -138,6 +208,94 @@ public class AdminController {
         model.addAttribute("invitations", invitationClient.listInvitations(page, size));
         model.addAttribute("currentPage", page);
         return "admin/invitations/list";
+    }
+
+    @GetMapping("/invitations/{id}")
+    public String invitationDetail(@PathVariable UUID id, Model model) {
+        InvitationDTO inv = invitationClient.getInvitation(id);
+        if (inv == null) {
+            return "redirect:/admin/invitations";
+        }
+        model.addAttribute("invitation", inv);
+        return "admin/invitations/detail";
+    }
+
+    @PostMapping("/invitations/{id}/status")
+    public String updateInvitationStatus(@PathVariable UUID id, @RequestParam String status) {
+        invitationClient.updateStatus(id, status);
+        return "redirect:/admin/invitations/" + id;
+    }
+
+    @GetMapping("/invitations/{id}/rsvp")
+    public String rsvp(@PathVariable UUID id, Model model) {
+        model.addAttribute("invitationId", id);
+        model.addAttribute("entries", invitationClient.listRsvp(id));
+        return "admin/invitations/rsvp";
+    }
+
+    @GetMapping("/invitations/{id}/guests")
+    public String guests(@PathVariable UUID id, Model model) {
+        model.addAttribute("invitationId", id);
+        model.addAttribute("guests", invitationClient.listGuests(id));
+        return "admin/invitations/guests";
+    }
+
+    @PostMapping("/invitations/{id}/guests")
+    public String addGuest(
+            @PathVariable UUID id,
+            @RequestParam String name,
+            @RequestParam(required = false) String groupLabel,
+            @RequestParam(required = false) String tableNo,
+            @RequestParam(defaultValue = "1") short allottedCount) {
+        invitationClient.addGuest(id, Map.of(
+                "name", name,
+                "groupLabel", groupLabel != null ? groupLabel : "",
+                "tableNo", tableNo != null ? tableNo : "",
+                "allottedCount", allottedCount
+        ));
+        return "redirect:/admin/invitations/" + id + "/guests";
+    }
+
+    @PostMapping("/invitations/{id}/guests/{guestId}/delete")
+    public String deleteGuest(@PathVariable UUID id, @PathVariable UUID guestId) {
+        invitationClient.deleteGuest(id, guestId);
+        return "redirect:/admin/invitations/" + id + "/guests";
+    }
+
+    @GetMapping("/invitations/{id}/attendance")
+    public String attendance(@PathVariable UUID id, Model model) {
+        model.addAttribute("invitationId", id);
+        model.addAttribute("attendance", invitationClient.getAttendance(id));
+        return "admin/invitations/attendance";
+    }
+
+    @GetMapping("/invitations/{id}/gifts")
+    public String gifts(@PathVariable UUID id, Model model) {
+        model.addAttribute("invitationId", id);
+        model.addAttribute("gifts", invitationClient.getGifts(id));
+        return "admin/invitations/gifts";
+    }
+
+    @GetMapping("/invitations/{id}/gift-account")
+    public String giftAccountForm(@PathVariable UUID id, Model model) {
+        model.addAttribute("invitationId", id);
+        model.addAttribute("account", invitationClient.getGiftAccount(id));
+        return "admin/invitations/gift-account";
+    }
+
+    @PostMapping("/invitations/{id}/gift-account")
+    public String saveGiftAccount(
+            @PathVariable UUID id,
+            @RequestParam(required = false) String bankName,
+            @RequestParam(required = false) String accountNumber,
+            @RequestParam(required = false) String accountHolder,
+            @RequestParam(required = false) String gopayNumber,
+            @RequestParam(required = false) String ovoNumber,
+            @RequestParam(required = false) String qrisImageUrl) {
+        GiftAccountDTO req = new GiftAccountDTO(
+                bankName, accountNumber, accountHolder, gopayNumber, ovoNumber, qrisImageUrl);
+        invitationClient.setGiftAccount(id, req);
+        return "redirect:/admin/invitations/" + id;
     }
 
     @GetMapping("/invitations/{id}/guestbook")

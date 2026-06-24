@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id">
+<head th:replace="~{layout/base :: head('Buat Template')}"></head>
+<body class="bg-gray-100 min-h-screen flex">
+
+<div th:replace="~{layout/base :: sidebar('templates')}"></div>
+
+<div class="flex-1 flex flex-col ml-64">
+    <header class="bg-white shadow-sm px-8 py-4">
+        <a href="/admin/templates" class="text-gray-400 hover:text-gray-600 text-sm">← Daftar Template</a>
+        <h1 class="text-lg font-semibold text-gray-800 mt-1">Buat Template Baru</h1>
+    </header>
+    <main class="flex-1 p-8">
+
+        <div th:if="${error}" class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm"
+             th:text="${error}"></div>
+
+        <div class="bg-white rounded-xl shadow p-6 max-w-xl">
+            <form action="/admin/templates/create" method="post" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Nama Template *</label>
+                        <input type="text" name="name" required
+                               th:value="${form != null ? form.name() : ''}"
+                               class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Slug *</label>
+                        <input type="text" name="slug" required
+                               th:value="${form != null ? form.slug() : ''}"
+                               placeholder="nama-template"
+                               class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400"/>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Deskripsi</label>
+                    <textarea name="description" rows="3"
+                              class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400"
+                              th:text="${form != null ? form.description() : ''}"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Kategori *</label>
+                        <select name="category" required
+                                class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400">
+                            <option value="">Pilih Kategori</option>
+                            <option value="WEDDING" th:selected="${form != null and form.category() == 'WEDDING'}">Wedding</option>
+                            <option value="BIRTHDAY" th:selected="${form != null and form.category() == 'BIRTHDAY'}">Birthday</option>
+                            <option value="GRADUATION" th:selected="${form != null and form.category() == 'GRADUATION'}">Graduation</option>
+                            <option value="CORPORATE" th:selected="${form != null and form.category() == 'CORPORATE'}">Corporate</option>
+                            <option value="OTHER" th:selected="${form != null and form.category() == 'OTHER'}">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Tier Harga *</label>
+                        <select name="priceLevel" required
+                                class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400">
+                            <option value="1" th:selected="${form != null and form.priceLevel() == 1}">1 — Dasar</option>
+                            <option value="2" th:selected="${form != null and form.priceLevel() == 2}">2 — Standar</option>
+                            <option value="3" th:selected="${form != null and form.priceLevel() == 3}">3 — Premium</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Style Preset</label>
+                    <input type="text" name="stylePreset"
+                           th:value="${form != null ? form.stylePreset() : ''}"
+                           placeholder="elegant, modern, rustic..."
+                           class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400"/>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">URL Thumbnail</label>
+                    <input type="url" name="thumbnailUrl"
+                           th:value="${form != null ? form.thumbnailUrl() : ''}"
+                           class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400"/>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <a href="/admin/templates"
+                       class="px-4 py-2 border rounded text-sm text-gray-600 hover:bg-gray-50">Batal</a>
+                    <button type="submit"
+                            class="bg-rose-600 text-white px-5 py-2 rounded text-sm hover:bg-rose-700">
+                        Buat Template
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </main>
+</div>
+
+</body>
+</html>
