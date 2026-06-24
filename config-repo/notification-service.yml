@@ -22,6 +22,11 @@ spring:
       hibernate:
         default_schema: notification
 
+management:
+  health:
+    mail:
+      enabled: false
+
 app:
   fonnte:
     token: ${WHATSAPP_API_TOKEN}
