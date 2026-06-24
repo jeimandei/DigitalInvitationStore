@@ -34,12 +34,24 @@
                     <td class="px-4 py-3 text-gray-500"
                         th:text="${inv.activeUntil() != null ? #temporals.format(inv.activeUntil(), 'dd MMM yyyy') : '-'}"></td>
                     <td class="px-4 py-3 text-gray-500" th:text="${inv.viewCount()}"></td>
-                    <td class="px-4 py-3 flex gap-2">
-                        <a th:href="@{/admin/invitations/{id}/guestbook(id=${inv.id()})}"
-                           class="text-rose-600 hover:underline text-xs">Buku Tamu</a>
+                    <td class="px-4 py-3 flex flex-wrap gap-2">
+                        <a th:href="@{/admin/invitations/{id}(id=${inv.id()})}"
+                           class="text-rose-600 hover:underline text-xs">Detail</a>
                         <span class="text-gray-300">|</span>
-                        <a th:href="@{/admin/rsvp/{id}/export.csv(id=${inv.id()})}"
-                           class="text-gray-600 hover:underline text-xs">Export RSVP</a>
+                        <a th:href="@{/admin/invitations/{id}/rsvp(id=${inv.id()})}"
+                           class="text-gray-600 hover:underline text-xs">RSVP</a>
+                        <span class="text-gray-300">|</span>
+                        <a th:href="@{/admin/invitations/{id}/guests(id=${inv.id()})}"
+                           class="text-gray-600 hover:underline text-xs">Tamu</a>
+                        <span class="text-gray-300">|</span>
+                        <a th:href="@{/admin/invitations/{id}/attendance(id=${inv.id()})}"
+                           class="text-gray-600 hover:underline text-xs">Kehadiran</a>
+                        <span class="text-gray-300">|</span>
+                        <a th:href="@{/admin/invitations/{id}/gifts(id=${inv.id()})}"
+                           class="text-gray-600 hover:underline text-xs">Amplop</a>
+                        <span class="text-gray-300">|</span>
+                        <a th:href="@{/admin/invitations/{id}/guestbook(id=${inv.id()})}"
+                           class="text-gray-600 hover:underline text-xs">Buku Tamu</a>
                     </td>
                 </tr>
                 <tr th:if="${invitations.content().isEmpty()}">

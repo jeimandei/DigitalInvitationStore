@@ -3,9 +3,14 @@ package id.baundang.admin.client;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import id.baundang.admin.dto.AttendanceDTO;
+import id.baundang.admin.dto.GiftAccountDTO;
+import id.baundang.admin.dto.GiftSummaryDTO;
+import id.baundang.admin.dto.GuestDTO;
 import id.baundang.admin.dto.GuestbookEntryDTO;
 import id.baundang.admin.dto.InvitationDTO;
 import id.baundang.admin.dto.PagedResult;
+import id.baundang.admin.dto.RsvpEntryDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -44,6 +49,20 @@ public class InvitationAdminClient {
         } catch (RestClientException e) {
             log.error("Failed to list invitations: {}", e.getMessage());
             return PagedResult.empty();
+        }
+    }
+
+    public InvitationDTO getInvitation(UUID id) {
+        try {
+            JsonNode root = restClient.get()
+                    .uri("/api/v1/admin/invitations/" + id)
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .retrieve().body(JsonNode.class);
+            return objectMapper.convertValue(root.path("data"), InvitationDTO.class);
+        } catch (RestClientException e) {
+            log.error("Failed to get invitation {}: {}", id, e.getMessage());
+            return null;
         }
     }
 
@@ -90,7 +109,7 @@ public class InvitationAdminClient {
         }
     }
 
-    public List<Map<String, Object>> listRsvp(UUID invitationId) {
+    public List<RsvpEntryDTO> listRsvp(UUID invitationId) {
         try {
             JsonNode root = restClient.get()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/rsvp")
@@ -101,6 +120,121 @@ public class InvitationAdminClient {
         } catch (RestClientException e) {
             log.error("Failed to list rsvp {}: {}", invitationId, e.getMessage());
             return List.of();
+        }
+    }
+
+    public List<GuestDTO> listGuests(UUID invitationId) {
+        try {
+            JsonNode root = restClient.get()
+                    .uri("/api/v1/admin/invitations/" + invitationId + "/guests")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .retrieve().body(JsonNode.class);
+            return objectMapper.convertValue(root.path("data"), new TypeReference<>() {});
+        } catch (RestClientException e) {
+            log.error("Failed to list guests {}: {}", invitationId, e.getMessage());
+            return List.of();
+        }
+    }
+
+    public boolean addGuest(UUID invitationId, Map<String, Object> req) {
+        try {
+            restClient.post()
+                    .uri("/api/v1/admin/invitations/" + invitationId + "/guests")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .body(req)
+                    .retrieve().toBodilessEntity();
+            return true;
+        } catch (RestClientException e) {
+            log.error("Failed to add guest to {}: {}", invitationId, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean deleteGuest(UUID invitationId, UUID guestId) {
+        try {
+            restClient.delete()
+                    .uri("/api/v1/admin/invitations/" + invitationId + "/guests/" + guestId)
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .retrieve().toBodilessEntity();
+            return true;
+        } catch (RestClientException e) {
+            log.error("Failed to delete guest {} from {}: {}", guestId, invitationId, e.getMessage());
+            return false;
+        }
+    }
+
+    public AttendanceDTO getAttendance(UUID invitationId) {
+        try {
+            JsonNode root = restClient.get()
+                    .uri("/api/v1/admin/invitations/" + invitationId + "/attendance")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .retrieve().body(JsonNode.class);
+            return objectMapper.convertValue(root.path("data"), AttendanceDTO.class);
+        } catch (RestClientException e) {
+            log.error("Failed to get attendance {}: {}", invitationId, e.getMessage());
+            return null;
+        }
+    }
+
+    public GiftSummaryDTO getGifts(UUID invitationId) {
+        try {
+            JsonNode root = restClient.get()
+                    .uri("/api/v1/admin/invitations/" + invitationId + "/gifts")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .retrieve().body(JsonNode.class);
+            return objectMapper.convertValue(root.path("data"), GiftSummaryDTO.class);
+        } catch (RestClientException e) {
+            log.error("Failed to get gifts {}: {}", invitationId, e.getMessage());
+            return null;
+        }
+    }
+
+    public GiftAccountDTO getGiftAccount(UUID invitationId) {
+        try {
+            JsonNode root = restClient.get()
+                    .uri("/api/v1/admin/invitations/" + invitationId + "/gift-accounts")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .retrieve().body(JsonNode.class);
+            return objectMapper.convertValue(root.path("data"), GiftAccountDTO.class);
+        } catch (RestClientException e) {
+            log.error("Failed to get gift account {}: {}", invitationId, e.getMessage());
+            return null;
+        }
+    }
+
+    public boolean setGiftAccount(UUID invitationId, GiftAccountDTO req) {
+        try {
+            restClient.put()
+                    .uri("/api/v1/admin/invitations/" + invitationId + "/gift-accounts")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .body(req)
+                    .retrieve().toBodilessEntity();
+            return true;
+        } catch (RestClientException e) {
+            log.error("Failed to set gift account {}: {}", invitationId, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean updateStatus(UUID invitationId, String status) {
+        try {
+            restClient.put()
+                    .uri("/api/v1/admin/invitations/" + invitationId + "/status")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .body(Map.of("status", status))
+                    .retrieve().toBodilessEntity();
+            return true;
+        } catch (RestClientException e) {
+            log.error("Failed to update status {}: {}", invitationId, e.getMessage());
+            return false;
         }
     }
 }

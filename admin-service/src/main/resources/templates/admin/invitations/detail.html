@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id">
+<head th:replace="~{layout/base :: head('Detail Undangan')}"></head>
+<body class="bg-gray-100 min-h-screen flex">
+
+<div th:replace="~{layout/base :: sidebar('invitations')}"></div>
+
+<div class="flex-1 flex flex-col ml-64">
+    <header class="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
+        <div>
+            <a href="/admin/invitations" class="text-gray-400 hover:text-gray-600 text-sm">← Daftar Undangan</a>
+            <h1 class="text-lg font-semibold text-gray-800 mt-1"
+                th:text="${invitation.coupleSlug()}">Detail Undangan</h1>
+        </div>
+        <form th:action="@{/admin/invitations/{id}/status(id=${invitation.id()})}" method="post" class="flex gap-2">
+            <select name="status" class="border rounded px-3 py-1.5 text-sm text-gray-700"
+                    th:value="${invitation.status()}">
+                <option value="DRAFT" th:selected="${invitation.status() == 'DRAFT'}">DRAFT</option>
+                <option value="ACTIVE" th:selected="${invitation.status() == 'ACTIVE'}">ACTIVE</option>
+                <option value="EXPIRED" th:selected="${invitation.status() == 'EXPIRED'}">EXPIRED</option>
+                <option value="SUSPENDED" th:selected="${invitation.status() == 'SUSPENDED'}">SUSPENDED</option>
+            </select>
+            <button type="submit"
+                    class="bg-rose-600 text-white px-4 py-1.5 rounded text-sm hover:bg-rose-700">
+                Simpan Status
+            </button>
+        </form>
+    </header>
+    <main class="flex-1 p-8">
+
+        <div class="grid grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow p-6">
+                <h2 class="text-sm font-semibold text-gray-500 uppercase mb-4">Info Undangan</h2>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">ID</dt>
+                        <dd class="font-mono text-xs text-gray-700" th:text="${invitation.id()}"></dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Order ID</dt>
+                        <dd class="font-mono text-xs text-gray-700" th:text="${invitation.orderId()}"></dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Status</dt>
+                        <dd>
+                            <span class="px-2 py-0.5 rounded text-xs font-medium"
+                                  th:classappend="${invitation.status() == 'ACTIVE'} ? 'bg-green-100 text-green-700' :
+                                                 (${invitation.status() == 'DRAFT'} ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-red-600')"
+                                  th:text="${invitation.status()}"></span>
+                        </dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Aktif Sampai</dt>
+                        <dd class="text-gray-700"
+                            th:text="${invitation.activeUntil() != null ? #temporals.format(invitation.activeUntil(), 'dd MMM yyyy') : '-'}"></dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Views</dt>
+                        <dd class="text-gray-700" th:text="${invitation.viewCount()}"></dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="bg-white rounded-xl shadow p-6">
+                <h2 class="text-sm font-semibold text-gray-500 uppercase mb-4">Aksi Cepat</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <a th:href="@{/admin/invitations/{id}/rsvp(id=${invitation.id()})}"
+                       class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 text-center">
+                        <span class="text-2xl mb-1">📋</span>
+                        <span class="text-sm font-medium text-gray-700">RSVP</span>
+                    </a>
+                    <a th:href="@{/admin/invitations/{id}/guests(id=${invitation.id()})}"
+                       class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 text-center">
+                        <span class="text-2xl mb-1">👥</span>
+                        <span class="text-sm font-medium text-gray-700">Tamu</span>
+                    </a>
+                    <a th:href="@{/admin/invitations/{id}/attendance(id=${invitation.id()})}"
+                       class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 text-center">
+                        <span class="text-2xl mb-1">✅</span>
+                        <span class="text-sm font-medium text-gray-700">Kehadiran</span>
+                    </a>
+                    <a th:href="@{/admin/invitations/{id}/gifts(id=${invitation.id()})}"
+                       class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 text-center">
+                        <span class="text-2xl mb-1">🎁</span>
+                        <span class="text-sm font-medium text-gray-700">Amplop Digital</span>
+                    </a>
+                    <a th:href="@{/admin/invitations/{id}/guestbook(id=${invitation.id()})}"
+                       class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 text-center">
+                        <span class="text-2xl mb-1">📖</span>
+                        <span class="text-sm font-medium text-gray-700">Buku Tamu</span>
+                    </a>
+                    <a th:href="@{/admin/invitations/{id}/gift-account(id=${invitation.id()})}"
+                       class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 text-center">
+                        <span class="text-2xl mb-1">🏦</span>
+                        <span class="text-sm font-medium text-gray-700">Rekening</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+</body>
+</html>

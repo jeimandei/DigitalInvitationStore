@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.baundang.admin.dto.PagedResult;
+import id.baundang.admin.dto.TemplateCreateRequest;
 import id.baundang.admin.dto.TemplateDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -44,6 +46,20 @@ public class TemplateAdminClient {
         }
     }
 
+    public TemplateDTO getTemplate(String slug) {
+        try {
+            JsonNode root = restClient.get()
+                    .uri("/api/v1/templates/" + slug)
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .retrieve().body(JsonNode.class);
+            return objectMapper.convertValue(root.path("data"), TemplateDTO.class);
+        } catch (RestClientException e) {
+            log.error("Failed to get template {}: {}", slug, e.getMessage());
+            return null;
+        }
+    }
+
     public boolean toggleActive(String id, boolean active) {
         try {
             restClient.put()
@@ -54,6 +70,50 @@ public class TemplateAdminClient {
             return true;
         } catch (RestClientException e) {
             log.error("Failed to toggle template {}: {}", id, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean createTemplate(TemplateCreateRequest req) {
+        try {
+            restClient.post()
+                    .uri("/api/v1/templates")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .body(req)
+                    .retrieve().toBodilessEntity();
+            return true;
+        } catch (RestClientException e) {
+            log.error("Failed to create template: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean updateTemplate(UUID id, TemplateCreateRequest req) {
+        try {
+            restClient.put()
+                    .uri("/api/v1/templates/" + id)
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .body(req)
+                    .retrieve().toBodilessEntity();
+            return true;
+        } catch (RestClientException e) {
+            log.error("Failed to update template {}: {}", id, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean deleteTemplate(UUID id) {
+        try {
+            restClient.delete()
+                    .uri("/api/v1/templates/" + id)
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "admin")
+                    .retrieve().toBodilessEntity();
+            return true;
+        } catch (RestClientException e) {
+            log.error("Failed to delete template {}: {}", id, e.getMessage());
             return false;
         }
     }
