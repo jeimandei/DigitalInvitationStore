@@ -137,7 +137,7 @@ services:
       start_period: 90s
       retries: 10
 
-  auth:
+  auth-service:
     build:
       context: ./auth-service
       dockerfile: Containerfile
@@ -180,7 +180,7 @@ services:
       rabbitmq:
         condition: service_started
 
-  storefront:
+  storefront-service:
     build:
       context: ./storefront-service
       dockerfile: Containerfile
@@ -210,7 +210,7 @@ services:
       config-server:
         condition: service_healthy
 
-  template:
+  template-service:
     build:
       context: ./template-service
       dockerfile: Containerfile
@@ -249,7 +249,7 @@ services:
       minio:
         condition: service_started
 
-  invitation:
+  invitation-service:
     build:
       context: ./invitation-service
       dockerfile: Containerfile
@@ -292,7 +292,7 @@ services:
       rabbitmq:
         condition: service_started
 
-  order:
+  order-service:
     build:
       context: ./order-service
       dockerfile: Containerfile
@@ -331,7 +331,7 @@ services:
       rabbitmq:
         condition: service_started
 
-  payment:
+  payment-service:
     build:
       context: ./payment-service
       dockerfile: Containerfile
@@ -372,7 +372,7 @@ services:
       rabbitmq:
         condition: service_started
 
-  notification:
+  notification-service:
     build:
       context: ./notification-service
       dockerfile: Containerfile
@@ -416,7 +416,7 @@ services:
       rabbitmq:
         condition: service_started
 
-  admin:
+  admin-service:
     build:
       context: ./admin-service
       dockerfile: Containerfile
@@ -451,7 +451,7 @@ services:
       postgres:
         condition: service_started
 
-  media:
+  media-service:
     build:
       context: ./media-service
       dockerfile: Containerfile
@@ -515,21 +515,21 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-      auth:
+      auth-service:
         condition: service_started
-      storefront:
+      storefront-service:
         condition: service_started
-      template:
+      template-service:
         condition: service_started
-      invitation:
+      invitation-service:
         condition: service_started
-      order:
+      order-service:
         condition: service_started
-      payment:
+      payment-service:
         condition: service_started
-      notification:
+      notification-service:
         condition: service_started
-      admin:
+      admin-service:
         condition: service_started
-      media:
+      media-service:
         condition: service_started
