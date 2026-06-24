@@ -309,6 +309,6 @@ jobs:
         if: inputs.action == 'full-deploy' || (inputs.action == 'build-service' && contains(inputs.services, 'gateway'))
         run: |
           ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
-            "curl -sf http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' \
+            "curl -sf http://localhost:1080/actuator/health | grep -q '\"status\":\"UP\"' \
               && echo '✓ Gateway healthy' \
               || echo '✗ Gateway not yet healthy (may still be starting)'"

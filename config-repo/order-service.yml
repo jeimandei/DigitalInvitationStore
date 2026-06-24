@@ -1,5 +1,5 @@
 server:
-  port: 8085
+  port: 1085
 
 app:
   rabbitmq:

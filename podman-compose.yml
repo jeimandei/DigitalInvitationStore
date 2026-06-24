@@ -151,7 +151,7 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
     ports:
-      - "8081:8081"
+      - "1081:1081"
     volumes:
       - ./logs/auth-service:/app/logs/auth-service
     security_opt:
@@ -163,7 +163,7 @@ services:
           memory: 512m
           cpus: "0.5"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1081/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
       start_period: 60s
@@ -187,7 +187,7 @@ services:
       SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
       SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
     ports:
-      - "8082:8082"
+      - "1082:1082"
     volumes:
       - ./logs/storefront-service:/app/logs/storefront-service
     security_opt:
@@ -199,7 +199,7 @@ services:
           memory: 512m
           cpus: "0.5"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1082/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
       start_period: 60s
@@ -222,7 +222,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "8083:8083"
+      - "1083:1083"
     volumes:
       - ./logs/template-service:/app/logs/template-service
     security_opt:
@@ -234,7 +234,7 @@ services:
           memory: 768m
           cpus: "0.75"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1083/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
       start_period: 60s
@@ -263,7 +263,7 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
     ports:
-      - "8084:8084"
+      - "1084:1084"
     volumes:
       - ./logs/invitation-service:/app/logs/invitation-service
     security_opt:
@@ -275,7 +275,7 @@ services:
           memory: 1024m
           cpus: "1.0"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1084/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
       start_period: 60s
@@ -304,7 +304,7 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
-      - "8085:8085"
+      - "1085:1085"
     volumes:
       - ./logs/order-service:/app/logs/order-service
     security_opt:
@@ -316,7 +316,7 @@ services:
           memory: 512m
           cpus: "0.5"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1085/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
       start_period: 60s
@@ -345,7 +345,7 @@ services:
       MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY}
       MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY}
     ports:
-      - "8086:8086"
+      - "1086:1086"
     volumes:
       - ./logs/payment-service:/app/logs/payment-service
     security_opt:
@@ -357,7 +357,7 @@ services:
           memory: 768m
           cpus: "0.75"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1086/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
       start_period: 60s
@@ -389,7 +389,7 @@ services:
       EMAIL_USERNAME: ${EMAIL_USERNAME}
       EMAIL_PASSWORD: ${EMAIL_PASSWORD}
     ports:
-      - "8087:8087"
+      - "1087:1087"
     volumes:
       - ./logs/notification-service:/app/logs/notification-service
     security_opt:
@@ -401,7 +401,7 @@ services:
           memory: 512m
           cpus: "0.5"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1087/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
       start_period: 60s
@@ -426,7 +426,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "8088:8088"
+      - "1088:1088"
     volumes:
       - ./logs/admin-service:/app/logs/admin-service
     security_opt:
@@ -438,7 +438,7 @@ services:
           memory: 512m
           cpus: "0.5"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1088/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
       start_period: 60s
@@ -460,7 +460,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "8089:8089"
+      - "1089:1089"
     volumes:
       - ./logs/media-service:/app/logs/media-service
     security_opt:
@@ -472,7 +472,7 @@ services:
           memory: 512m
           cpus: "0.5"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8089/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1089/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
       start_period: 60s
@@ -493,7 +493,7 @@ services:
       SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
-      - "8080:8080"
+      - "1080:1080"
     volumes:
       - ./logs/gateway-service:/app/logs/gateway-service
     security_opt:
@@ -505,7 +505,7 @@ services:
           memory: 512m
           cpus: "1.0"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1080/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
       start_period: 60s

@@ -1,5 +1,5 @@
 server:
-  port: 8087
+  port: 1087
 
 spring:
   mail:
@@ -29,7 +29,7 @@ app:
   admin:
     whatsapp: ${ADMIN_WHATSAPP:6281234567890}
   services:
-    invitation-service: ${INVITATION_SERVICE_URL:http://invitation-service:8084}
+    invitation-service: ${INVITATION_SERVICE_URL:http://invitation-service:1084}
   rabbitmq:
     orders-exchange: baundang.orders
     invitations-exchange: baundang.invitations

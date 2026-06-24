@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 1081
 
 # spring.datasource.url/username/password are injected via SPRING_DATASOURCE_* in podman-compose
 
