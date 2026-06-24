@@ -12,7 +12,12 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.*;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
@@ -24,7 +29,7 @@ import java.util.UUID;
 @Service
 public class JwtService {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JwtService.class);
     private static final String PRIVATE_KEY_FILE = "auth_rsa";
     private static final String PUBLIC_KEY_FILE  = "auth_rsa.pub";
     private static final int KEY_SIZE = 4096;
@@ -51,11 +56,11 @@ public class JwtService {
         Path pubPath  = dir.resolve(PUBLIC_KEY_FILE);
 
         if (Files.exists(privPath) && Files.exists(pubPath)) {
-            log.info("Loading RSA key pair from {}", keysDir);
+            LOG.info("Loading RSA key pair from {}", keysDir);
             privateKey = loadPrivateKey(privPath);
             publicKey  = loadPublicKey(pubPath);
         } else {
-            log.info("Generating new RSA-{} key pair in {}", KEY_SIZE, keysDir);
+            LOG.info("Generating new RSA-{} key pair in {}", KEY_SIZE, keysDir);
             Files.createDirectories(dir);
             KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
             gen.initialize(KEY_SIZE, new SecureRandom());

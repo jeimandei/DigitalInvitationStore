@@ -25,12 +25,27 @@ public record OrderDTO(
         Instant createdAt,
         Instant updatedAt
 ) {
-    public boolean isPending()    { return "PENDING".equals(status); }
-    public boolean isPaid()       { return "PAID".equals(status); }
-    public boolean isCompleted()  { return "COMPLETED".equals(status); }
-    public boolean isCancelled()  { return "CANCELLED".equals(status); }
+    public boolean isPending() {
+        return "PENDING".equals(status);
+    }
 
-    /** Alias used in templates — orders don't store a separate buyer name. */
-    public String buyerName()  { return coupleName; }
-    public String buyerEmail() { return contactEmail; }
+    public boolean isPaid() {
+        return "PAID".equals(status);
+    }
+
+    public boolean isCompleted() {
+        return "COMPLETED".equals(status);
+    }
+
+    public boolean isCancelled() {
+        return "CANCELLED".equals(status);
+    }
+
+    public String buyerName() {
+        return coupleName;
+    }
+
+    public String buyerEmail() {
+        return contactEmail;
+    }
 }

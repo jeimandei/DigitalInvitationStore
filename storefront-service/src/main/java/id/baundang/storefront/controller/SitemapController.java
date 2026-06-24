@@ -24,19 +24,18 @@ public class SitemapController {
     @GetMapping(value = "/sitemap.xml", produces = MediaType.APPLICATION_XML_VALUE)
     @ResponseBody
     public String sitemap() {
-        List<TemplateSummaryDTO> templates = fetchAllTemplates();
-
         StringBuilder xml = new StringBuilder();
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
 
         // Static pages
-        appendUrl(xml, BASE + "/",         "weekly", "1.0");
-        appendUrl(xml, BASE + "/templates","weekly", "0.9");
-        appendUrl(xml, BASE + "/pesan",    "monthly","0.8");
-        appendUrl(xml, BASE + "/tentang",  "monthly","0.7");
+        appendUrl(xml, BASE + "/", "weekly", "1.0");
+        appendUrl(xml, BASE + "/templates", "weekly", "0.9");
+        appendUrl(xml, BASE + "/pesan", "monthly", "0.8");
+        appendUrl(xml, BASE + "/tentang", "monthly", "0.7");
 
         // Template detail pages
+        List<TemplateSummaryDTO> templates = fetchAllTemplates();
         for (TemplateSummaryDTO t : templates) {
             appendUrl(xml, BASE + "/templates/" + t.slug(), "monthly", "0.6");
         }
@@ -47,10 +46,10 @@ public class SitemapController {
 
     private void appendUrl(StringBuilder xml, String loc, String changefreq, String priority) {
         xml.append("  <url>\n")
-           .append("    <loc>").append(loc).append("</loc>\n")
-           .append("    <changefreq>").append(changefreq).append("</changefreq>\n")
-           .append("    <priority>").append(priority).append("</priority>\n")
-           .append("  </url>\n");
+                .append("    <loc>").append(loc).append("</loc>\n")
+                .append("    <changefreq>").append(changefreq).append("</changefreq>\n")
+                .append("    <priority>").append(priority).append("</priority>\n")
+                .append("  </url>\n");
     }
 
     private List<TemplateSummaryDTO> fetchAllTemplates() {

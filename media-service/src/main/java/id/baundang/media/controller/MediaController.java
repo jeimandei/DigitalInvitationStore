@@ -1,13 +1,22 @@
 package id.baundang.media.controller;
 
 import id.baundang.common.ApiResponse;
-import id.baundang.media.dto.*;
+import id.baundang.media.dto.PresignDownloadResponse;
+import id.baundang.media.dto.PresignUploadRequest;
+import id.baundang.media.dto.PresignUploadResponse;
+import id.baundang.media.dto.UploadedObjectResponse;
 import id.baundang.media.service.MinioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
@@ -19,11 +28,6 @@ public class MediaController {
 
     private final MinioService minioService;
 
-    /**
-     * Buyer requests a presigned PUT URL to upload directly to MinIO.
-     * The client should PUT the file bytes to the returned presignedUrl
-     * with the matching Content-Type header.
-     */
     @PostMapping("/upload/presign")
     public ResponseEntity<ApiResponse<PresignUploadResponse>> presignUpload(
             @Valid @RequestBody PresignUploadRequest req) {
@@ -33,19 +37,12 @@ public class MediaController {
                 .body(ApiResponse.ok(resp));
     }
 
-    /**
-     * Buyer requests a presigned GET URL to download/view a private object.
-     * The objectKey path may contain slashes (e.g. couples/slug/uuid-file.jpg).
-     */
     @GetMapping("/download/**")
     public ApiResponse<PresignDownloadResponse> presignDownload(
             @RequestParam String objectKey) {
         return ApiResponse.ok(minioService.presignDownload(objectKey));
     }
 
-    /**
-     * Admin hard-deletes an object from whichever bucket owns it.
-     */
     @DeleteMapping("/**")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> deleteObject(@RequestParam String objectKey) {
@@ -53,10 +50,6 @@ public class MediaController {
         return ApiResponse.ok(null, "Object deleted: " + objectKey);
     }
 
-    /**
-     * Admin uploads a file directly (server-side) to baundang-templates.
-     * Subfolder defaults to "thumbnails"; pass ?subfolder=previews for preview images.
-     */
     @PostMapping("/template/upload")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UploadedObjectResponse>> uploadTemplate(

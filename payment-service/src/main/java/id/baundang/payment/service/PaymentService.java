@@ -64,13 +64,10 @@ public class PaymentService {
 
     @Transactional
     public void handleWebhook(JsonNode notification) {
-        String orderId        = notification.path("order_id").asText();
-        String statusCode     = notification.path("status_code").asText();
-        String grossAmount    = notification.path("gross_amount").asText();
-        String signatureKey   = notification.path("signature_key").asText();
-        String transactionStatus = notification.path("transaction_status").asText();
-        String paymentType    = notification.path("payment_type").asText();
-        String fraudStatus    = notification.path("fraud_status").asText("accept");
+        String orderId      = notification.path("order_id").asText();
+        String statusCode   = notification.path("status_code").asText();
+        String grossAmount  = notification.path("gross_amount").asText();
+        String signatureKey = notification.path("signature_key").asText();
 
         if (!signatureValidator.isValid(orderId, statusCode, grossAmount, signatureKey)) {
             throw new ValidationException("Invalid Midtrans signature");
@@ -79,9 +76,12 @@ public class PaymentService {
         Payment payment = paymentRepository.findByMidtransOrderId(orderId)
                 .orElseThrow(() -> new NotFoundException("Payment not found for midtrans order: " + orderId));
 
+        String paymentType = notification.path("payment_type").asText();
         payment.setRawNotification(notification);
         payment.setPaymentMethod(paymentType);
 
+        String transactionStatus = notification.path("transaction_status").asText();
+        String fraudStatus = notification.path("fraud_status").asText("accept");
         switch (transactionStatus) {
             case "capture" -> {
                 if ("accept".equals(fraudStatus)) {

@@ -18,7 +18,7 @@ import java.util.Base64;
 @Component
 public class PublicKeyProvider {
 
-    private static final Logger log = LoggerFactory.getLogger(PublicKeyProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PublicKeyProvider.class);
 
     @Value("${app.auth.public-key-uri}")
     private String publicKeyUri;
@@ -39,13 +39,14 @@ public class PublicKeyProvider {
                 .bodyToMono(String.class)
                 .retryWhen(Retry.backoff(6, Duration.ofSeconds(5))
                         .maxBackoff(Duration.ofSeconds(30))
-                        .doBeforeRetry(sig -> log.warn("Retrying public key fetch, attempt {}", sig.totalRetries() + 1)))
+                        .doBeforeRetry(sig -> LOG.warn("Retrying public key fetch, attempt {}",
+                                sig.totalRetries() + 1)))
                 .flatMap(this::parse)
                 .doOnSuccess(key -> {
                     this.publicKey = key;
-                    log.info("Auth service public key loaded successfully");
+                    LOG.info("Auth service public key loaded successfully");
                 })
-                .doOnError(e -> log.error("Failed to load auth service public key", e))
+                .doOnError(e -> LOG.error("Failed to load auth service public key", e))
                 .subscribe();
     }
 

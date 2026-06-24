@@ -1,6 +1,14 @@
 package id.baundang.template.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.util.UUID;
 
 @Entity
@@ -29,10 +37,27 @@ public class TemplateFeature {
         this.featureValue = featureValue;
     }
 
-    public UUID getId()             { return id; }
-    public Template getTemplate()   { return template; }
-    public String getFeatureKey()   { return featureKey; }
-    public String getFeatureValue() { return featureValue; }
-    public void setFeatureKey(String v)   { this.featureKey = v; }
-    public void setFeatureValue(String v) { this.featureValue = v; }
+    public UUID getId() {
+        return id;
+    }
+
+    public Template getTemplate() {
+        return template;
+    }
+
+    public String getFeatureKey() {
+        return featureKey;
+    }
+
+    public String getFeatureValue() {
+        return featureValue;
+    }
+
+    public void setFeatureKey(String v) {
+        this.featureKey = v;
+    }
+
+    public void setFeatureValue(String v) {
+        this.featureValue = v;
+    }
 }

@@ -25,7 +25,7 @@ import java.util.List;
 public class JwtAuthGatewayFilterFactory
         extends AbstractGatewayFilterFactory<JwtAuthGatewayFilterFactory.Config> {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtAuthGatewayFilterFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JwtAuthGatewayFilterFactory.class);
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final PublicKeyProvider keyProvider;
@@ -59,7 +59,7 @@ public class JwtAuthGatewayFilterFactory
                         .parseSignedClaims(token)
                         .getPayload();
             } catch (JwtException e) {
-                log.debug("JWT validation failed: {}", e.getMessage());
+                LOG.debug("JWT validation failed: {}", e.getMessage());
                 return unauthorized(exchange, "Invalid or expired token");
             }
 
@@ -81,21 +81,27 @@ public class JwtAuthGatewayFilterFactory
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String reason) {
-        log.debug("Unauthorized: {}", reason);
+        LOG.debug("Unauthorized: {}", reason);
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
         return exchange.getResponse().setComplete();
     }
 
     private Mono<Void> forbidden(ServerWebExchange exchange, String reason) {
-        log.debug("Forbidden: {}", reason);
+        LOG.debug("Forbidden: {}", reason);
         exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
         return exchange.getResponse().setComplete();
     }
 
     public static class Config {
+
         private String requiredRole;
 
-        public String getRequiredRole() { return requiredRole; }
-        public void setRequiredRole(String requiredRole) { this.requiredRole = requiredRole; }
+        public String getRequiredRole() {
+            return requiredRole;
+        }
+
+        public void setRequiredRole(String requiredRole) {
+            this.requiredRole = requiredRole;
+        }
     }
 }

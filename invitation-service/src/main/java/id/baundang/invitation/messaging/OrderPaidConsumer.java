@@ -26,15 +26,15 @@ public class OrderPaidConsumer {
     @RabbitListener(queues = "invitation.order.paid")
     public void onOrderPaid(Map<String, Object> event) {
         try {
-            UUID orderId    = UUID.fromString(event.get("orderId").toString());
-            UUID templateId = UUID.fromString(event.get("templateId").toString());
-            String slug     = buildSlug(event);
+            UUID orderId = UUID.fromString(event.get("orderId").toString());
+            String slug  = buildSlug(event);
 
             if (invitationRepository.findByCoupleSlug(slug).isPresent()) {
                 log.warn("Invitation already exists for slug {}", slug);
                 return;
             }
 
+            UUID templateId = UUID.fromString(event.get("templateId").toString());
             Invitation invitation = new Invitation();
             invitation.setOrderId(orderId);
             invitation.setCoupleSlug(slug);

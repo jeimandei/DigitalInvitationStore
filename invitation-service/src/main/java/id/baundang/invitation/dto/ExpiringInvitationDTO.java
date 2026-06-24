@@ -22,7 +22,8 @@ public record ExpiringInvitationDTO(
         String couple  = textOf(content, "coupleName", inv.getCoupleSlug());
         String wa      = textOf(content, "contactWhatsapp", "");
         int days       = (int) ChronoUnit.DAYS.between(LocalDate.now(), inv.getActiveUntil());
-        return new ExpiringInvitationDTO(inv.getId(), inv.getCoupleSlug(), title, couple, wa, inv.getActiveUntil(), days);
+        return new ExpiringInvitationDTO(inv.getId(), inv.getCoupleSlug(), title, couple, wa,
+                inv.getActiveUntil(), days);
     }
 
     private static String textOf(JsonNode node, String field, String fallback) {

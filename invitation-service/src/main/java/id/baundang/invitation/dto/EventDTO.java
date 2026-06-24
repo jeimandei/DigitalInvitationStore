@@ -58,7 +58,9 @@ public record EventDTO(
     }
 
     private static Double decimal(JsonNode n, String field) {
-        if (n == null || !n.hasNonNull(field)) return null;
+        if (n == null || !n.hasNonNull(field)) {
+            return null;
+        }
         JsonNode v = n.get(field);
         return v.isNumber() ? v.asDouble() : null;
     }
