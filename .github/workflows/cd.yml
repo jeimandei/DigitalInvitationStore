@@ -67,14 +67,6 @@ on:
         type: boolean
         default: false
 
-      services:
-        description: >
-          (restart-service only) Space-separated service name(s).
-          For build-service use the checkboxes above.
-        required: false
-        type: string
-        default: ''
-
       branch:
         description: 'Git branch to deploy from'
         required: false
@@ -94,17 +86,17 @@ env:
 
 jobs:
   deploy:
-    name: "${{ inputs.action }}${{ inputs.services != '' && format(' [{0}]', inputs.services) || '' }} @ ${{ inputs.branch }}"
+    name: "${{ inputs.action }} @ ${{ inputs.branch }}"
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
     steps:
 
       # ── Validate inputs ────────────────────────────────────────────────────
-      - name: Validate — services required for restart-service
-        if: inputs.action == 'restart-service' && inputs.services == ''
+      - name: Validate — at least one service checkbox required for build/restart-service
+        if: (inputs.action == 'build-service' || inputs.action == 'restart-service') && !inputs.svc_config_server && !inputs.svc_auth && !inputs.svc_storefront && !inputs.svc_template && !inputs.svc_invitation && !inputs.svc_order && !inputs.svc_payment && !inputs.svc_notification && !inputs.svc_admin && !inputs.svc_media && !inputs.svc_gateway
         run: |
-          echo "::error::The 'services' input is required for action 'restart-service'."
+          echo "::error::No services selected — tick at least one checkbox."
           exit 1
 
       # ── Checkout (needed for deploy-config rsync) ─────────────────────────
@@ -294,7 +286,8 @@ jobs:
           fi
           echo "→ Selected services: $SERVICES"
 
-          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} SERVICES="$SERVICES" << 'ENDSSH'
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
+            SERVICES="$SERVICES" DEPLOY_DIR="${{ env.DEPLOY_DIR }}" << 'ENDSSH'
             set -e
             cd "$DEPLOY_DIR"
 
@@ -353,16 +346,31 @@ jobs:
       # ══════════════════════════════════════════════════════════════════════
       # restart-service — restart specific service(s) without rebuild
       # ══════════════════════════════════════════════════════════════════════
-      - name: "[restart-service] Restart ${{ inputs.services }}"
+      - name: "[restart-service] Restart selected services"
         if: inputs.action == 'restart-service'
         run: |
-          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
+          SERVICES=""
+          ${{ inputs.svc_config_server == true && 'SERVICES="$SERVICES config-server"' || '' }}
+          ${{ inputs.svc_auth         == true && 'SERVICES="$SERVICES auth-service"'     || '' }}
+          ${{ inputs.svc_storefront   == true && 'SERVICES="$SERVICES storefront-service"' || '' }}
+          ${{ inputs.svc_template     == true && 'SERVICES="$SERVICES template-service"' || '' }}
+          ${{ inputs.svc_invitation   == true && 'SERVICES="$SERVICES invitation-service"' || '' }}
+          ${{ inputs.svc_order        == true && 'SERVICES="$SERVICES order-service"'    || '' }}
+          ${{ inputs.svc_payment      == true && 'SERVICES="$SERVICES payment-service"'  || '' }}
+          ${{ inputs.svc_notification == true && 'SERVICES="$SERVICES notification-service"' || '' }}
+          ${{ inputs.svc_admin        == true && 'SERVICES="$SERVICES admin-service"'    || '' }}
+          ${{ inputs.svc_media        == true && 'SERVICES="$SERVICES media-service"'    || '' }}
+          ${{ inputs.svc_gateway      == true && 'SERVICES="$SERVICES gateway"'          || '' }}
+          SERVICES="${SERVICES# }"
+
+          echo "→ Restarting: $SERVICES"
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
+            SERVICES="$SERVICES" DEPLOY_DIR="${{ env.DEPLOY_DIR }}" << 'ENDSSH'
             set -e
-            cd "${{ env.DEPLOY_DIR }}"
-            echo "→ Restarting: ${{ inputs.services }}"
-            podman compose --env-file .env restart ${{ inputs.services }}
-            echo "✓ Restart complete"
-          EOF
+            cd "$DEPLOY_DIR"
+            podman compose --env-file .env restart $SERVICES
+            echo "✓ Restart complete: $SERVICES"
+          ENDSSH
 
       # ══════════════════════════════════════════════════════════════════════
       # restart-all — restart every container in the stack
@@ -388,7 +396,7 @@ jobs:
 
       # ── Post-deploy: gateway health check ─────────────────────────────────
       - name: Health check — gateway
-        if: inputs.action == 'full-deploy' || (inputs.action == 'build-service' && contains(inputs.services, 'gateway'))
+        if: inputs.action == 'full-deploy' || ((inputs.action == 'build-service' || inputs.action == 'restart-service') && inputs.svc_gateway == true)
         run: |
           ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} "
             for i in \$(seq 1 24); do
