@@ -134,6 +134,7 @@ services:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 15s
       timeout: 10s
+      start_period: 90s
       retries: 10
 
   auth:
@@ -171,7 +172,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_started
       redis:
@@ -207,7 +208,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
 
   template:
     build:
@@ -242,7 +243,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_started
       minio:
@@ -283,7 +284,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_started
       redis:
@@ -324,7 +325,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_started
       rabbitmq:
@@ -365,7 +366,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_started
       rabbitmq:
@@ -409,7 +410,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_started
       rabbitmq:
@@ -446,7 +447,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_started
 
@@ -480,7 +481,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_started
 
@@ -513,7 +514,7 @@ services:
       retries: 5
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
       auth:
         condition: service_started
       storefront:
