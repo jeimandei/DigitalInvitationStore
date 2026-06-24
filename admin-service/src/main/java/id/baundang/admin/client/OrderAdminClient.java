@@ -31,8 +31,12 @@ public class OrderAdminClient {
         try {
             StringBuilder uri = new StringBuilder("/api/v1/orders?page=").append(page)
                     .append("&size=").append(size);
-            if (status != null && !status.isBlank()) uri.append("&status=").append(status);
-            if (search != null && !search.isBlank()) uri.append("&search=").append(search);
+            if (status != null && !status.isBlank()) {
+                uri.append("&status=").append(status);
+            }
+            if (search != null && !search.isBlank()) {
+                uri.append("&search=").append(search);
+            }
 
             JsonNode root = restClient.get().uri(uri.toString())
                     .retrieve().body(JsonNode.class);

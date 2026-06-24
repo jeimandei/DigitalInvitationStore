@@ -14,7 +14,7 @@ import java.time.Instant;
 @EnableScheduling
 public class CleanupScheduler {
 
-    private static final Logger log = LoggerFactory.getLogger(CleanupScheduler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CleanupScheduler.class);
 
     private final RefreshTokenRepository refreshRepo;
 
@@ -26,6 +26,6 @@ public class CleanupScheduler {
     @Transactional
     public void purgeStaleTokens() {
         refreshRepo.deleteExpiredAndRevoked(Instant.now());
-        log.info("Purged expired and revoked refresh tokens");
+        LOG.info("Purged expired and revoked refresh tokens");
     }
 }

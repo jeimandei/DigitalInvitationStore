@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class RequestLoggingFilter implements GlobalFilter, Ordered {
 
-    private static final Logger log = LoggerFactory.getLogger(RequestLoggingFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RequestLoggingFilter.class);
 
     @Override
     public int getOrder() {
@@ -37,7 +37,7 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
                     : 0;
             long latencyMs = System.currentTimeMillis() - start;
 
-            log.info("{} {} -> {} | status={} latency={}ms",
+            LOG.info("{} {} -> {} | status={} latency={}ms",
                     method, path, upstream, status, latencyMs);
         });
     }

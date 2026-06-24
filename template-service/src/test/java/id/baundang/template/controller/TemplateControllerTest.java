@@ -1,11 +1,8 @@
 package id.baundang.template.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import id.baundang.common.ApiResponse;
-import id.baundang.common.PagedResponse;
 import id.baundang.template.config.AdminHeaderFilter;
 import id.baundang.template.dto.TemplateDTO;
-import id.baundang.template.dto.TemplateListDTO;
 import id.baundang.template.dto.TemplateRequest;
 import id.baundang.template.repository.BibleVerseRepository;
 import id.baundang.template.service.TemplateService;
@@ -27,8 +24,11 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
         value = TemplateController.class,

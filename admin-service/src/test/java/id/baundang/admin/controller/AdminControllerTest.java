@@ -7,7 +7,6 @@ import id.baundang.admin.client.TemplateAdminClient;
 import id.baundang.admin.config.GatewayHeaderFilter;
 import id.baundang.admin.dto.DashboardStats;
 import id.baundang.admin.dto.PagedResult;
-import id.baundang.admin.entity.AdminNote;
 import id.baundang.admin.repository.AdminNoteRepository;
 import id.baundang.admin.service.AdminDashboardService;
 import id.baundang.admin.service.CsvExportService;
@@ -23,11 +22,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
         value = AdminController.class,

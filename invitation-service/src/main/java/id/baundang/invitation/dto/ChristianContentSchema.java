@@ -30,7 +30,9 @@ public record ChristianContentSchema(
         String churchTime
 ) {
     public static ChristianContentSchema from(JsonNode content) {
-        if (content == null || !content.hasNonNull("christian")) return null;
+        if (content == null || !content.hasNonNull("christian")) {
+            return null;
+        }
         JsonNode c = content.get("christian");
         JsonNode v = c.path("bibleVerse");
         return new ChristianContentSchema(

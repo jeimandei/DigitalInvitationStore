@@ -8,5 +8,6 @@ import java.util.UUID;
 
 public interface GuestbookEntryRepository extends JpaRepository<GuestbookEntry, UUID> {
     List<GuestbookEntry> findAllByInvitationIdAndApprovedTrueOrderByCreatedAtDesc(UUID invitationId);
+
     List<GuestbookEntry> findAllByInvitationIdOrderByCreatedAtDesc(UUID invitationId);
 }

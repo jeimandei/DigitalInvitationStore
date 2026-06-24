@@ -9,5 +9,6 @@ import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
     Page<Order> findAllByBuyerId(UUID buyerId, Pageable pageable);
+
     boolean existsByOrderNumber(String orderNumber);
 }

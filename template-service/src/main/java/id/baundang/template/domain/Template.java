@@ -2,7 +2,17 @@ package id.baundang.template.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.Type;
 
 import java.time.Instant;
@@ -55,30 +65,92 @@ public class Template {
     private List<TemplateFeature> features = new ArrayList<>();
 
     public enum Category { GENERAL, CHRISTIAN }
+
     public enum StylePreset { GRACE, COVENANT, EDEN, GLORIA }
 
     public Template() {}
 
-    public UUID getId()                        { return id; }
-    public String getName()                    { return name; }
-    public String getSlug()                    { return slug; }
-    public String getDescription()             { return description; }
-    public Category getCategory()              { return category; }
-    public StylePreset getStylePreset()        { return stylePreset; }
-    public short getPriceLevel()               { return priceLevel; }
-    public String getThumbnailUrl()            { return thumbnailUrl; }
-    public JsonNode getConfig()                { return config; }
-    public boolean isActive()                  { return active; }
-    public Instant getCreatedAt()              { return createdAt; }
-    public List<TemplateFeature> getFeatures() { return features; }
+    public UUID getId() {
+        return id;
+    }
 
-    public void setName(String v)             { this.name = v; }
-    public void setSlug(String v)             { this.slug = v; }
-    public void setDescription(String v)      { this.description = v; }
-    public void setCategory(Category v)       { this.category = v; }
-    public void setStylePreset(StylePreset v) { this.stylePreset = v; }
-    public void setPriceLevel(short v)        { this.priceLevel = v; }
-    public void setThumbnailUrl(String v)     { this.thumbnailUrl = v; }
-    public void setConfig(JsonNode v)         { this.config = v; }
-    public void setActive(boolean v)          { this.active = v; }
+    public String getName() {
+        return name;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public StylePreset getStylePreset() {
+        return stylePreset;
+    }
+
+    public short getPriceLevel() {
+        return priceLevel;
+    }
+
+    public String getThumbnailUrl() {
+        return thumbnailUrl;
+    }
+
+    public JsonNode getConfig() {
+        return config;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public List<TemplateFeature> getFeatures() {
+        return features;
+    }
+
+    public void setName(String v) {
+        this.name = v;
+    }
+
+    public void setSlug(String v) {
+        this.slug = v;
+    }
+
+    public void setDescription(String v) {
+        this.description = v;
+    }
+
+    public void setCategory(Category v) {
+        this.category = v;
+    }
+
+    public void setStylePreset(StylePreset v) {
+        this.stylePreset = v;
+    }
+
+    public void setPriceLevel(short v) {
+        this.priceLevel = v;
+    }
+
+    public void setThumbnailUrl(String v) {
+        this.thumbnailUrl = v;
+    }
+
+    public void setConfig(JsonNode v) {
+        this.config = v;
+    }
+
+    public void setActive(boolean v) {
+        this.active = v;
+    }
 }

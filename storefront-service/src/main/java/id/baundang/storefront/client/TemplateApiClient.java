@@ -13,7 +13,7 @@ import java.util.List;
 @Component
 public class TemplateApiClient {
 
-    private static final Logger log = LoggerFactory.getLogger(TemplateApiClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TemplateApiClient.class);
 
     private final RestClient restClient;
 
@@ -29,7 +29,9 @@ public class TemplateApiClient {
                     .retrieve()
                     .body(JsonNode.class);
 
-            if (body == null) return TemplatePage.empty();
+            if (body == null) {
+                return TemplatePage.empty();
+            }
 
             JsonNode data = body.has("data") ? body.get("data") : body;
 
@@ -40,7 +42,7 @@ public class TemplateApiClient {
 
             return new TemplatePage(content, page, size, totalElements, totalPages, last);
         } catch (RestClientException e) {
-            log.warn("Template service unavailable, returning empty page: {}", e.getMessage());
+            LOG.warn("Template service unavailable, returning empty page: {}", e.getMessage());
             return TemplatePage.empty();
         }
     }
@@ -56,7 +58,9 @@ public class TemplateApiClient {
     }
 
     private List<TemplateSummaryDTO> parseContent(JsonNode contentNode) {
-        if (contentNode == null || !contentNode.isArray()) return Collections.emptyList();
+        if (contentNode == null || !contentNode.isArray()) {
+            return Collections.emptyList();
+        }
 
         return contentNode.findValues("id").isEmpty()
                 ? Collections.emptyList()

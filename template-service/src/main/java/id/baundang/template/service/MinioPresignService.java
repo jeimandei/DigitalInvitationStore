@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MinioPresignService {
 
-    private static final Logger log = LoggerFactory.getLogger(MinioPresignService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MinioPresignService.class);
 
     private final MinioClient minioClient;
 
@@ -37,7 +37,7 @@ public class MinioPresignService {
                             .expiry(expiryMinutes, TimeUnit.MINUTES)
                             .build());
         } catch (Exception e) {
-            log.error("Failed to generate presigned URL for object {}: {}", objectKey, e.getMessage());
+            LOG.error("Failed to generate presigned URL for object {}: {}", objectKey, e.getMessage());
             throw new IllegalStateException("Could not generate preview URL", e);
         }
     }

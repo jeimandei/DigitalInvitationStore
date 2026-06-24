@@ -19,8 +19,9 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
         value = PaymentController.class,
@@ -47,7 +48,8 @@ class PaymentControllerTest {
         when(paymentService.charge(any())).thenReturn(response);
 
         String body = objectMapper.writeValueAsString(
-                new id.baundang.payment.dto.ChargeRequest(orderId, 100000L, "Budi & Sari", "budi@email.com", "+628123456789")
+                new id.baundang.payment.dto.ChargeRequest(
+                        orderId, 100000L, "Budi & Sari", "budi@email.com", "+628123456789")
         );
 
         mockMvc.perform(post("/api/v1/payments/charge")

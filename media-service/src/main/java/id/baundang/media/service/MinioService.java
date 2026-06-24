@@ -2,8 +2,14 @@ package id.baundang.media.service;
 
 import id.baundang.common.exception.ValidationException;
 import id.baundang.media.config.MediaProperties;
-import id.baundang.media.dto.*;
-import io.minio.*;
+import id.baundang.media.dto.PresignDownloadResponse;
+import id.baundang.media.dto.PresignUploadRequest;
+import id.baundang.media.dto.PresignUploadResponse;
+import id.baundang.media.dto.UploadedObjectResponse;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -137,13 +143,19 @@ public class MinioService {
     }
 
     private String sanitizeFilename(String filename) {
-        if (filename == null) return "file";
+        if (filename == null) {
+            return "file";
+        }
         return filename.replaceAll("[^a-zA-Z0-9.\\-_]", "_").toLowerCase();
     }
 
     private String bucketForKey(String objectKey) {
-        if (objectKey.startsWith("couples/")) return couplesBucket;
-        if (objectKey.startsWith("admin/"))   return adminBucket;
+        if (objectKey.startsWith("couples/")) {
+            return couplesBucket;
+        }
+        if (objectKey.startsWith("admin/")) {
+            return adminBucket;
+        }
         return templatesBucket;
     }
 }

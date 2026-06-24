@@ -36,18 +36,18 @@ public class InvitationPageController {
         model.addAttribute("content", content);
 
         // Convenience fields extracted from JSONB for use in templates
-        model.addAttribute("coupleName",    textOf(content, "coupleName", slug));
+        model.addAttribute("coupleName", textOf(content, "coupleName", slug));
         model.addAttribute("brideFullName", textOf(content, "brideFullName", ""));
         model.addAttribute("groomFullName", textOf(content, "groomFullName", ""));
-        model.addAttribute("akadDate",      textOf(content, "akadDate", ""));
-        model.addAttribute("akadTime",      textOf(content, "akadTime", ""));
-        model.addAttribute("akadVenue",     textOf(content, "akadVenue", ""));
+        model.addAttribute("akadDate", textOf(content, "akadDate", ""));
+        model.addAttribute("akadTime", textOf(content, "akadTime", ""));
+        model.addAttribute("akadVenue", textOf(content, "akadVenue", ""));
         model.addAttribute("receptionDate", textOf(content, "receptionDate", ""));
         model.addAttribute("receptionTime", textOf(content, "receptionTime", ""));
-        model.addAttribute("receptionVenue",textOf(content, "receptionVenue", ""));
-        model.addAttribute("loveStory",     textOf(content, "loveStory", ""));
+        model.addAttribute("receptionVenue", textOf(content, "receptionVenue", ""));
+        model.addAttribute("loveStory", textOf(content, "loveStory", ""));
         model.addAttribute("coverPhotoUrl", textOf(content, "coverPhotoUrl", ""));
-        model.addAttribute("mapsEmbedUrl",  textOf(content, "mapsEmbedUrl", ""));
+        model.addAttribute("mapsEmbedUrl", textOf(content, "mapsEmbedUrl", ""));
         model.addAttribute("events", extractEvents(content));
         model.addAttribute("christian", ChristianContentSchema.from(content));
 
@@ -60,9 +60,13 @@ public class InvitationPageController {
 
     private List<EventDTO> extractEvents(JsonNode content) {
         List<EventDTO> events = new ArrayList<>();
-        if (content == null || !content.hasNonNull("events")) return events;
+        if (content == null || !content.hasNonNull("events")) {
+            return events;
+        }
         JsonNode arr = content.get("events");
-        if (!arr.isArray()) return events;
+        if (!arr.isArray()) {
+            return events;
+        }
         for (JsonNode item : arr) {
             events.add(EventDTO.from(item));
         }

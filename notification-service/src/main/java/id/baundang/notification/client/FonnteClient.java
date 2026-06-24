@@ -43,7 +43,9 @@ public class FonnteClient {
 
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public void sendBulk(List<String> targets, String message) {
-        if (targets == null || targets.isEmpty()) return;
+        if (targets == null || targets.isEmpty()) {
+            return;
+        }
         rateLimiter.acquire();
         String joined = String.join(",", targets);
         try {

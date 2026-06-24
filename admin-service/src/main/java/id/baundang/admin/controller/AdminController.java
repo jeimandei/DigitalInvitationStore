@@ -4,7 +4,9 @@ import id.baundang.admin.client.InvitationAdminClient;
 import id.baundang.admin.client.NotificationAdminClient;
 import id.baundang.admin.client.OrderAdminClient;
 import id.baundang.admin.client.TemplateAdminClient;
-import id.baundang.admin.dto.*;
+import id.baundang.admin.dto.BroadcastRequest;
+import id.baundang.admin.dto.OrderDTO;
+import id.baundang.admin.dto.PagedResult;
 import id.baundang.admin.entity.AdminNote;
 import id.baundang.admin.repository.AdminNoteRepository;
 import id.baundang.admin.service.AdminDashboardService;
@@ -14,10 +16,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -66,7 +71,9 @@ public class AdminController {
             model.addAttribute("notes",
                     noteRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc("ORDER", id.toString()));
         });
-        if (!model.containsAttribute("order")) return "redirect:/admin/orders";
+        if (!model.containsAttribute("order")) {
+            return "redirect:/admin/orders";
+        }
         return "admin/orders/detail";
     }
 

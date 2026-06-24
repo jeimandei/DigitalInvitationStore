@@ -2,7 +2,6 @@ package id.baundang.admin.service;
 
 import id.baundang.admin.client.InvitationAdminClient;
 import id.baundang.admin.client.OrderAdminClient;
-import id.baundang.admin.dto.GuestbookEntryDTO;
 import id.baundang.admin.dto.OrderDTO;
 import id.baundang.admin.dto.PagedResult;
 import lombok.RequiredArgsConstructor;

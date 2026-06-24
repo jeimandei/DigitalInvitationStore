@@ -2,7 +2,10 @@ package id.baundang.order.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.baundang.order.config.GatewayHeaderFilter;
-import id.baundang.order.dto.*;
+import id.baundang.order.dto.CreateOrderRequest;
+import id.baundang.order.dto.CreateOrderResponse;
+import id.baundang.order.dto.OrderDTO;
+import id.baundang.order.dto.OrderRevisionDTO;
 import id.baundang.order.service.OrderService;
 import id.baundang.order.service.RevisionService;
 import org.junit.jupiter.api.Test;
@@ -21,10 +24,11 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
         value = OrderController.class,

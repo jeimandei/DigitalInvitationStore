@@ -1,6 +1,10 @@
 package id.baundang.notification.messaging;
 
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,12 +40,35 @@ public class QueueConfig {
 
     // --- queues ---
 
-    @Bean Queue notifOrderPaidQueue()        { return QueueBuilder.durable("notification.order.paid").build(); }
-    @Bean Queue notifOrderRevisedQueue()     { return QueueBuilder.durable("notification.order.revised").build(); }
-    @Bean Queue notifRsvpSubmittedQueue()    { return QueueBuilder.durable("notification.rsvp.submitted").build(); }
-    @Bean Queue notifInvitationExpiringQueue() { return QueueBuilder.durable("notification.invitation.expiring").build(); }
-    @Bean Queue notifGiftConfirmedQueue()          { return QueueBuilder.durable("notification.gift.confirmed").build(); }
-    @Bean Queue notifRevisionCompletedQueue()      { return QueueBuilder.durable("notification.revision.completed").build(); }
+    @Bean
+    Queue notifOrderPaidQueue() {
+        return QueueBuilder.durable("notification.order.paid").build();
+    }
+
+    @Bean
+    Queue notifOrderRevisedQueue() {
+        return QueueBuilder.durable("notification.order.revised").build();
+    }
+
+    @Bean
+    Queue notifRsvpSubmittedQueue() {
+        return QueueBuilder.durable("notification.rsvp.submitted").build();
+    }
+
+    @Bean
+    Queue notifInvitationExpiringQueue() {
+        return QueueBuilder.durable("notification.invitation.expiring").build();
+    }
+
+    @Bean
+    Queue notifGiftConfirmedQueue() {
+        return QueueBuilder.durable("notification.gift.confirmed").build();
+    }
+
+    @Bean
+    Queue notifRevisionCompletedQueue() {
+        return QueueBuilder.durable("notification.revision.completed").build();
+    }
 
     // --- bindings ---
 
@@ -61,8 +88,10 @@ public class QueueConfig {
     }
 
     @Bean
-    Binding invitationExpiringBinding(Queue notifInvitationExpiringQueue, TopicExchange invitationsTopicExchange) {
-        return BindingBuilder.bind(notifInvitationExpiringQueue).to(invitationsTopicExchange).with("invitation.expiring");
+    Binding invitationExpiringBinding(Queue notifInvitationExpiringQueue,
+                                      TopicExchange invitationsTopicExchange) {
+        return BindingBuilder.bind(notifInvitationExpiringQueue)
+                .to(invitationsTopicExchange).with("invitation.expiring");
     }
 
     @Bean
@@ -71,7 +100,9 @@ public class QueueConfig {
     }
 
     @Bean
-    Binding revisionCompletedBinding(Queue notifRevisionCompletedQueue, TopicExchange ordersTopicExchange) {
-        return BindingBuilder.bind(notifRevisionCompletedQueue).to(ordersTopicExchange).with("revision.completed");
+    Binding revisionCompletedBinding(Queue notifRevisionCompletedQueue,
+                                     TopicExchange ordersTopicExchange) {
+        return BindingBuilder.bind(notifRevisionCompletedQueue)
+                .to(ordersTopicExchange).with("revision.completed");
     }
 }
