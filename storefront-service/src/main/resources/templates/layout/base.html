@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="id">
+<html xmlns:th="http://www.thymeleaf.org" lang="id"
+      th:fragment="dir(title, main-content, head-extra)">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title th:replace="~{::title}">baundang.id</title>
+  <title th:replace="${title}">baundang.id</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
@@ -15,7 +16,7 @@
     .htmx-request .htmx-indicator { opacity: 1; }
   </style>
 
-  <th:block th:replace="~{::head-extra}"></th:block>
+  <th:block th:replace="${head-extra}"></th:block>
 </head>
 <body class="bg-stone-50 text-stone-800 font-sans antialiased">
 
@@ -49,7 +50,7 @@
   </div>
 </nav>
 
-<main th:replace="~{::main-content}"></main>
+<main th:replace="${main-content}"></main>
 
 <footer class="border-t border-stone-100 mt-24 py-10 text-center text-sm text-stone-400">
   <p>&copy; 2025 baundang.id &mdash; Undangan pernikahan digital yang berkesan.</p>
