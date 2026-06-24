@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: dir(title=~{::title},mainContent=~{::main},headExtra=~{::head-extra})}">
+      th:replace="~{layout/base :: dir(title=~{::title},mainContent=~{::main})}">
 
 <title>Pesan Undangan — baundang.id</title>
-<th:block th:fragment="head-extra"></th:block>
 
 <main th:fragment="main-content">
   <section class="max-w-2xl mx-auto px-4 py-16">
