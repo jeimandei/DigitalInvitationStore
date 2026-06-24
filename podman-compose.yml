@@ -140,7 +140,9 @@ services:
       context: ./auth-service
       dockerfile: Containerfile
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
+      SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=auth
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
@@ -181,7 +183,9 @@ services:
       context: ./storefront-service
       dockerfile: Containerfile
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
+      SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
     ports:
       - "8082:8082"
     volumes:
@@ -209,7 +213,9 @@ services:
       context: ./template-service
       dockerfile: Containerfile
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
+      SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=template
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
@@ -246,7 +252,9 @@ services:
       context: ./invitation-service
       dockerfile: Containerfile
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
+      SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=invitation
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
@@ -287,7 +295,9 @@ services:
       context: ./order-service
       dockerfile: Containerfile
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
+      SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=orders
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
@@ -324,7 +334,9 @@ services:
       context: ./payment-service
       dockerfile: Containerfile
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
+      SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=payment
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
@@ -363,7 +375,9 @@ services:
       context: ./notification-service
       dockerfile: Containerfile
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
+      SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=notification
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
@@ -405,7 +419,9 @@ services:
       context: ./admin-service
       dockerfile: Containerfile
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
+      SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/baundang?currentSchema=admin
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
@@ -438,7 +454,9 @@ services:
       context: ./media-service
       dockerfile: Containerfile
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
+      SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
@@ -470,7 +488,9 @@ services:
       context: ./gateway-service
       dockerfile: Containerfile
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@config-server:8888
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      SPRING_CLOUD_CONFIG_USERNAME: ${CONFIG_SERVER_USER}
+      SPRING_CLOUD_CONFIG_PASSWORD: ${CONFIG_SERVER_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8080:8080"
