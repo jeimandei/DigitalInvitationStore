@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: dir(title=~{::title},main-content=~{::main},head-extra=~{::head-extra})}">
+      th:replace="~{layout/base :: dir(title=~{::title},mainContent=~{::main},headExtra=~{::head-extra})}">
 
 <title th:text="${template.name} + ' — baundang.id'">Template Detail — baundang.id</title>
 <th:block th:fragment="head-extra"></th:block>
