@@ -4,6 +4,8 @@ networks:
   baundang-network:
     driver: bridge
     enable_ipv6: false
+  public:
+    driver: bridge
 
 volumes:
   postgres-data:
@@ -475,7 +477,7 @@ services:
       - ./logs/gateway-service:/app/logs/gateway-service
     security_opt:
       - label=disable
-    networks: [baundang-network]
+    networks: [baundang-network, public]
     deploy:
       resources:
         limits:
