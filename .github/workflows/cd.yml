@@ -330,7 +330,7 @@ jobs:
             echo "→ Stopping and removing old containers"
             for svc in $SERVICES; do
               podman compose --env-file .env stop \$svc || true
-              podman compose --env-file .env rm -f \$svc || true
+              podman rm -f "baundang-\$svc" 2>/dev/null || true
             done
 
             echo "→ Starting new containers"
