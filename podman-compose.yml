@@ -2,10 +2,9 @@ version: "3.9"
 
 networks:
   baundang-network:
-    driver: bridge
-    enable_ipv6: false
+    external: true
   public:
-    driver: bridge
+    external: true
 
 volumes:
   postgres-data:
