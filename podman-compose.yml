@@ -113,10 +113,12 @@ services:
       dockerfile: Containerfile
     environment:
       SERVER_PORT: 8888
-      CONFIG_GIT_URI: ${CONFIG_GIT_URI:-file:///config-repo}
-      CONFIG_GIT_DEFAULT_LABEL: ${CONFIG_GIT_DEFAULT_LABEL:-main}
+      SPRING_PROFILES_ACTIVE: native
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: file:///config-repo
       SPRING_SECURITY_USER_NAME: ${CONFIG_SERVER_USER}
       SPRING_SECURITY_USER_PASSWORD: ${CONFIG_SERVER_PASSWORD}
+    volumes:
+      - ./config-repo:/config-repo:ro
     ports:
       - "8888:8888"
     security_opt:
