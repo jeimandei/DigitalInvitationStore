@@ -42,7 +42,10 @@ public class MinioConfig {
 
     @PostConstruct
     void ensureBuckets() {
-        MinioClient client = minioClient();
+        MinioClient client = MinioClient.builder()
+                .endpoint(endpoint)
+                .credentials(accessKey, secretKey)
+                .build();
         ensureBucket(client, templatesBucket, publicReadPolicy(templatesBucket));
         ensureBucket(client, couplesBucket, null);
         ensureBucket(client, adminBucket, null);
