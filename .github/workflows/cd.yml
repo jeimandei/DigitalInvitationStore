@@ -272,8 +272,14 @@ jobs:
               podman compose --env-file .env build \$svc
             done
 
-            echo "→ Recreating containers: ${{ inputs.services }}"
-            podman compose --env-file .env up -d --force-recreate --no-deps ${{ inputs.services }}
+            echo "→ Stopping and removing containers: ${{ inputs.services }}"
+            for svc in ${{ inputs.services }}; do
+              podman compose --env-file .env stop \$svc || true
+              podman compose --env-file .env rm -f \$svc || true
+            done
+
+            echo "→ Starting containers: ${{ inputs.services }}"
+            podman compose --env-file .env up -d --no-deps ${{ inputs.services }}
 
             # Restart gateway so it picks up any route/dependency changes
             echo "→ Restarting gateway"
