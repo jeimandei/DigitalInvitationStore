@@ -16,7 +16,7 @@ services:
   # ── Infrastructure ────────────────────────────────────────────────────────
 
   postgres:
-    container_name: postgres
+    container_name: baundang-postgres
     image: docker.io/postgres:16-alpine
     # Raise max_connections to 200 (9 services × pool-size 5 = 45 active, headroom for spikes)
     command: postgres -N 200
@@ -41,7 +41,7 @@ services:
       retries: 5
 
   redis:
-    container_name: redis
+    container_name: baundang-redis
     image: docker.io/redis:7-alpine
     command: redis-server --requirepass ${REDIS_PASSWORD}
     security_opt:
@@ -59,7 +59,7 @@ services:
       retries: 5
 
   rabbitmq:
-    container_name: rabbitmq
+    container_name: baundang-rabbitmq
     image: docker.io/rabbitmq:3.13-management-alpine
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
@@ -85,7 +85,7 @@ services:
       retries: 5
 
   minio:
-    container_name: minio
+    container_name: baundang-minio
     image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
@@ -113,7 +113,7 @@ services:
   # ── Platform ──────────────────────────────────────────────────────────────
 
   config-server:
-    container_name: config-server
+    container_name: baundang-config-server
     build:
       context: ./config-server
       dockerfile: Containerfile
@@ -143,7 +143,7 @@ services:
       retries: 10
 
   auth-service:
-    container_name: auth-service
+    container_name: baundang-auth-service
     build:
       context: ./auth-service
       dockerfile: Containerfile
@@ -187,7 +187,7 @@ services:
         condition: service_started
 
   storefront-service:
-    container_name: storefront-service
+    container_name: baundang-storefront-service
     build:
       context: ./storefront-service
       dockerfile: Containerfile
@@ -218,7 +218,7 @@ services:
         condition: service_healthy
 
   template-service:
-    container_name: template-service
+    container_name: baundang-template-service
     build:
       context: ./template-service
       dockerfile: Containerfile
@@ -258,7 +258,7 @@ services:
         condition: service_started
 
   invitation-service:
-    container_name: invitation-service
+    container_name: baundang-invitation-service
     build:
       context: ./invitation-service
       dockerfile: Containerfile
@@ -302,7 +302,7 @@ services:
         condition: service_started
 
   order-service:
-    container_name: order-service
+    container_name: baundang-order-service
     build:
       context: ./order-service
       dockerfile: Containerfile
@@ -342,7 +342,7 @@ services:
         condition: service_started
 
   payment-service:
-    container_name: payment-service
+    container_name: baundang-payment-service
     build:
       context: ./payment-service
       dockerfile: Containerfile
@@ -384,7 +384,7 @@ services:
         condition: service_started
 
   notification-service:
-    container_name: notification-service
+    container_name: baundang-notification-service
     build:
       context: ./notification-service
       dockerfile: Containerfile
@@ -429,7 +429,7 @@ services:
         condition: service_started
 
   admin-service:
-    container_name: admin-service
+    container_name: baundang-admin-service
     build:
       context: ./admin-service
       dockerfile: Containerfile
@@ -465,7 +465,7 @@ services:
         condition: service_started
 
   media-service:
-    container_name: media-service
+    container_name: baundang-media-service
     build:
       context: ./media-service
       dockerfile: Containerfile
@@ -500,7 +500,7 @@ services:
         condition: service_started
 
   gateway:
-    container_name: gateway
+    container_name: baundang-gateway
     build:
       context: ./gateway-service
       dockerfile: Containerfile
