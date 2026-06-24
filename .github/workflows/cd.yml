@@ -26,7 +26,7 @@ on:
         description: >
           Space-separated service name(s) — required for build-service and restart-service.
           Valid names: postgres, redis, rabbitmq, minio, config-server,
-          auth, storefront, template, invitation, order, payment, notification, media, gateway, admin
+          auth-service, storefront-service, template-service, invitation-service, order-service, payment-service, notification-service, media-service, gateway, admin-service
         required: false
         type: string
         default: ''
@@ -198,16 +198,16 @@ jobs:
             echo "→ Building container images one by one"
             for svc in \
               config-server \
-              auth \
-              storefront \
-              template \
-              invitation \
-              order \
-              payment \
-              notification \
-              media \
+              auth-service \
+              storefront-service \
+              template-service \
+              invitation-service \
+              order-service \
+              payment-service \
+              notification-service \
+              media-service \
               gateway \
-              admin; do
+              admin-service; do
               echo "  → Building \$svc"
               podman compose --env-file .env build \$svc
             done
