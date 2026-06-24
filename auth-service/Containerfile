@@ -21,6 +21,8 @@ RUN mkdir -p /secrets/auth && chown appuser:appgroup /secrets/auth
 
 WORKDIR /app
 
+RUN mkdir -p /app/logs/auth-service && chown appuser:appgroup /app/logs/auth-service
+
 COPY --from=builder --chown=appuser:appgroup /workspace/target/extracted/dependencies/ ./
 COPY --from=builder --chown=appuser:appgroup /workspace/target/extracted/spring-boot-loader/ ./
 COPY --from=builder --chown=appuser:appgroup /workspace/target/extracted/snapshot-dependencies/ ./

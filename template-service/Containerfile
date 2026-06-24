@@ -19,6 +19,8 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
+RUN mkdir -p /app/logs/template-service && chown appuser:appgroup /app/logs/template-service
+
 COPY --from=builder --chown=appuser:appgroup /workspace/target/extracted/dependencies/ ./
 COPY --from=builder --chown=appuser:appgroup /workspace/target/extracted/spring-boot-loader/ ./
 COPY --from=builder --chown=appuser:appgroup /workspace/target/extracted/snapshot-dependencies/ ./

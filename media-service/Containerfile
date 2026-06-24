@@ -7,6 +7,8 @@ RUN ./mvnw -pl media-service -am -q -DskipTests package && \
 FROM eclipse-temurin:25-jre-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
+
+RUN mkdir -p /app/logs/media-service && chown appuser:appgroup /app/logs/media-service
 COPY --from=builder --chown=appuser:appgroup /build/media-service/target/extracted/dependencies/ ./
 COPY --from=builder --chown=appuser:appgroup /build/media-service/target/extracted/spring-boot-loader/ ./
 COPY --from=builder --chown=appuser:appgroup /build/media-service/target/extracted/snapshot-dependencies/ ./
