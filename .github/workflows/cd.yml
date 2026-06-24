@@ -141,7 +141,7 @@ jobs:
                 exit 1
               fi
             fi
-            export JAVA_HOME=\$(dirname \$(dirname \$(readlink -f \$(which java 2>/dev/null || echo /usr/lib/jvm/java-21-openjdk-amd64/bin/java))))
+            export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
             export PATH="\$JAVA_HOME/bin:\$PATH"
             echo "→ Java: \$(java -version 2>&1 | head -1)"
 
@@ -236,9 +236,9 @@ jobs:
 
             [ -f .env ] || { echo "✗ .env not found — run deploy-env first"; exit 1; }
 
-            export JAVA_HOME=\$(dirname \$(dirname \$(readlink -f \$(which java 2>/dev/null || echo /usr/lib/jvm/java-21-openjdk-amd64/bin/java))))
+            export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
             export PATH="\$JAVA_HOME/bin:\$PATH"
-            command -v java >/dev/null 2>&1 || { echo "✗ Java not found — run full-deploy first to auto-install"; exit 1; }
+            command -v java >/dev/null 2>&1 || { echo "✗ Java 21 not found at \$JAVA_HOME — run full-deploy first to auto-install"; exit 1; }
 
             echo "→ Pulling branch ${{ inputs.branch }}"
             git fetch origin
