@@ -4,6 +4,8 @@ networks:
   baundang-network:
     driver: bridge
     enable_ipv6: false
+  public:
+    driver: bridge
 
 volumes:
   postgres-data:
@@ -305,7 +307,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8080:8080"
-    networks: [baundang-network]
+    networks: [baundang-network, public]
     depends_on:
       config-server:
         condition: service_healthy
