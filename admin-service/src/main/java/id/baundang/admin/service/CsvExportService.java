@@ -4,6 +4,7 @@ import id.baundang.admin.client.InvitationAdminClient;
 import id.baundang.admin.client.OrderAdminClient;
 import id.baundang.admin.dto.OrderDTO;
 import id.baundang.admin.dto.PagedResult;
+import id.baundang.admin.dto.RsvpEntryDTO;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -48,20 +48,21 @@ public class CsvExportService {
     }
 
     public void exportRsvp(Writer writer, UUID invitationId) throws IOException {
-        List<Map<String, Object>> rsvpList = invitationClient.listRsvp(invitationId);
+        List<RsvpEntryDTO> rsvpList = invitationClient.listRsvp(invitationId);
 
         CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setHeader("Nama", "Kehadiran", "Jumlah Tamu", "Pesan", "Waktu")
+                .setHeader("Nama", "No. HP", "Kehadiran", "Jumlah Tamu", "Pesan", "Waktu")
                 .build();
 
         try (CSVPrinter printer = new CSVPrinter(writer, format)) {
-            for (Map<String, Object> rsvp : rsvpList) {
+            for (RsvpEntryDTO rsvp : rsvpList) {
                 printer.printRecord(
-                        rsvp.getOrDefault("guestName", ""),
-                        rsvp.getOrDefault("attendance", ""),
-                        rsvp.getOrDefault("guestCount", ""),
-                        rsvp.getOrDefault("message", ""),
-                        rsvp.getOrDefault("submittedAt", "")
+                        rsvp.guestName(),
+                        rsvp.phone(),
+                        rsvp.attendance(),
+                        rsvp.guestCount(),
+                        rsvp.message(),
+                        rsvp.submittedAt() != null ? rsvp.submittedAt().toString() : ""
                 );
             }
         }
