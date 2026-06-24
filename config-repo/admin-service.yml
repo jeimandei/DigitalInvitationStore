@@ -11,6 +11,13 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    default-schema: admin
+    schemas: admin
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: admin
 
 app:
   services:
@@ -19,13 +26,3 @@ app:
     template-service: ${TEMPLATE_SERVICE_URL:http://template-service:8083}
     auth-service: ${AUTH_SERVICE_URL:http://auth-service:8081}
     notification-service: ${NOTIFICATION_SERVICE_URL:http://notification-service:8087}
-
-spring:
-  flyway:
-    default-schema: admin
-    schemas: admin
-    create-schemas: true
-  jpa:
-    properties:
-      hibernate:
-        default_schema: admin

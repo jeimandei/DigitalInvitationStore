@@ -10,6 +10,14 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  flyway:
+    default-schema: media
+    schemas: media
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: media
 
 app:
   minio:
@@ -26,13 +34,3 @@ app:
     max-image-bytes: 10485760
     max-video-bytes: 52428800
     allowed-types: image/jpeg,image/png,image/webp,video/mp4
-
-spring:
-  flyway:
-    default-schema: media
-    schemas: media
-    create-schemas: true
-  jpa:
-    properties:
-      hibernate:
-        default_schema: media

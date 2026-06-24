@@ -2,14 +2,19 @@ server:
   port: 8083
 
 spring:
-  jpa:
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  flyway:
+    default-schema: template
+    schemas: template
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: template
 
 app:
   minio:
@@ -18,13 +23,3 @@ app:
     secret-key: ${MINIO_ROOT_PASSWORD}
     bucket: ${MINIO_BUCKET:baundang-templates}
     presign-expiry-minutes: 60
-
-spring:
-  flyway:
-    default-schema: template
-    schemas: template
-    create-schemas: true
-  jpa:
-    properties:
-      hibernate:
-        default_schema: template

@@ -13,6 +13,14 @@ spring:
           auth: true
           starttls:
             enable: true
+  flyway:
+    default-schema: notification
+    schemas: notification
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: notification
 
 app:
   fonnte:
@@ -26,13 +34,3 @@ app:
     orders-exchange: baundang.orders
     invitations-exchange: baundang.invitations
     rsvp-exchange: baundang.rsvp
-
-spring:
-  flyway:
-    default-schema: notification
-    schemas: notification
-    create-schemas: true
-  jpa:
-    properties:
-      hibernate:
-        default_schema: notification

@@ -2,14 +2,18 @@ server:
   port: 8084
 
 spring:
-  thymeleaf:
-    cache: true
-    encoding: UTF-8
-    mode: HTML
   cache:
     type: redis
     redis:
       time-to-live: 300000
+  flyway:
+    default-schema: invitation
+    schemas: invitation
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: invitation
 
 app:
   rabbitmq:
@@ -20,13 +24,3 @@ app:
   midtrans:
     client-key: ${MIDTRANS_CLIENT_KEY}
     snap-js-url: ${MIDTRANS_SNAP_JS_URL:https://app.sandbox.midtrans.com/snap/snap.js}
-
-spring:
-  flyway:
-    default-schema: invitation
-    schemas: invitation
-    create-schemas: true
-  jpa:
-    properties:
-      hibernate:
-        default_schema: invitation
