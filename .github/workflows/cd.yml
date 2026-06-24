@@ -308,7 +308,15 @@ jobs:
       - name: Health check — gateway
         if: inputs.action == 'full-deploy' || (inputs.action == 'build-service' && contains(inputs.services, 'gateway'))
         run: |
-          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
-            "curl -sf http://localhost:1080/actuator/health | grep -q '\"status\":\"UP\"' \
-              && echo '✓ Gateway healthy' \
-              || echo '✗ Gateway not yet healthy (may still be starting)'"
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} "
+            for i in \$(seq 1 24); do
+              if curl -sf http://localhost:1080/actuator/health | grep -q '\"status\":\"UP\"'; then
+                echo \"✓ Gateway healthy (attempt \$i)\";
+                exit 0;
+              fi;
+              echo \"Waiting for gateway... (\$i/24)\";
+              sleep 15;
+            done;
+            echo '✗ Gateway not healthy after 6 minutes';
+            exit 1;
+          "
