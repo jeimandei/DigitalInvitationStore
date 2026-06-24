@@ -28,7 +28,14 @@ spring:
         - id: storefront
           uri: http://storefront-service:8082
           predicates:
-            - Path=/, /templates/**, /pesan/**, /tentang/**, /sitemap.xml, /robots.txt
+            - Path=/, /templates, /templates/**, /pesan/**, /tentang/**, /sitemap.xml, /robots.txt
+
+        - id: admin-ui
+          uri: http://admin-service:8088
+          predicates:
+            - Path=/admin, /admin/**
+          filters:
+            - "JwtAuth=ROLE_ADMIN"
 
         - id: template-service
           uri: http://template-service:8083

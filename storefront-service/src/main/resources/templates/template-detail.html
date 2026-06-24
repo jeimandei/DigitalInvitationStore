@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: __dir__(title=~{::title},main-content=~{::main},head-extra=~{::head-extra})}">
+
+<title th:text="${template.name} + ' — baundang.id'">Template Detail — baundang.id</title>
+<th:block th:fragment="head-extra"></th:block>
+
+<main th:fragment="main-content">
+  <section class="max-w-4xl mx-auto px-4 py-16">
+
+    <nav class="text-sm text-stone-400 mb-8">
+      <a href="/templates" class="hover:text-rose-500">Template</a>
+      <span class="mx-2">/</span>
+      <span th:text="${template.name}" class="text-stone-700">Nama Template</span>
+    </nav>
+
+    <div class="grid md:grid-cols-2 gap-12 items-start">
+
+      <div class="rounded-2xl overflow-hidden bg-stone-100 aspect-[3/4]">
+        <img th:if="${template.thumbnailUrl != null and !template.thumbnailUrl.isEmpty()}"
+             th:src="${template.thumbnailUrl}"
+             th:alt="${template.name}"
+             class="w-full h-full object-cover"/>
+        <div th:unless="${template.thumbnailUrl != null and !template.thumbnailUrl.isEmpty()}"
+             class="w-full h-full flex items-center justify-center text-stone-300">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
+      </div>
+
+      <div>
+        <span th:text="${template.category}"
+              class="inline-block text-xs font-semibold uppercase tracking-widest text-rose-500 mb-3">Kategori</span>
+        <h1 th:text="${template.name}" class="text-3xl font-bold text-stone-800 mb-4">Nama Template</h1>
+
+        <div class="flex items-center gap-2 mb-8">
+          <span class="text-stone-500 text-sm">Paket</span>
+          <span th:text="'Level ' + ${template.priceLevel}"
+                class="bg-rose-50 text-rose-600 text-xs font-semibold px-3 py-1 rounded-full">Level 1</span>
+        </div>
+
+        <div class="space-y-3 mb-10 text-stone-600 text-sm">
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>Desain eksklusif sesuai tema</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>Konfirmasi kehadiran (RSVP)</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>Buku tamu digital</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>Link undangan yang bisa dibagikan</span>
+          </div>
+        </div>
+
+        <a th:href="'/pesan?template=' + ${template.slug}"
+           class="block w-full text-center bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+          Pesan Template Ini
+        </a>
+        <a href="/templates"
+           class="block w-full text-center mt-3 text-stone-500 hover:text-stone-700 text-sm py-2 transition-colors">
+          ← Lihat template lainnya
+        </a>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+</html>
