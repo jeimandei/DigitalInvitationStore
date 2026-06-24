@@ -101,10 +101,10 @@ jobs:
     steps:
 
       # ── Validate inputs ────────────────────────────────────────────────────
-      - name: Validate — services required for build-service / restart-service
-        if: (inputs.action == 'build-service' || inputs.action == 'restart-service') && inputs.services == ''
+      - name: Validate — services required for restart-service
+        if: inputs.action == 'restart-service' && inputs.services == ''
         run: |
-          echo "::error::The 'services' input is required for action '${{ inputs.action }}'."
+          echo "::error::The 'services' input is required for action 'restart-service'."
           exit 1
 
       # ── Checkout (needed for deploy-config rsync) ─────────────────────────
