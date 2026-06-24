@@ -123,7 +123,7 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - ./logs/auth-service:/app/logs/auth-service:z
+      - ./logs/auth-service:/app/logs/auth-service
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -146,7 +146,7 @@ services:
     ports:
       - "8082:8082"
     volumes:
-      - ./logs/storefront-service:/app/logs/storefront-service:z
+      - ./logs/storefront-service:/app/logs/storefront-service
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -168,7 +168,7 @@ services:
     ports:
       - "8083:8083"
     volumes:
-      - ./logs/template-service:/app/logs/template-service:z
+      - ./logs/template-service:/app/logs/template-service
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -196,7 +196,7 @@ services:
     ports:
       - "8084:8084"
     volumes:
-      - ./logs/invitation-service:/app/logs/invitation-service:z
+      - ./logs/invitation-service:/app/logs/invitation-service
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -224,7 +224,7 @@ services:
     ports:
       - "8085:8085"
     volumes:
-      - ./logs/order-service:/app/logs/order-service:z
+      - ./logs/order-service:/app/logs/order-service
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -252,7 +252,7 @@ services:
     ports:
       - "8086:8086"
     volumes:
-      - ./logs/payment-service:/app/logs/payment-service:z
+      - ./logs/payment-service:/app/logs/payment-service
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -283,7 +283,7 @@ services:
     ports:
       - "8087:8087"
     volumes:
-      - ./logs/notification-service:/app/logs/notification-service:z
+      - ./logs/notification-service:/app/logs/notification-service
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -307,7 +307,7 @@ services:
     ports:
       - "8088:8088"
     volumes:
-      - ./logs/admin-service:/app/logs/admin-service:z
+      - ./logs/admin-service:/app/logs/admin-service
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -331,7 +331,7 @@ services:
     ports:
       - "8089:8089"
     volumes:
-      - ./logs/media-service:/app/logs/media-service:z
+      - ./logs/media-service:/app/logs/media-service
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -353,7 +353,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./logs/gateway-service:/app/logs/gateway-service:z
+      - ./logs/gateway-service:/app/logs/gateway-service
     security_opt:
       - label=disable
     networks: [baundang-network]
