@@ -4,12 +4,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import id.baundang.common.ApiResponse;
 import id.baundang.payment.dto.ChargeRequest;
 import id.baundang.payment.dto.ChargeResponse;
+import id.baundang.payment.dto.GiftChargeRequest;
+import id.baundang.payment.dto.GiftChargeResponse;
 import id.baundang.payment.dto.SnapTokenResponse;
+import id.baundang.payment.service.GiftPaymentService;
 import id.baundang.payment.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
@@ -19,6 +27,7 @@ import java.util.UUID;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final GiftPaymentService giftPaymentService;
 
     @PostMapping("/charge")
     public ResponseEntity<ApiResponse<ChargeResponse>> charge(
@@ -35,5 +44,11 @@ public class PaymentController {
     public ResponseEntity<Void> webhook(@RequestBody JsonNode notification) {
         paymentService.handleWebhook(notification);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/gifts/charge")
+    public ResponseEntity<ApiResponse<GiftChargeResponse>> chargeGift(
+            @Valid @RequestBody GiftChargeRequest req) {
+        return ResponseEntity.ok(ApiResponse.ok(giftPaymentService.charge(req)));
     }
 }

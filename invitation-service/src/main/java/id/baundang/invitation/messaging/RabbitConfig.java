@@ -47,6 +47,19 @@ public class RabbitConfig {
     }
 
     @Bean
+    Queue invitationGiftPaidQueue() {
+        return QueueBuilder.durable("invitation.gift.paid").build();
+    }
+
+    @Bean
+    Binding invitationGiftPaidBinding(Queue invitationGiftPaidQueue,
+                                      TopicExchange ordersTopicExchange) {
+        return BindingBuilder.bind(invitationGiftPaidQueue)
+                .to(ordersTopicExchange)
+                .with("gift.paid");
+    }
+
+    @Bean
     Jackson2JsonMessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }

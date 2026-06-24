@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import id.baundang.payment.config.GatewayHeaderFilter;
 import id.baundang.payment.dto.ChargeResponse;
 import id.baundang.payment.dto.SnapTokenResponse;
+import id.baundang.payment.service.GiftPaymentService;
 import id.baundang.payment.service.PaymentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,9 @@ class PaymentControllerTest {
 
     @MockBean
     PaymentService paymentService;
+
+    @MockBean
+    GiftPaymentService giftPaymentService;
 
     @MockBean
     GatewayHeaderFilter gatewayHeaderFilter;

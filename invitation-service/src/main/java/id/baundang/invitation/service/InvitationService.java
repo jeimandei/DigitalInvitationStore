@@ -3,9 +3,15 @@ package id.baundang.invitation.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import id.baundang.common.exception.NotFoundException;
+import id.baundang.invitation.domain.Gift;
 import id.baundang.invitation.domain.GiftAccount;
 import id.baundang.invitation.domain.GiftConfirmation;
+import id.baundang.invitation.domain.Guest;
+import id.baundang.invitation.dto.AttendanceDTO;
+import id.baundang.invitation.dto.CheckInRequest;
 import id.baundang.invitation.dto.EventDTO;
+import id.baundang.invitation.dto.GuestDTO;
+import id.baundang.invitation.dto.GuestRequest;
 import id.baundang.invitation.domain.GuestbookEntry;
 import id.baundang.invitation.domain.Invitation;
 import id.baundang.invitation.domain.Invitation.InvitationStatus;
@@ -13,7 +19,9 @@ import id.baundang.invitation.domain.RsvpResponse;
 import id.baundang.invitation.dto.*;
 import id.baundang.invitation.repository.GiftAccountRepository;
 import id.baundang.invitation.repository.GiftConfirmationRepository;
+import id.baundang.invitation.repository.GiftRepository;
 import id.baundang.invitation.repository.GuestbookEntryRepository;
+import id.baundang.invitation.repository.GuestRepository;
 import id.baundang.invitation.repository.InvitationRepository;
 import id.baundang.invitation.repository.RsvpResponseRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +35,11 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,11 +49,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class InvitationService {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final InvitationRepository invitationRepository;
     private final RsvpResponseRepository rsvpRepository;
     private final GuestbookEntryRepository guestbookRepository;
     private final GiftAccountRepository giftAccountRepository;
     private final GiftConfirmationRepository giftConfirmationRepository;
+    private final GuestRepository guestRepository;
+    private final GiftRepository giftRepository;
     private final RabbitTemplate rabbitTemplate;
 
     // Self-injection so @Cacheable on getBySlug is honoured when called internally
@@ -250,5 +264,93 @@ public class InvitationService {
                 .filter(wa -> !wa.isBlank())
                 .distinct()
                 .toList();
+    }
+
+    // ── Guest list & check-in ─────────────────────────────────────────────────
+
+    @Transactional
+    public GuestDTO addGuest(UUID invitationId, GuestRequest req) {
+        Invitation inv = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> new NotFoundException("Invitation not found: " + invitationId));
+        Guest guest = new Guest();
+        guest.setInvitation(inv);
+        guest.setName(req.name());
+        guest.setInviteCode(generateInviteCode());
+        guest.setGroupLabel(req.groupLabel());
+        guest.setTableNo(req.tableNo());
+        guest.setAllottedCount(req.allottedCount());
+        return GuestDTO.from(guestRepository.save(guest));
+    }
+
+    @Transactional(readOnly = true)
+    public List<GuestDTO> listGuests(UUID invitationId) {
+        return guestRepository.findAllByInvitationIdOrderByNameAsc(invitationId)
+                .stream().map(GuestDTO::from).toList();
+    }
+
+    @Transactional
+    public void removeGuest(UUID invitationId, UUID guestId) {
+        Guest guest = guestRepository.findById(guestId)
+                .orElseThrow(() -> new NotFoundException("Guest not found: " + guestId));
+        if (!guest.getInvitation().getId().equals(invitationId)) {
+            throw new NotFoundException("Guest does not belong to this invitation");
+        }
+        guestRepository.delete(guest);
+    }
+
+    @Transactional(readOnly = true)
+    public GuestDTO getGuestByCode(String inviteCode) {
+        return GuestDTO.from(guestRepository.findByInviteCode(inviteCode)
+                .orElseThrow(() -> new NotFoundException("Guest not found: " + inviteCode)));
+    }
+
+    @Transactional
+    public GuestDTO checkIn(String inviteCode, CheckInRequest req) {
+        Guest guest = guestRepository.findByInviteCode(inviteCode)
+                .orElseThrow(() -> new NotFoundException("Guest not found: " + inviteCode));
+        guest.setCheckedInAt(Instant.now());
+        guest.setCheckedInCount(req.actualCount());
+        return GuestDTO.from(guestRepository.save(guest));
+    }
+
+    @Transactional(readOnly = true)
+    public AttendanceDTO getAttendance(UUID invitationId) {
+        long totalInvited = guestRepository.countByInvitationId(invitationId);
+        long totalAllotted = guestRepository.sumAllottedByInvitationId(invitationId);
+        long checkedInGuests = guestRepository.countCheckedInByInvitationId(invitationId);
+        long checkedInCount = guestRepository.sumCheckedInCountByInvitationId(invitationId);
+        return AttendanceDTO.of(totalInvited, totalAllotted, checkedInGuests, checkedInCount);
+    }
+
+    private String generateInviteCode() {
+        byte[] bytes = new byte[12];
+        SECURE_RANDOM.nextBytes(bytes);
+        return HexFormat.of().formatHex(bytes);
+    }
+
+    // ── Digital gift payments (Phase 2) ──────────────────────────────────────
+
+    @Transactional
+    public void recordGiftPaid(UUID invitationId, String senderName, long amount,
+                               String message, String midtransOrderId) {
+        Invitation inv = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> new NotFoundException("Invitation not found: " + invitationId));
+        Gift gift = new Gift();
+        gift.setInvitation(inv);
+        gift.setSenderName(senderName);
+        gift.setAmount(amount);
+        gift.setMessage(message);
+        gift.setMidtransOrderId(midtransOrderId);
+        giftRepository.save(gift);
+        log.info("Recorded digital gift {} for invitation {}", midtransOrderId, invitationId);
+    }
+
+    @Transactional(readOnly = true)
+    public GiftSummaryDTO getGiftSummary(UUID invitationId) {
+        long count = giftRepository.countByInvitationId(invitationId);
+        long total = giftRepository.sumAmountByInvitationId(invitationId);
+        List<GiftEntryDTO> entries = giftRepository.findAllByInvitationIdOrderByCreatedAtDesc(invitationId)
+                .stream().map(GiftEntryDTO::from).toList();
+        return new GiftSummaryDTO(count, total, entries);
     }
 }

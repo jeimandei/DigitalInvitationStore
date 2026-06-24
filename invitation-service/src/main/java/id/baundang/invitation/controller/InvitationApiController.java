@@ -3,12 +3,31 @@ package id.baundang.invitation.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import id.baundang.common.ApiResponse;
 import id.baundang.invitation.domain.Invitation.InvitationStatus;
-import id.baundang.invitation.dto.*;
+import id.baundang.invitation.dto.AttendanceDTO;
+import id.baundang.invitation.dto.CheckInRequest;
+import id.baundang.invitation.dto.EventDTO;
+import id.baundang.invitation.dto.ExpiringInvitationDTO;
+import id.baundang.invitation.dto.GiftAccountDTO;
+import id.baundang.invitation.dto.GiftAccountRequest;
+import id.baundang.invitation.dto.GiftConfirmRequest;
+import id.baundang.invitation.dto.GiftSummaryDTO;
+import id.baundang.invitation.dto.GuestDTO;
+import id.baundang.invitation.dto.GuestRequest;
+import id.baundang.invitation.dto.GuestbookEntryDTO;
+import id.baundang.invitation.dto.GuestbookRequest;
+import id.baundang.invitation.dto.RsvpRequest;
 import jakarta.validation.Valid;
 import id.baundang.invitation.service.InvitationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
@@ -98,5 +117,49 @@ public class InvitationApiController {
                                              @RequestBody GiftAccountRequest req) {
         invitationService.setGiftAccount(id, req);
         return ApiResponse.ok(null, "Informasi hadiah diperbarui");
+    }
+
+    // ── Guest list & check-in ─────────────────────────────────────────────────
+
+    @PostMapping("/api/v1/admin/invitations/{id}/guests")
+    public ApiResponse<GuestDTO> addGuest(@PathVariable UUID id,
+                                           @Valid @RequestBody GuestRequest req) {
+        return ApiResponse.ok(invitationService.addGuest(id, req), "Tamu berhasil ditambahkan");
+    }
+
+    @GetMapping("/api/v1/admin/invitations/{id}/guests")
+    public ApiResponse<List<GuestDTO>> listGuests(@PathVariable UUID id) {
+        return ApiResponse.ok(invitationService.listGuests(id));
+    }
+
+    @DeleteMapping("/api/v1/admin/invitations/{id}/guests/{guestId}")
+    public ApiResponse<Void> removeGuest(@PathVariable UUID id, @PathVariable UUID guestId) {
+        invitationService.removeGuest(id, guestId);
+        return ApiResponse.ok(null, "Tamu dihapus");
+    }
+
+    @GetMapping("/api/v1/invitations/{slug}/checkin/{code}")
+    public ApiResponse<GuestDTO> getGuestForCheckIn(@PathVariable String slug,
+                                                     @PathVariable String code) {
+        return ApiResponse.ok(invitationService.getGuestByCode(code));
+    }
+
+    @PostMapping("/api/v1/invitations/{slug}/checkin/{code}")
+    public ApiResponse<GuestDTO> checkIn(@PathVariable String slug,
+                                          @PathVariable String code,
+                                          @Valid @RequestBody CheckInRequest req) {
+        return ApiResponse.ok(invitationService.checkIn(code, req), "Check-in berhasil");
+    }
+
+    @GetMapping("/api/v1/admin/invitations/{id}/attendance")
+    public ApiResponse<AttendanceDTO> getAttendance(@PathVariable UUID id) {
+        return ApiResponse.ok(invitationService.getAttendance(id));
+    }
+
+    // ── Digital gifts ─────────────────────────────────────────────────────────
+
+    @GetMapping("/api/v1/admin/invitations/{id}/gifts")
+    public ApiResponse<GiftSummaryDTO> getGiftSummary(@PathVariable UUID id) {
+        return ApiResponse.ok(invitationService.getGiftSummary(id));
     }
 }
