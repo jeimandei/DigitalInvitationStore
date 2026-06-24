@@ -35,6 +35,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminController {
 
+    @GetMapping("/login")
+    public String loginPage() {
+        return "admin/login";
+    }
+
     private final AdminDashboardService dashboardService;
     private final OrderAdminClient orderClient;
     private final InvitationAdminClient invitationClient;

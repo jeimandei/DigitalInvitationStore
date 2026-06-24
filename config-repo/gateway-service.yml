@@ -30,6 +30,11 @@ spring:
           predicates:
             - Path=/, /templates, /templates/**, /pesan/**, /tentang/**, /sitemap.xml, /robots.txt
 
+        - id: admin-login
+          uri: http://admin-service:1088
+          predicates:
+            - Path=/admin/login
+
         - id: admin-ui
           uri: http://admin-service:1088
           predicates:

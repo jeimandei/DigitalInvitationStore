@@ -10,9 +10,12 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import java.net.URI;
 
 import java.util.List;
 
@@ -46,6 +49,15 @@ public class JwtAuthGatewayFilterFactory
             String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
             if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
+                // Redirect browser navigation to login page; return 401 for API/HTMX calls
+                String accept = exchange.getRequest().getHeaders().getFirst(HttpHeaders.ACCEPT);
+                boolean isBrowserNav = accept != null && accept.contains(MediaType.TEXT_HTML_VALUE)
+                        && exchange.getRequest().getHeaders().getFirst("HX-Request") == null;
+                if (isBrowserNav) {
+                    exchange.getResponse().setStatusCode(HttpStatus.FOUND);
+                    exchange.getResponse().getHeaders().setLocation(URI.create("/admin/login"));
+                    return exchange.getResponse().setComplete();
+                }
                 return unauthorized(exchange, "Missing or malformed Authorization header");
             }
 
