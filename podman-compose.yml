@@ -166,14 +166,10 @@ services:
       start_period: 60s
       retries: 5
     depends_on:
-      config-server:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - config-server
+      - postgres
+      - redis
+      - rabbitmq
 
   storefront:
     build:
@@ -200,8 +196,7 @@ services:
       start_period: 60s
       retries: 5
     depends_on:
-      config-server:
-        condition: service_healthy
+      - config-server
 
   template:
     build:
@@ -233,12 +228,9 @@ services:
       start_period: 60s
       retries: 5
     depends_on:
-      config-server:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
+      - config-server
+      - postgres
+      - minio
 
   invitation:
     build:
@@ -272,14 +264,10 @@ services:
       start_period: 60s
       retries: 5
     depends_on:
-      config-server:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - config-server
+      - postgres
+      - redis
+      - rabbitmq
 
   order:
     build:
@@ -311,12 +299,9 @@ services:
       start_period: 60s
       retries: 5
     depends_on:
-      config-server:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - config-server
+      - postgres
+      - rabbitmq
 
   payment:
     build:
@@ -350,12 +335,9 @@ services:
       start_period: 60s
       retries: 5
     depends_on:
-      config-server:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - config-server
+      - postgres
+      - rabbitmq
 
   notification:
     build:
@@ -392,12 +374,9 @@ services:
       start_period: 60s
       retries: 5
     depends_on:
-      config-server:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - config-server
+      - postgres
+      - rabbitmq
 
   admin:
     build:
@@ -427,10 +406,8 @@ services:
       start_period: 60s
       retries: 5
     depends_on:
-      config-server:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
+      - config-server
+      - postgres
 
   media:
     build:
@@ -459,10 +436,8 @@ services:
       start_period: 60s
       retries: 5
     depends_on:
-      config-server:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
+      - config-server
+      - minio
 
   gateway:
     build:
@@ -490,23 +465,13 @@ services:
       start_period: 60s
       retries: 5
     depends_on:
-      config-server:
-        condition: service_healthy
-      auth:
-        condition: service_healthy
-      storefront:
-        condition: service_healthy
-      template:
-        condition: service_healthy
-      invitation:
-        condition: service_healthy
-      order:
-        condition: service_healthy
-      payment:
-        condition: service_healthy
-      notification:
-        condition: service_healthy
-      admin:
-        condition: service_healthy
-      media:
-        condition: service_healthy
+      - config-server
+      - auth
+      - storefront
+      - template
+      - invitation
+      - order
+      - payment
+      - notification
+      - admin
+      - media
