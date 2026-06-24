@@ -114,6 +114,7 @@ services:
 
   config-server:
     container_name: baundang-config-server
+    image: baundang/config-server
     build:
       context: ./config-server
       dockerfile: Containerfile
@@ -144,6 +145,7 @@ services:
 
   auth-service:
     container_name: baundang-auth-service
+    image: baundang/auth-service
     build:
       context: ./auth-service
       dockerfile: Containerfile
@@ -188,6 +190,7 @@ services:
 
   storefront-service:
     container_name: baundang-storefront-service
+    image: baundang/storefront-service
     build:
       context: ./storefront-service
       dockerfile: Containerfile
@@ -219,6 +222,7 @@ services:
 
   template-service:
     container_name: baundang-template-service
+    image: baundang/template-service
     build:
       context: ./template-service
       dockerfile: Containerfile
@@ -259,6 +263,7 @@ services:
 
   invitation-service:
     container_name: baundang-invitation-service
+    image: baundang/invitation-service
     build:
       context: ./invitation-service
       dockerfile: Containerfile
@@ -303,6 +308,7 @@ services:
 
   order-service:
     container_name: baundang-order-service
+    image: baundang/order-service
     build:
       context: ./order-service
       dockerfile: Containerfile
@@ -343,6 +349,7 @@ services:
 
   payment-service:
     container_name: baundang-payment-service
+    image: baundang/payment-service
     build:
       context: ./payment-service
       dockerfile: Containerfile
@@ -385,6 +392,7 @@ services:
 
   notification-service:
     container_name: baundang-notification-service
+    image: baundang/notification-service
     build:
       context: ./notification-service
       dockerfile: Containerfile
@@ -430,6 +438,7 @@ services:
 
   admin-service:
     container_name: baundang-admin-service
+    image: baundang/admin-service
     build:
       context: ./admin-service
       dockerfile: Containerfile
@@ -466,6 +475,7 @@ services:
 
   media-service:
     container_name: baundang-media-service
+    image: baundang/media-service
     build:
       context: ./media-service
       dockerfile: Containerfile
@@ -501,6 +511,7 @@ services:
 
   gateway:
     container_name: baundang-gateway
+    image: baundang/gateway
     build:
       context: ./gateway-service
       dockerfile: Containerfile
