@@ -74,7 +74,7 @@ public class AdminController {
             model.addAttribute("order", order);
             model.addAttribute("revisions", orderClient.getRevisions(id));
             model.addAttribute("notes",
-                    noteRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc("ORDER", id.toString()));
+                    noteRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc("ORDER", id));
         });
         if (!model.containsAttribute("order")) {
             return "redirect:/admin/orders";
