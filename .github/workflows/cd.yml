@@ -127,32 +127,27 @@ jobs:
           ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
             set -e
 
-            # ── Pre-flight checks ──────────────────────────────────────────
-            echo "→ Checking required tools"
-
-            # Source login profile so PATH picks up Java/SDKMAN installed by the user
-            [ -f /etc/profile ] && . /etc/profile || true
-            [ -f "$HOME/.profile" ] && . "$HOME/.profile" || true
-            [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc" || true
-            # Also add common JDK locations explicitly
-            export PATH="$PATH:/usr/lib/jvm/java-21-openjdk-amd64/bin:/usr/lib/jvm/temurin-21/bin:$HOME/.sdkman/candidates/java/current/bin"
-
-            if ! command -v java >/dev/null 2>&1; then
-              echo "→ Java not found — installing JDK 21"
+            # ── Install OpenJDK 21 if missing ──────────────────────────────
+            if ! /usr/lib/jvm/java-21-openjdk-amd64/bin/java -version >/dev/null 2>&1 && \
+               ! command -v java >/dev/null 2>&1; then
+              echo "→ OpenJDK 21 not found — installing"
               if command -v apt-get >/dev/null 2>&1; then
                 sudo apt-get update -q
                 sudo apt-get install -y -q openjdk-21-jdk
               elif command -v dnf >/dev/null 2>&1; then
                 sudo dnf install -y java-21-openjdk-devel
               else
-                echo "✗ Cannot auto-install Java — unsupported package manager. Install JDK 21 manually."
+                echo "✗ Cannot auto-install Java — unsupported package manager"
                 exit 1
               fi
             fi
-            java -version
+            export JAVA_HOME=\$(dirname \$(dirname \$(readlink -f \$(which java 2>/dev/null || echo /usr/lib/jvm/java-21-openjdk-amd64/bin/java))))
+            export PATH="\$JAVA_HOME/bin:\$PATH"
+            echo "→ Java: \$(java -version 2>&1 | head -1)"
 
+            # ── Pre-flight checks ──────────────────────────────────────────
             command -v podman >/dev/null 2>&1 || { echo "✗ podman not found"; exit 1; }
-            podman compose version >/dev/null 2>&1 || { echo "✗ podman compose plugin not found — install podman-compose or the compose plugin"; exit 1; }
+            podman compose version >/dev/null 2>&1 || { echo "✗ podman compose plugin not found"; exit 1; }
 
             # ── Repo bootstrap or update ───────────────────────────────────
             if [ ! -d "${{ env.DEPLOY_DIR }}/.git" ]; then
@@ -241,10 +236,8 @@ jobs:
 
             [ -f .env ] || { echo "✗ .env not found — run deploy-env first"; exit 1; }
 
-            [ -f /etc/profile ] && . /etc/profile || true
-            [ -f "$HOME/.profile" ] && . "$HOME/.profile" || true
-            [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc" || true
-            export PATH="$PATH:/usr/lib/jvm/java-21-openjdk-amd64/bin:/usr/lib/jvm/temurin-21/bin:$HOME/.sdkman/candidates/java/current/bin"
+            export JAVA_HOME=\$(dirname \$(dirname \$(readlink -f \$(which java 2>/dev/null || echo /usr/lib/jvm/java-21-openjdk-amd64/bin/java))))
+            export PATH="\$JAVA_HOME/bin:\$PATH"
             command -v java >/dev/null 2>&1 || { echo "✗ Java not found — run full-deploy first to auto-install"; exit 1; }
 
             echo "→ Pulling branch ${{ inputs.branch }}"
