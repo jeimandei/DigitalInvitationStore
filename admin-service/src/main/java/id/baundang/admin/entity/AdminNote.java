@@ -27,8 +27,8 @@ public class AdminNote {
     @Column(name = "entity_type", nullable = false, length = 50)
     private String entityType;
 
-    @Column(name = "entity_id", nullable = false, length = 100)
-    private String entityId;
+    @Column(name = "entity_id", nullable = false, columnDefinition = "uuid")
+    private UUID entityId;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String note;

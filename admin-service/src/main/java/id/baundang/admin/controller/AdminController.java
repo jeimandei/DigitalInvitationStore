@@ -99,7 +99,7 @@ public class AdminController {
         String adminId = (String) request.getAttribute("userId");
         AdminNote n = new AdminNote();
         n.setEntityType("ORDER");
-        n.setEntityId(id.toString());
+        n.setEntityId(id);
         n.setNote(note);
         n.setCreatedBy(adminId != null ? adminId : "admin");
         noteRepository.save(n);
@@ -346,7 +346,7 @@ public class AdminController {
             String adminId = (String) request.getAttribute("userId");
             AdminNote n = new AdminNote();
             n.setEntityType("ORDER");
-            n.setEntityId(orderId.toString());
+            n.setEntityId(orderId);
             n.setNote(note);
             n.setCreatedBy(adminId != null ? adminId : "admin");
             noteRepository.save(n);

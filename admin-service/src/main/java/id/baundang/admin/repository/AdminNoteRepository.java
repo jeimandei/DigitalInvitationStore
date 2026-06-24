@@ -7,5 +7,5 @@ import java.util.List;
 import java.util.UUID;
 
 public interface AdminNoteRepository extends JpaRepository<AdminNote, UUID> {
-    List<AdminNote> findByEntityTypeAndEntityIdOrderByCreatedAtDesc(String entityType, String entityId);
+    List<AdminNote> findByEntityTypeAndEntityIdOrderByCreatedAtDesc(String entityType, UUID entityId);
 }
