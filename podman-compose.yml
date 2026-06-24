@@ -24,6 +24,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d baundang"]
@@ -34,6 +36,8 @@ services:
   redis:
     image: redis:7-alpine
     command: redis-server --requirepass ${REDIS_PASSWORD}
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
@@ -51,6 +55,8 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
@@ -69,6 +75,8 @@ services:
       - "9001:9001"
     volumes:
       - minio-data:/data
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
@@ -90,6 +98,8 @@ services:
       SPRING_SECURITY_USER_PASSWORD: ${CONFIG_SERVER_PASSWORD}
     ports:
       - "8888:8888"
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health | grep -q UP"]
@@ -114,6 +124,8 @@ services:
       - "8081:8081"
     volumes:
       - ./logs/auth-service:/app/logs/auth-service:z
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -135,6 +147,8 @@ services:
       - "8082:8082"
     volumes:
       - ./logs/storefront-service:/app/logs/storefront-service:z
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -155,6 +169,8 @@ services:
       - "8083:8083"
     volumes:
       - ./logs/template-service:/app/logs/template-service:z
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -181,6 +197,8 @@ services:
       - "8084:8084"
     volumes:
       - ./logs/invitation-service:/app/logs/invitation-service:z
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -207,6 +225,8 @@ services:
       - "8085:8085"
     volumes:
       - ./logs/order-service:/app/logs/order-service:z
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -233,6 +253,8 @@ services:
       - "8086:8086"
     volumes:
       - ./logs/payment-service:/app/logs/payment-service:z
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -262,6 +284,8 @@ services:
       - "8087:8087"
     volumes:
       - ./logs/notification-service:/app/logs/notification-service:z
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -284,6 +308,8 @@ services:
       - "8088:8088"
     volumes:
       - ./logs/admin-service:/app/logs/admin-service:z
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -306,6 +332,8 @@ services:
       - "8089:8089"
     volumes:
       - ./logs/media-service:/app/logs/media-service:z
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     depends_on:
       config-server:
@@ -326,6 +354,8 @@ services:
       - "8080:8080"
     volumes:
       - ./logs/gateway-service:/app/logs/gateway-service:z
+    security_opt:
+      - label=disable
     networks: [baundang-network]
     depends_on:
       config-server:
