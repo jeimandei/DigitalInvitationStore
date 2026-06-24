@@ -149,16 +149,18 @@ jobs:
             podman compose version >/dev/null 2>&1 || { echo "✗ podman compose plugin not found"; exit 1; }
 
             # ── Repo bootstrap or update ───────────────────────────────────
+            REPO_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
             if [ ! -d "${{ env.DEPLOY_DIR }}/.git" ]; then
               echo "→ No git repo found — initialising in ${{ env.DEPLOY_DIR }}"
               mkdir -p "${{ env.DEPLOY_DIR }}"
               git -C "${{ env.DEPLOY_DIR }}" init
-              git -C "${{ env.DEPLOY_DIR }}" remote add origin https://github.com/${{ github.repository }}.git
+              git -C "${{ env.DEPLOY_DIR }}" remote add origin "\$REPO_URL"
               git -C "${{ env.DEPLOY_DIR }}" fetch origin
               git -C "${{ env.DEPLOY_DIR }}" checkout -b ${{ inputs.branch }} --track origin/${{ inputs.branch }}
             else
               echo "→ Pulling branch ${{ inputs.branch }}"
               cd "${{ env.DEPLOY_DIR }}"
+              git remote set-url origin "\$REPO_URL"
               git fetch origin
               git checkout ${{ inputs.branch }}
               git reset --hard origin/${{ inputs.branch }}
@@ -241,6 +243,7 @@ jobs:
             export PATH="\$JAVA_HOME/bin:\$PATH"
 
             echo "→ Pulling branch ${{ inputs.branch }}"
+            git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
             git fetch origin
             git checkout ${{ inputs.branch }}
             git reset --hard origin/${{ inputs.branch }}
