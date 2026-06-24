@@ -1,10 +1,10 @@
-FROM eclipse-temurin:25-jdk-alpine AS builder
+FROM docker.io/eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /build
 COPY . .
 RUN ./mvnw -pl order-service -am -q -DskipTests package && \
     java -Djarmode=layertools -jar order-service/target/order-service-*.jar extract --destination order-service/target/extracted
 
-FROM eclipse-temurin:25-jre-alpine
+FROM docker.io/eclipse-temurin:21-jre-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 
