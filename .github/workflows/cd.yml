@@ -22,11 +22,55 @@ on:
           - deploy-config
           - deploy-env
 
+      svc_config_server:
+        description: 'config-server'
+        type: boolean
+        default: false
+      svc_auth:
+        description: 'auth-service'
+        type: boolean
+        default: false
+      svc_storefront:
+        description: 'storefront-service'
+        type: boolean
+        default: false
+      svc_template:
+        description: 'template-service'
+        type: boolean
+        default: false
+      svc_invitation:
+        description: 'invitation-service'
+        type: boolean
+        default: false
+      svc_order:
+        description: 'order-service'
+        type: boolean
+        default: false
+      svc_payment:
+        description: 'payment-service'
+        type: boolean
+        default: false
+      svc_notification:
+        description: 'notification-service'
+        type: boolean
+        default: false
+      svc_admin:
+        description: 'admin-service'
+        type: boolean
+        default: false
+      svc_media:
+        description: 'media-service'
+        type: boolean
+        default: false
+      svc_gateway:
+        description: 'gateway'
+        type: boolean
+        default: false
+
       services:
         description: >
-          Space-separated service name(s) — required for build-service and restart-service.
-          Valid names: postgres, redis, rabbitmq, minio, config-server,
-          auth-service, storefront-service, template-service, invitation-service, order-service, payment-service, notification-service, media-service, gateway, admin-service
+          (restart-service only) Space-separated service name(s).
+          For build-service use the checkboxes above.
         required: false
         type: string
         default: ''
@@ -226,30 +270,50 @@ jobs:
       # ══════════════════════════════════════════════════════════════════════
       # build-service — git pull + mvn package + rebuild specific service(s)
       # ══════════════════════════════════════════════════════════════════════
-      - name: "[build-service] Rebuild and restart ${{ inputs.services }}"
+      - name: "[build-service] Rebuild and restart selected services"
         if: inputs.action == 'build-service'
         run: |
-          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
+          # Build service list from checked boolean inputs
+          SERVICES=""
+          ${{ inputs.svc_config_server == true && 'SERVICES="$SERVICES config-server"' || '' }}
+          ${{ inputs.svc_auth         == true && 'SERVICES="$SERVICES auth-service"'     || '' }}
+          ${{ inputs.svc_storefront   == true && 'SERVICES="$SERVICES storefront-service"' || '' }}
+          ${{ inputs.svc_template     == true && 'SERVICES="$SERVICES template-service"' || '' }}
+          ${{ inputs.svc_invitation   == true && 'SERVICES="$SERVICES invitation-service"' || '' }}
+          ${{ inputs.svc_order        == true && 'SERVICES="$SERVICES order-service"'    || '' }}
+          ${{ inputs.svc_payment      == true && 'SERVICES="$SERVICES payment-service"'  || '' }}
+          ${{ inputs.svc_notification == true && 'SERVICES="$SERVICES notification-service"' || '' }}
+          ${{ inputs.svc_admin        == true && 'SERVICES="$SERVICES admin-service"'    || '' }}
+          ${{ inputs.svc_media        == true && 'SERVICES="$SERVICES media-service"'    || '' }}
+          ${{ inputs.svc_gateway      == true && 'SERVICES="$SERVICES gateway"'          || '' }}
+          SERVICES="${SERVICES# }"  # trim leading space
+
+          if [ -z "$SERVICES" ]; then
+            echo "✗ No services selected — tick at least one checkbox"
+            exit 1
+          fi
+          echo "→ Selected services: $SERVICES"
+
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} SERVICES="$SERVICES" << 'ENDSSH'
             set -e
-            cd "${{ env.DEPLOY_DIR }}"
+            cd "$DEPLOY_DIR"
 
             [ -f .env ] || { echo "✗ .env not found — run deploy-env first"; exit 1; }
 
             command -v java >/dev/null 2>&1 || { echo "✗ Java not found — run full-deploy first to auto-install"; exit 1; }
             export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-            [ -x "\$JAVA_HOME/bin/javac" ] || { echo "✗ javac not found at \$JAVA_HOME — is java-21-openjdk-devel installed?"; exit 1; }
-            export PATH="\$JAVA_HOME/bin:\$PATH"
+            [ -x "$JAVA_HOME/bin/javac" ] || { echo "✗ javac not found at $JAVA_HOME — is java-21-openjdk-devel installed?"; exit 1; }
+            export PATH="$JAVA_HOME/bin:$PATH"
 
-            echo "→ Pulling branch ${{ inputs.branch }}"
+            echo "→ Pulling latest code"
             git fetch origin
-            git checkout ${{ inputs.branch }}
-            git reset --hard origin/${{ inputs.branch }}
+            git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)
 
             echo "→ Ensuring log directories exist"
             for svc in auth-service storefront-service template-service invitation-service \
                        order-service payment-service notification-service media-service \
                        gateway-service admin-service; do
-              mkdir -p "logs/\$svc" && chmod 777 "logs/\$svc"
+              mkdir -p "logs/$svc" && chmod 777 "logs/$svc"
             done
 
             podman network exists baundang-network || podman network create baundang-network
@@ -257,36 +321,34 @@ jobs:
 
             chmod +x ./mvnw
 
-            # Build only the modules needed for the requested services
-            echo "→ Building JARs for: ${{ inputs.services }}"
-            for svc in ${{ inputs.services }}; do
-              module="\${svc%-service}"
-              [ "\$module" = "gateway" ] && module="gateway"
-              [ "\$module" = "config-server" ] && module="config-server"
-              JAVA_HOME="\$JAVA_HOME" ./mvnw -q -DskipTests -pl "\${module}-service" -am clean package 2>/dev/null \
-                || JAVA_HOME="\$JAVA_HOME" ./mvnw -q -DskipTests -pl "\$module" -am clean package
+            echo "→ Building JARs for: $SERVICES"
+            for svc in $SERVICES; do
+              module="${svc%-service}"
+              [ "$module" = "gateway" ] && module="gateway"
+              [ "$module" = "config-server" ] && module="config-server"
+              JAVA_HOME="$JAVA_HOME" ./mvnw -q -DskipTests -pl "${module}-service" -am clean package 2>/dev/null \
+                || JAVA_HOME="$JAVA_HOME" ./mvnw -q -DskipTests -pl "$module" -am clean package
             done
 
-            echo "→ Rebuilding images: ${{ inputs.services }}"
-            for svc in ${{ inputs.services }}; do
-              podman compose --env-file .env build \$svc
+            echo "→ Rebuilding images"
+            for svc in $SERVICES; do
+              podman compose --env-file .env build $svc
             done
 
-            echo "→ Stopping and removing containers: ${{ inputs.services }}"
-            for svc in ${{ inputs.services }}; do
-              podman compose --env-file .env stop \$svc || true
-              podman compose --env-file .env rm -f \$svc || true
+            echo "→ Stopping and removing old containers"
+            for svc in $SERVICES; do
+              podman compose --env-file .env stop $svc || true
+              podman compose --env-file .env rm -f $svc || true
             done
 
-            echo "→ Starting containers: ${{ inputs.services }}"
-            podman compose --env-file .env up -d --no-deps ${{ inputs.services }}
+            echo "→ Starting new containers"
+            podman compose --env-file .env up -d --no-deps $SERVICES
 
-            # Restart gateway so it picks up any route/dependency changes
             echo "→ Restarting gateway"
             podman compose --env-file .env restart gateway
 
-            echo "✓ Build-service complete"
-          EOF
+            echo "✓ Build-service complete: $SERVICES"
+          ENDSSH
 
       # ══════════════════════════════════════════════════════════════════════
       # restart-service — restart specific service(s) without rebuild
