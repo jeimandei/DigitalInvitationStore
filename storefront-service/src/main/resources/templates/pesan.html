@@ -76,7 +76,7 @@
           <label th:each="tier : ${tiers}"
                  :class="form.paket === [[${tier.name}]] ? 'ring-2 ring-rose-500 bg-rose-50' : 'border border-stone-200'"
                  class="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all"
-                 th:attr="@click='form.paket = \'' + ${tier.name} + '\''"
+                 th:attr="x-on:click=|form.paket = '| + ${tier.name} + |'|"
           >
             <input type="radio" x-model="form.paket" th:value="${tier.name}" class="accent-rose-600"/>
             <div class="flex-1">
