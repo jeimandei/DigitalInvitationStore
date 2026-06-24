@@ -139,8 +139,8 @@ jobs:
                 exit 1
               fi
             fi
-            export JAVA_HOME=\$(find /usr/lib/jvm -maxdepth 1 -type d -name 'java-21-openjdk*' | sort | tail -1)
-            [ -z "\$JAVA_HOME" ] && { echo "✗ Could not locate java-21-openjdk under /usr/lib/jvm"; exit 1; }
+            export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+            [ -x "\$JAVA_HOME/bin/javac" ] || { echo "✗ javac not found at \$JAVA_HOME — is java-21-openjdk-devel installed?"; exit 1; }
             export PATH="\$JAVA_HOME/bin:\$PATH"
             echo "→ Java: \$(java -version 2>&1 | head -1)"
 
@@ -236,8 +236,8 @@ jobs:
             [ -f .env ] || { echo "✗ .env not found — run deploy-env first"; exit 1; }
 
             command -v java >/dev/null 2>&1 || { echo "✗ Java not found — run full-deploy first to auto-install"; exit 1; }
-            export JAVA_HOME=\$(find /usr/lib/jvm -maxdepth 1 -type d -name 'java-21-openjdk*' | sort | tail -1)
-            [ -z "\$JAVA_HOME" ] && { echo "✗ Could not locate java-21-openjdk under /usr/lib/jvm"; exit 1; }
+            export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+            [ -x "\$JAVA_HOME/bin/javac" ] || { echo "✗ javac not found at \$JAVA_HOME — is java-21-openjdk-devel installed?"; exit 1; }
             export PATH="\$JAVA_HOME/bin:\$PATH"
 
             echo "→ Pulling branch ${{ inputs.branch }}"
