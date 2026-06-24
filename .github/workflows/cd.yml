@@ -256,14 +256,28 @@ jobs:
             podman network exists public           || podman network create public
 
             chmod +x ./mvnw
-            echo "→ Building JARs (tests skipped)"
-            JAVA_HOME="\$JAVA_HOME" ./mvnw -q -DskipTests clean package
+
+            # Build only the modules needed for the requested services
+            echo "→ Building JARs for: ${{ inputs.services }}"
+            for svc in ${{ inputs.services }}; do
+              module="\${svc%-service}"
+              [ "\$module" = "gateway" ] && module="gateway"
+              [ "\$module" = "config-server" ] && module="config-server"
+              JAVA_HOME="\$JAVA_HOME" ./mvnw -q -DskipTests -pl "\${module}-service" -am clean package 2>/dev/null \
+                || JAVA_HOME="\$JAVA_HOME" ./mvnw -q -DskipTests -pl "\$module" -am clean package
+            done
 
             echo "→ Rebuilding images: ${{ inputs.services }}"
-            podman compose --env-file .env build ${{ inputs.services }}
+            for svc in ${{ inputs.services }}; do
+              podman compose --env-file .env build \$svc
+            done
 
             echo "→ Recreating containers: ${{ inputs.services }}"
             podman compose --env-file .env up -d --force-recreate --no-deps ${{ inputs.services }}
+
+            # Restart gateway so it picks up any route/dependency changes
+            echo "→ Restarting gateway"
+            podman compose --env-file .env restart gateway
 
             echo "✓ Build-service complete"
           EOF
