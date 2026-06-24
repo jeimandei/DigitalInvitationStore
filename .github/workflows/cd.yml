@@ -1,52 +1,245 @@
-name: CD
+name: CD — Baundang Digital Invitation Store
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: >
+          Action to perform:
+          full-deploy       = git pull + mvn package + podman compose up --build (all services),
+          build-service     = rebuild + restart specific service(s),
+          restart-service   = restart specific service(s) without rebuild,
+          restart-all       = restart every running container,
+          deploy-config     = sync config-repo/ to server and refresh config server,
+          deploy-env        = push .env from ENV_FILE secret to server
+        required: true
+        type: choice
+        options:
+          - full-deploy
+          - build-service
+          - restart-service
+          - restart-all
+          - deploy-config
+          - deploy-env
+
+      services:
+        description: >
+          Space-separated service name(s) — required for build-service and restart-service.
+          Valid names: postgres, redis, rabbitmq, minio, config-server,
+          auth, storefront, template, invitation, order, payment, notification, media, gateway, admin
+        required: false
+        type: string
+        default: ''
+
+      branch:
+        description: 'Git branch to deploy from'
+        required: false
+        type: string
+        default: 'main'
+
+# Prevent concurrent deploys — queue rather than cancel
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  DEPLOY_DIR: ${{ secrets.SSH_PATH }}
+  SSH_HOST:   ${{ secrets.SSH_URL }}
+  SSH_PORT:   ${{ secrets.SSH_PORT }}
+  SSH_USER:   ${{ secrets.SSH_USER }}
 
 jobs:
   deploy:
-    name: Deploy to production
+    name: "${{ inputs.action }}${{ inputs.services != '' && format(' [{0}]', inputs.services) || '' }} @ ${{ inputs.branch }}"
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Load SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Add server to known_hosts
-        run: ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_URL }} >> ~/.ssh/known_hosts
-
-      - name: Deploy over SSH
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_URL:  ${{ secrets.SSH_URL }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          SSH_PATH: ${{ secrets.SSH_PATH }}
+      # ── Validate inputs ────────────────────────────────────────────────────
+      - name: Validate — services required for build-service / restart-service
+        if: (inputs.action == 'build-service' || inputs.action == 'restart-service') && inputs.services == ''
         run: |
-          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_URL" DEPLOY_PATH="$SSH_PATH" 'bash -s' << 'DEPLOY'
-            set -euo pipefail
+          echo "::error::The 'services' input is required for action '${{ inputs.action }}'."
+          exit 1
 
-            cd "$DEPLOY_PATH"
+      # ── Checkout (needed for deploy-config rsync) ─────────────────────────
+      - name: Checkout ${{ inputs.branch }}
+        if: inputs.action == 'deploy-config'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
-            echo "==> Pulling latest code"
-            git pull origin main
+      # ── Setup SSH ──────────────────────────────────────────────────────────
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ env.SSH_PORT }} -H ${{ env.SSH_HOST }} >> ~/.ssh/known_hosts
 
-            echo "==> Building all modules (tests skipped — already passed in CI)"
+      # ══════════════════════════════════════════════════════════════════════
+      # deploy-env — push .env content from GitHub secret to server
+      # Requires secret: ENV_FILE (full content of .env)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: "[deploy-env] Push .env to server"
+        if: inputs.action == 'deploy-env'
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: |
+          printf '%s\n' "$ENV_FILE" | ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
+            "cat > ${{ env.DEPLOY_DIR }}/.env && chmod 600 ${{ env.DEPLOY_DIR }}/.env"
+          echo "✓ .env deployed"
+
+      # ══════════════════════════════════════════════════════════════════════
+      # deploy-config — rsync config-repo/ to server, then refresh config server
+      # Config server reads from the bind-mounted config-repo at runtime.
+      # ══════════════════════════════════════════════════════════════════════
+      - name: "[deploy-config] Sync config-repo/ to server"
+        if: inputs.action == 'deploy-config'
+        run: |
+          rsync -az --delete \
+            -e "ssh -p ${{ env.SSH_PORT }}" \
+            config-repo/ \
+            ${{ env.SSH_USER }}@${{ env.SSH_HOST }}:${{ env.DEPLOY_DIR }}/config-repo/
+          echo "✓ config-repo synced"
+
+      - name: "[deploy-config] Refresh config server & restart gateway"
+        if: inputs.action == 'deploy-config'
+        run: |
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << 'EOF'
+            set -e
+            sleep 2
+            curl -sf -X POST http://localhost:8888/actuator/refresh \
+              -H "Content-Type: application/json" || true
+            echo "✓ Config server refresh triggered"
+            cd ${{ env.DEPLOY_DIR }}
+            podman compose --env-file .env restart gateway
+            echo "✓ gateway restarted"
+          EOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # full-deploy — git pull + mvn package + rebuild all images
+      # ══════════════════════════════════════════════════════════════════════
+      - name: "[full-deploy] Pull code, build JARs & rebuild all containers"
+        if: inputs.action == 'full-deploy'
+        run: |
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
+            set -e
+            if [ ! -d "${{ env.DEPLOY_DIR }}/.git" ]; then
+              echo "→ No git repo found — initialising in ${{ env.DEPLOY_DIR }}"
+              mkdir -p "${{ env.DEPLOY_DIR }}"
+              git -C "${{ env.DEPLOY_DIR }}" init
+              git -C "${{ env.DEPLOY_DIR }}" remote add origin https://github.com/${{ github.repository }}.git
+              git -C "${{ env.DEPLOY_DIR }}" fetch origin
+              git -C "${{ env.DEPLOY_DIR }}" checkout -b ${{ inputs.branch }} --track origin/${{ inputs.branch }}
+            else
+              echo "→ Pulling branch ${{ inputs.branch }}"
+              cd "${{ env.DEPLOY_DIR }}"
+              git fetch origin
+              git checkout ${{ inputs.branch }}
+              git reset --hard origin/${{ inputs.branch }}
+              git clean -fd
+            fi
+            cd "${{ env.DEPLOY_DIR }}"
+            mkdir -p logs && chmod 777 logs
+
+            echo "→ Building all JARs (tests already passed in CI)"
             ./mvnw -q -DskipTests clean package
 
-            echo "==> Pulling updated container images"
-            podman compose -f podman-compose.yml pull
+            echo "→ Building container images one by one"
+            for svc in \
+              config-server \
+              auth \
+              storefront \
+              template \
+              invitation \
+              order \
+              payment \
+              notification \
+              media \
+              gateway \
+              admin; do
+              echo "  → Building \$svc"
+              podman compose --env-file .env build \$svc
+            done
 
-            echo "==> Restarting services"
-            podman compose -f podman-compose.yml up -d --remove-orphans
+            echo "→ Starting all containers"
+            podman compose --env-file .env up -d --remove-orphans
 
-            echo "==> Pruning unused images"
+            echo "→ Pruning unused images"
             podman image prune -f
 
-            echo "==> Deploy complete at $(date) — path: $DEPLOY_PATH"
-          DEPLOY
+            echo "✓ Full deploy complete at \$(date)"
+          EOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # build-service — git pull + mvn package + rebuild specific service(s)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: "[build-service] Rebuild and restart ${{ inputs.services }}"
+        if: inputs.action == 'build-service'
+        run: |
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
+            set -e
+            cd "${{ env.DEPLOY_DIR }}"
+            echo "→ Pulling branch ${{ inputs.branch }}"
+            git fetch origin
+            git checkout ${{ inputs.branch }}
+            git reset --hard origin/${{ inputs.branch }}
+
+            echo "→ Building JARs (tests skipped)"
+            ./mvnw -q -DskipTests clean package
+
+            echo "→ Rebuilding images: ${{ inputs.services }}"
+            podman compose --env-file .env build ${{ inputs.services }}
+
+            echo "→ Recreating containers: ${{ inputs.services }}"
+            podman compose --env-file .env up -d --force-recreate --no-deps ${{ inputs.services }}
+
+            echo "✓ Build-service complete"
+          EOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # restart-service — restart specific service(s) without rebuild
+      # ══════════════════════════════════════════════════════════════════════
+      - name: "[restart-service] Restart ${{ inputs.services }}"
+        if: inputs.action == 'restart-service'
+        run: |
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
+            set -e
+            cd "${{ env.DEPLOY_DIR }}"
+            echo "→ Restarting: ${{ inputs.services }}"
+            podman compose --env-file .env restart ${{ inputs.services }}
+            echo "✓ Restart complete"
+          EOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # restart-all — restart every container in the stack
+      # ══════════════════════════════════════════════════════════════════════
+      - name: "[restart-all] Restart all containers"
+        if: inputs.action == 'restart-all'
+        run: |
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
+            set -e
+            cd "${{ env.DEPLOY_DIR }}"
+            echo "→ Restarting all containers"
+            podman compose --env-file .env restart
+            echo "✓ All containers restarted"
+          EOF
+
+      # ── Post-deploy: container status ──────────────────────────────────────
+      - name: Container status
+        if: inputs.action != 'deploy-env' && inputs.action != 'deploy-config'
+        run: |
+          sleep 10
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
+            "cd ${{ env.DEPLOY_DIR }} && podman compose --env-file .env ps"
+
+      # ── Post-deploy: gateway health check ─────────────────────────────────
+      - name: Health check — gateway
+        if: inputs.action == 'full-deploy' || (inputs.action == 'build-service' && contains(inputs.services, 'gateway'))
+        run: |
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
+            "curl -sf http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' \
+              && echo '✓ Gateway healthy' \
+              || echo '✗ Gateway not yet healthy (may still be starting)'"
