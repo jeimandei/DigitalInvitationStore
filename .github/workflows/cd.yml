@@ -163,7 +163,7 @@ jobs:
               git fetch origin
               git checkout ${{ inputs.branch }}
               git reset --hard origin/${{ inputs.branch }}
-              git clean -fd
+              git clean -fd -e .env -e logs/
             fi
 
             cd "${{ env.DEPLOY_DIR }}"
