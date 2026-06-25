@@ -6,6 +6,7 @@ import id.baundang.order.dto.CreateOrderRequest;
 import id.baundang.order.dto.CreateOrderResponse;
 import id.baundang.order.dto.OrderDTO;
 import id.baundang.order.dto.OrderRevisionDTO;
+import id.baundang.order.dto.PublicOrderDTO;
 import id.baundang.order.dto.RevisionRequest;
 import id.baundang.order.dto.UpdateStatusRequest;
 import id.baundang.order.service.OrderService;
@@ -48,6 +49,11 @@ public class OrderController {
         return ResponseEntity
                 .created(URI.create("/api/v1/orders/" + resp.orderId()))
                 .body(ApiResponse.ok(resp));
+    }
+
+    @GetMapping("/public/{id}")
+    public ApiResponse<PublicOrderDTO> getPublicOrder(@PathVariable UUID id) {
+        return ApiResponse.ok(orderService.getPublicOrder(id));
     }
 
     @GetMapping("/{id}")

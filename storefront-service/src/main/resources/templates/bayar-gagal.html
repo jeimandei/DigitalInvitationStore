@@ -17,10 +17,35 @@
     <p class="text-stone-500 mb-2">Maaf, pembayaranmu tidak dapat diproses saat ini.</p>
     <p class="text-stone-500 mb-8">Pesananmu masih tersimpan. Kamu bisa mencoba pembayaran kembali atau hubungi kami untuk bantuan.</p>
 
-    <div class="bg-stone-50 rounded-xl p-5 text-sm text-left space-y-3 mb-8" th:if="${orderId != null and !orderId.isEmpty()}">
+    <div class="bg-stone-50 rounded-xl p-5 text-sm text-left space-y-3 mb-8"
+         th:if="${orderId != null and !orderId.isEmpty()}">
       <div class="flex justify-between">
         <span class="text-stone-500">Nomor Transaksi</span>
         <span class="font-mono font-semibold text-stone-800" th:text="${orderId}"></span>
+      </div>
+      <div class="flex justify-between" th:if="${order != null}">
+        <span class="text-stone-500">Nomor Pesanan</span>
+        <span class="font-mono font-semibold text-stone-800" th:text="${order.orderNumber()}"></span>
+      </div>
+      <div class="flex justify-between" th:if="${order != null}">
+        <span class="text-stone-500">Nama Pasangan</span>
+        <span class="font-semibold text-stone-800" th:text="${order.coupleName()}"></span>
+      </div>
+      <div class="flex justify-between" th:if="${order != null}">
+        <span class="text-stone-500">Paket</span>
+        <span class="font-semibold text-stone-800">
+          Paket
+          <span th:switch="${order.tier()}">
+            <span th:case="1">Dasar</span>
+            <span th:case="2">Standar</span>
+            <span th:case="3">Premium</span>
+          </span>
+        </span>
+      </div>
+      <div class="flex justify-between" th:if="${order != null}">
+        <span class="text-stone-500">Total Tagihan</span>
+        <span class="font-semibold text-stone-800"
+              th:text="${'Rp ' + #numbers.formatInteger(order.amount(), 1, 'POINT')}"></span>
       </div>
       <div class="flex justify-between" th:if="${transactionStatus != null}">
         <span class="text-stone-500">Status</span>
@@ -28,8 +53,13 @@
       </div>
     </div>
 
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 mb-8 text-left">
+      <p class="font-semibold mb-1">Mengapa ini terjadi?</p>
+      <p>Pembayaran bisa gagal karena saldo tidak cukup, koneksi terputus, atau sesi pembayaran habis. Coba lagi atau hubungi kami jika masalah berlanjut.</p>
+    </div>
+
+    <!-- Strip the BND- prefix to get the orderId for retry -->
     <div class="flex flex-col sm:flex-row gap-3 justify-center">
-      <!-- Strip the BND- prefix to get the orderId for retry -->
       <a th:if="${orderId != null and orderId.startsWith('BND-')}"
          th:href="@{/bayar/{id}(id=${#strings.substringAfter(orderId, 'BND-')})}"
          class="inline-block bg-rose-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-rose-700 transition-colors text-sm">

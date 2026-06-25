@@ -64,6 +64,12 @@ spring:
             - Path=/api/v1/orders
             - Method=POST
 
+        - id: order-public
+          uri: http://order-service:1085
+          predicates:
+            - Path=/api/v1/orders/public/**
+            - Method=GET
+
         - id: order-service
           uri: http://order-service:1085
           predicates:
