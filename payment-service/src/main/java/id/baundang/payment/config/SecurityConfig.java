@@ -25,7 +25,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/health", "/error").permitAll()
                         // Midtrans webhook is public — signature validates authenticity
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook/midtrans").permitAll()
                         // Internal charge endpoint: called by consumer thread (no JWT), must be on internal net

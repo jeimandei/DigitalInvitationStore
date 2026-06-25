@@ -25,7 +25,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/health", "/error").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/media/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/media/template/upload").hasRole("ADMIN")
                         .anyRequest().authenticated()
