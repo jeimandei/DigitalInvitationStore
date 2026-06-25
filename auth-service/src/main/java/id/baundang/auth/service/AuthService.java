@@ -75,6 +75,15 @@ public class AuthService {
         return buildTokenPair(user);
     }
 
+    public TokenResponse registerAdmin(RegisterRequest req) {
+        if (userRepo.existsByEmail(req.email().toLowerCase())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
+        User user = new User(req.email().toLowerCase(), passwordEncoder.encode(req.password()), User.Role.ADMIN);
+        userRepo.save(user);
+        return buildTokenPair(user);
+    }
+
     public TokenResponse refresh(RefreshRequest req) {
         String hash = sha256Hex(req.refreshToken());
 

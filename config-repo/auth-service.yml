@@ -4,6 +4,7 @@ server:
 # spring.datasource.url/username/password are injected via SPRING_DATASOURCE_* in podman-compose
 
 app:
+  admin-seed-key: ${ADMIN_SEED_KEY:}
   jwt:
     keys-dir: /secrets/auth
     admin-expiry-hours: 8
