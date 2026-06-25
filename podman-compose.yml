@@ -154,8 +154,8 @@ services:
     container_name: baundang-auth-service
     image: baundang/auth-service
     build:
-      context: ./auth-service
-      dockerfile: Containerfile
+      context: .
+      dockerfile: auth-service/Containerfile
     environment:
       TZ: Asia/Jakarta
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
@@ -201,8 +201,8 @@ services:
     container_name: baundang-storefront-service
     image: baundang/storefront-service
     build:
-      context: ./storefront-service
-      dockerfile: Containerfile
+      context: .
+      dockerfile: storefront-service/Containerfile
     environment:
       TZ: Asia/Jakarta
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
@@ -234,8 +234,8 @@ services:
     container_name: baundang-template-service
     image: baundang/template-service
     build:
-      context: ./template-service
-      dockerfile: Containerfile
+      context: .
+      dockerfile: template-service/Containerfile
     environment:
       TZ: Asia/Jakarta
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
@@ -276,8 +276,8 @@ services:
     container_name: baundang-invitation-service
     image: baundang/invitation-service
     build:
-      context: ./invitation-service
-      dockerfile: Containerfile
+      context: .
+      dockerfile: invitation-service/Containerfile
     environment:
       TZ: Asia/Jakarta
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
@@ -322,8 +322,8 @@ services:
     container_name: baundang-order-service
     image: baundang/order-service
     build:
-      context: ./order-service
-      dockerfile: Containerfile
+      context: .
+      dockerfile: order-service/Containerfile
     environment:
       TZ: Asia/Jakarta
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
@@ -364,8 +364,8 @@ services:
     container_name: baundang-payment-service
     image: baundang/payment-service
     build:
-      context: ./payment-service
-      dockerfile: Containerfile
+      context: .
+      dockerfile: payment-service/Containerfile
     environment:
       TZ: Asia/Jakarta
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
@@ -408,8 +408,8 @@ services:
     container_name: baundang-notification-service
     image: baundang/notification-service
     build:
-      context: ./notification-service
-      dockerfile: Containerfile
+      context: .
+      dockerfile: notification-service/Containerfile
     environment:
       TZ: Asia/Jakarta
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
@@ -455,8 +455,8 @@ services:
     container_name: baundang-admin-service
     image: baundang/admin-service
     build:
-      context: ./admin-service
-      dockerfile: Containerfile
+      context: .
+      dockerfile: admin-service/Containerfile
     environment:
       TZ: Asia/Jakarta
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
@@ -493,8 +493,8 @@ services:
     container_name: baundang-media-service
     image: baundang/media-service
     build:
-      context: ./media-service
-      dockerfile: Containerfile
+      context: .
+      dockerfile: media-service/Containerfile
     environment:
       TZ: Asia/Jakarta
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
@@ -530,8 +530,8 @@ services:
     container_name: baundang-gateway
     image: baundang/gateway
     build:
-      context: ./gateway-service
-      dockerfile: Containerfile
+      context: .
+      dockerfile: gateway-service/Containerfile
     environment:
       TZ: Asia/Jakarta
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
