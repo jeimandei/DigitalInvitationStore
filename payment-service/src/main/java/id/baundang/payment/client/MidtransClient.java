@@ -37,19 +37,29 @@ public class MidtransClient {
 
     public JsonNode createSnapTransaction(String midtransOrderId, long grossAmount,
                                          String customerName, String customerEmail,
-                                         String customerPhone) {
-        Map<String, Object> body = Map.of(
-                "transaction_details", Map.of(
-                        "order_id", midtransOrderId,
-                        "gross_amount", grossAmount
-                ),
-                "customer_details", Map.of(
-                        "first_name", customerName,
-                        "email", customerEmail,
-                        "phone", customerPhone
-                ),
-                "credit_card", Map.of("secure", true)
-        );
+                                         String customerPhone, String packageName) {
+        var body = new java.util.HashMap<String, Object>();
+        body.put("transaction_details", Map.of(
+                "order_id", midtransOrderId,
+                "gross_amount", grossAmount
+        ));
+        body.put("customer_details", Map.of(
+                "first_name", customerName,
+                "email", customerEmail,
+                "phone", customerPhone
+        ));
+        body.put("credit_card", Map.of("secure", true));
+
+        if (packageName != null && !packageName.isBlank()) {
+            body.put("item_details", java.util.List.of(Map.of(
+                    "id", "PKG-" + midtransOrderId,
+                    "price", grossAmount,
+                    "quantity", 1,
+                    "name", "Undangan Digital - Paket " + packageName
+            )));
+        }
+
+        log.debug("Creating Snap transaction: orderId={} amount={}", midtransOrderId, grossAmount);
 
         return restClient.post()
                 .uri("/snap/v1/transactions")

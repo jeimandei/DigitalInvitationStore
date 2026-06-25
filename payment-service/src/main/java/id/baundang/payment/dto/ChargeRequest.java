@@ -12,5 +12,6 @@ public record ChargeRequest(
         @NotNull @Positive Long amount,
         @NotBlank String coupleName,
         @NotBlank @Email String contactEmail,
-        @NotBlank String contactWhatsapp
+        @NotBlank String contactWhatsapp,
+        String packageName
 ) {}

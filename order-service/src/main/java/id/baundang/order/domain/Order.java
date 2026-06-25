@@ -33,8 +33,11 @@ public class Order {
     @Column(name = "buyer_id", nullable = false)
     private UUID buyerId;
 
-    @Column(name = "template_id", nullable = false)
+    @Column(name = "template_id")
     private UUID templateId;
+
+    @Column(nullable = false)
+    private Long amount = 0L;
 
     @Column(nullable = false)
     private Short tier;

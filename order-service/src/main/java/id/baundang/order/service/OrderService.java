@@ -10,6 +10,7 @@ import id.baundang.order.dto.CreateOrderResponse;
 import id.baundang.order.dto.OrderDTO;
 import id.baundang.order.dto.OrderRevisionDTO;
 import id.baundang.order.dto.UpdateStatusRequest;
+import id.baundang.order.config.PricingProperties;
 import id.baundang.order.messaging.OrderEventPublisher;
 import id.baundang.order.repository.OrderRepository;
 import id.baundang.order.repository.OrderRevisionRepository;
@@ -33,6 +34,7 @@ public class OrderService {
     private final OrderRevisionRepository revisionRepository;
     private final OrderEventPublisher eventPublisher;
     private final OrderNumberGenerator numberGenerator;
+    private final PricingProperties pricing;
 
     @Transactional
     public CreateOrderResponse createOrder(CreateOrderRequest req, UUID buyerId) {
@@ -40,11 +42,14 @@ public class OrderService {
             throw new ValidationException("tier must be 1, 2, or 3");
         }
 
+        PricingProperties.Tier tier = pricing.forTier(req.tier());
+
         Order order = new Order();
         order.setOrderNumber(numberGenerator.generate());
         order.setBuyerId(buyerId);
         order.setTemplateId(req.templateId());
         order.setTier(req.tier());
+        order.setAmount(tier.getPrice());
         order.setCoupleName(req.coupleName());
         order.setContactWhatsapp(req.contactWhatsapp());
         order.setContactEmail(req.contactEmail());
@@ -53,7 +58,7 @@ public class OrderService {
         order.setStatus(OrderStatusPg.PENDING);
 
         order = orderRepository.save(order);
-        eventPublisher.publishOrderCreated(order);
+        eventPublisher.publishOrderCreated(order, tier.getName());
 
         return new CreateOrderResponse(order.getId(), order.getOrderNumber(), null);
     }

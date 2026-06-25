@@ -3,6 +3,7 @@ package id.baundang.storefront.controller;
 import id.baundang.storefront.client.TemplateApiClient;
 import id.baundang.storefront.client.TemplateApiClient.TemplatePage;
 import id.baundang.storefront.client.TemplateSummaryDTO;
+import id.baundang.storefront.config.MidtransProperties;
 import id.baundang.storefront.config.PricingProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -17,10 +18,13 @@ public class StorefrontController {
 
     private final PricingProperties pricing;
     private final TemplateApiClient templateClient;
+    private final MidtransProperties midtrans;
 
-    public StorefrontController(PricingProperties pricing, TemplateApiClient templateClient) {
+    public StorefrontController(PricingProperties pricing, TemplateApiClient templateClient,
+                                MidtransProperties midtrans) {
         this.pricing        = pricing;
         this.templateClient = templateClient;
+        this.midtrans       = midtrans;
     }
 
     @GetMapping("/")
@@ -73,6 +77,14 @@ public class StorefrontController {
     @GetMapping("/daftar")
     public String register() {
         return "daftar";
+    }
+
+    @GetMapping("/bayar/{orderId}")
+    public String payment(@PathVariable String orderId, Model model) {
+        model.addAttribute("orderId", orderId);
+        model.addAttribute("midtransClientKey", midtrans.getClientKey());
+        model.addAttribute("snapJsUrl", midtrans.getSnapJsUrl());
+        return "bayar";
     }
 
     @GetMapping("/templates/{slug}")

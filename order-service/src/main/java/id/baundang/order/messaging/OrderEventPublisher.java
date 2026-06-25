@@ -32,18 +32,20 @@ public class OrderEventPublisher {
     @Value("${app.rabbitmq.routing-key.revision-completed}")
     private String revisionCompletedKey;
 
-    public void publishOrderCreated(Order order) {
-        publish(createdKey, Map.of(
-                "orderId", order.getId(),
-                "orderNumber", order.getOrderNumber(),
-                "buyerId", order.getBuyerId(),
-                "templateId", order.getTemplateId(),
-                "tier", order.getTier(),
-                "coupleName", order.getCoupleName(),
-                "contactEmail", order.getContactEmail(),
-                "contactWhatsapp", order.getContactWhatsapp(),
-                "occurredAt", Instant.now()
-        ));
+    public void publishOrderCreated(Order order, String packageName) {
+        var payload = new java.util.HashMap<String, Object>();
+        payload.put("orderId", order.getId());
+        payload.put("orderNumber", order.getOrderNumber());
+        payload.put("buyerId", order.getBuyerId());
+        payload.put("tier", order.getTier());
+        payload.put("packageName", packageName);
+        payload.put("amount", order.getAmount());
+        payload.put("coupleName", order.getCoupleName());
+        payload.put("contactEmail", order.getContactEmail());
+        payload.put("contactWhatsapp", order.getContactWhatsapp());
+        payload.put("occurredAt", Instant.now());
+        if (order.getTemplateId() != null) payload.put("templateId", order.getTemplateId());
+        publish(createdKey, payload);
     }
 
     public void publishOrderPaid(Order order) {

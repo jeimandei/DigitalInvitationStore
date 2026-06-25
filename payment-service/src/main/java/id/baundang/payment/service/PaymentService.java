@@ -39,7 +39,8 @@ public class PaymentService {
 
         JsonNode snapResponse = midtransClient.createSnapTransaction(
                 midtransOrderId, req.amount(),
-                req.coupleName(), req.contactEmail(), req.contactWhatsapp()
+                req.coupleName(), req.contactEmail(), req.contactWhatsapp(),
+                req.packageName()
         );
 
         Payment payment = new Payment();

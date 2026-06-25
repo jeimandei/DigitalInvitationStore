@@ -30,6 +30,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook/midtrans").permitAll()
                         // Internal charge endpoint: called by consumer thread (no JWT), must be on internal net
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/charge").permitAll()
+                        // Snap token is fetched by buyers (may be guests without JWT)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/payments/snap-token/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(gatewayHeaderFilter, UsernamePasswordAuthenticationFilter.class)

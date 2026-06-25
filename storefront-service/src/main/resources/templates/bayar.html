@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: dir(title=~{::title},mainContent=~{::main})}">
+
+<title>Pembayaran — baundang.id</title>
+
+<main th:fragment="main-content">
+  <section class="max-w-lg mx-auto px-4 py-16"
+           x-data="paymentPage()"
+           th:attr="data-order-id=${orderId}">
+
+    <!-- Loading -->
+    <div x-show="state === 'loading'" class="text-center py-20">
+      <div class="w-10 h-10 border-4 border-rose-200 border-t-rose-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-stone-500 text-sm">Menyiapkan halaman pembayaran…</p>
+    </div>
+
+    <!-- Error -->
+    <div x-show="state === 'error'" x-cloak class="text-center py-20">
+      <div class="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </div>
+      <h2 class="text-lg font-semibold text-stone-800 mb-2">Gagal Memuat Pembayaran</h2>
+      <p class="text-sm text-stone-500 mb-6" x-text="errorMsg"></p>
+      <button @click="loadPayment()"
+              class="bg-rose-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-rose-700 transition-colors">
+        Coba Lagi
+      </button>
+    </div>
+
+    <!-- Ready — show pay button -->
+    <div x-show="state === 'ready'" x-cloak>
+      <div class="text-center mb-10">
+        <h1 class="text-2xl font-bold text-stone-800">Selesaikan Pembayaran</h1>
+        <p class="text-stone-400 mt-2 text-sm">Klik tombol di bawah untuk membuka halaman pembayaran Midtrans.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-8 text-center">
+        <div class="mb-6">
+          <p class="text-xs text-stone-400 uppercase tracking-wide mb-1">Nomor Pesanan</p>
+          <p class="font-mono text-stone-700 font-semibold" x-text="orderId"></p>
+        </div>
+        <button @click="openSnap()"
+                :disabled="paying"
+                class="w-full bg-rose-600 text-white py-3 rounded-full font-semibold hover:bg-rose-700 disabled:opacity-50 transition-colors">
+          <span x-show="!paying">Bayar Sekarang</span>
+          <span x-show="paying" x-cloak>Membuka…</span>
+        </button>
+        <p class="text-xs text-stone-400 mt-4">Pembayaran diproses aman oleh Midtrans</p>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div x-show="state === 'success'" x-cloak>
+      <div class="text-center py-10">
+        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-stone-800 mb-2">Pembayaran Berhasil!</h2>
+        <p class="text-stone-500 text-sm mb-8">Kami akan segera memproses undangan digitalmu dan menghubungimu via WhatsApp.</p>
+        <a href="/" class="bg-rose-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-rose-700 transition-colors text-sm">
+          Kembali ke Beranda
+        </a>
+      </div>
+    </div>
+
+    <!-- Pending -->
+    <div x-show="state === 'pending'" x-cloak>
+      <div class="text-center py-10">
+        <div class="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-stone-800 mb-2">Pembayaran Menunggu Konfirmasi</h2>
+        <p class="text-stone-500 text-sm mb-2">Pesananmu sudah kami terima. Selesaikan pembayaran sesuai instruksi yang dikirim.</p>
+        <p class="text-xs text-stone-400 mb-8">Nomor pesanan: <span class="font-mono" x-text="orderId"></span></p>
+        <a href="/" class="border border-stone-200 text-stone-600 px-8 py-3 rounded-full font-semibold hover:bg-stone-50 transition-colors text-sm">
+          Kembali ke Beranda
+        </a>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Snap.js loaded with client key from server -->
+  <script th:src="${snapJsUrl}" th:attr="data-client-key=${midtransClientKey}"></script>
+
+  <script>
+    function paymentPage() {
+      return {
+        state: 'loading',
+        orderId: '',
+        snapToken: null,
+        paying: false,
+        errorMsg: '',
+
+        init() {
+          this.orderId = this.$el.dataset.orderId;
+          this.loadPayment();
+        },
+
+        async loadPayment() {
+          this.state = 'loading';
+          this.errorMsg = '';
+          try {
+            const buyerToken = sessionStorage.getItem('buyer_token');
+            const res = await fetch('/api/v1/payments/snap-token/' + this.orderId, {
+              headers: buyerToken ? { 'Authorization': 'Bearer ' + buyerToken } : {}
+            });
+            if (res.status === 404) {
+              // Payment not created yet by consumer — retry after delay
+              setTimeout(() => this.loadPayment(), 3000);
+              return;
+            }
+            if (!res.ok) {
+              const body = await res.json().catch(() => ({}));
+              throw new Error(body.message || 'Gagal memuat data pembayaran');
+            }
+            const data = await res.json();
+            this.snapToken = data.snapToken || data.snap_token;
+            if (!this.snapToken) throw new Error('Token pembayaran tidak tersedia');
+            this.state = 'ready';
+            // Auto-open Snap on first load
+            this.$nextTick(() => this.openSnap());
+          } catch (e) {
+            this.errorMsg = e.message;
+            this.state = 'error';
+          }
+        },
+
+        openSnap() {
+          if (!this.snapToken) return;
+          this.paying = true;
+          window.snap.pay(this.snapToken, {
+            onSuccess: (result) => {
+              this.paying = false;
+              this.state = 'success';
+            },
+            onPending: (result) => {
+              this.paying = false;
+              this.state = 'pending';
+            },
+            onError: (result) => {
+              this.paying = false;
+              this.errorMsg = 'Pembayaran gagal. Silakan coba lagi.';
+              this.state = 'error';
+            },
+            onClose: () => {
+              this.paying = false;
+              if (this.state === 'loading') this.state = 'ready';
+            }
+          });
+        }
+      }
+    }
+  </script>
+</main>
+</html>

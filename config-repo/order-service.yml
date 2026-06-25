@@ -2,6 +2,14 @@ server:
   port: 1085
 
 app:
+  pricing:
+    tiers:
+      - name: Dasar
+        price: 119000
+      - name: Standar
+        price: 199000
+      - name: Premium
+        price: 249000
   rabbitmq:
     exchange: baundang.orders
     routing-key:

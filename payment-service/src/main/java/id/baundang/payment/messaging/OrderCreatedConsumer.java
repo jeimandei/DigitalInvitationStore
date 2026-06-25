@@ -25,8 +25,10 @@ public class OrderCreatedConsumer {
             String coupleName = event.get("coupleName").toString();
             String email = event.get("contactEmail").toString();
             String phone = event.get("contactWhatsapp").toString();
+            String packageName = event.containsKey("packageName")
+                    ? event.get("packageName").toString() : null;
 
-            paymentService.charge(new ChargeRequest(orderId, amount, coupleName, email, phone));
+            paymentService.charge(new ChargeRequest(orderId, amount, coupleName, email, phone, packageName));
         } catch (Exception e) {
             log.error("Failed to handle order.created event: {}", e.getMessage(), e);
         }
