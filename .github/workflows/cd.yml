@@ -245,7 +245,7 @@ jobs:
               gateway \
               admin-service; do
               echo "  → Building \$svc"
-              podman compose --env-file .env build \$svc
+              podman compose --env-file .env build --no-cache \$svc
             done
 
             # ── Start stack ────────────────────────────────────────────────
@@ -322,15 +322,16 @@ jobs:
                 || JAVA_HOME="\$JAVA_HOME" ./mvnw -q -DskipTests -pl "\$module" -am clean package
             done
 
-            echo "→ Rebuilding images"
-            for svc in $SERVICES; do
-              podman compose --env-file .env build \$svc
-            done
-
-            echo "→ Stopping and removing old containers"
+            echo "→ Stopping and removing old containers and images"
             for svc in $SERVICES; do
               podman compose --env-file .env stop \$svc || true
               podman rm -f "baundang-\$svc" 2>/dev/null || true
+              podman rmi -f "baundang/\$svc" 2>/dev/null || true
+            done
+
+            echo "→ Rebuilding images (no cache)"
+            for svc in $SERVICES; do
+              podman compose --env-file .env build --no-cache \$svc
             done
 
             echo "→ Starting new containers"
