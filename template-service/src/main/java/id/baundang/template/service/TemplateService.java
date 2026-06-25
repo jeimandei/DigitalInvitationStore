@@ -124,9 +124,7 @@ public class TemplateService {
     }
 
     private void validateStylePreset(Template t) {
-        if (t.getStylePreset() != null && t.getCategory() != Template.Category.CHRISTIAN) {
-            throw new ValidationException("stylePreset is only allowed for CHRISTIAN category");
-        }
+        // stylePreset is optional for any category
     }
 
     private <E extends Enum<E>> E parseEnum(Class<E> cls, String value, String field) {

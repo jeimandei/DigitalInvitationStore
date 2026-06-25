@@ -64,7 +64,7 @@ public class Template {
     @OneToMany(mappedBy = "template", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<TemplateFeature> features = new ArrayList<>();
 
-    public enum Category { GENERAL, CHRISTIAN }
+    public enum Category { GENERAL, CHRISTIAN, WEDDING, BIRTHDAY, GRADUATION, CORPORATE, OTHER }
 
     public enum StylePreset { GRACE, COVENANT, EDEN, GLORIA }
 
