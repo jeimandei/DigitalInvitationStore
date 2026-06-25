@@ -291,6 +291,13 @@ public class InvitationService {
     }
 
     @Transactional(readOnly = true)
+    public InvitationSummaryDTO getInvitation(UUID id) {
+        Invitation inv = invitationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
+        return InvitationSummaryDTO.from(inv);
+    }
+
+    @Transactional(readOnly = true)
     public List<AdminGuestbookEntryDTO> listAllGuestbook(UUID invitationId) {
         return guestbookRepository.findAllByInvitationIdOrderByCreatedAtDesc(invitationId)
                 .stream().map(AdminGuestbookEntryDTO::from).toList();

@@ -12,6 +12,7 @@ public record OrderDTO(
         UUID buyerId,
         UUID templateId,
         short tier,
+        long amount,
         String coupleName,
         String contactWhatsapp,
         String contactEmail,

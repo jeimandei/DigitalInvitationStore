@@ -29,13 +29,13 @@ public class AdminDashboardService {
         long revenueToday = orders.stream()
                 .filter(o -> "PAID".equals(o.status()) && o.paidAt() != null &&
                         o.paidAt().isAfter(java.time.Instant.now().minus(1, java.time.temporal.ChronoUnit.DAYS)))
-                .mapToLong(o -> tierPrice(o.tier()))
+                .mapToLong(o -> o.amount() > 0 ? o.amount() : tierPrice(o.tier()))
                 .sum();
 
         long pending = orders.stream().filter(OrderDTO::isPending).count();
         long totalRevenue = orders.stream()
                 .filter(OrderDTO::isPaid)
-                .mapToLong(o -> tierPrice(o.tier()))
+                .mapToLong(o -> o.amount() > 0 ? o.amount() : tierPrice(o.tier()))
                 .sum();
 
         PagedResult<?> invitations = invitationClient.listInvitations(0, 1);

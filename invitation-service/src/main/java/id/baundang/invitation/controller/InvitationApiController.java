@@ -92,6 +92,11 @@ public class InvitationApiController {
         return ApiResponse.ok(PagedResponse.from(invitationService.listInvitations(pageable)));
     }
 
+    @GetMapping("/api/v1/admin/invitations/{id}")
+    public ApiResponse<InvitationSummaryDTO> getInvitation(@PathVariable UUID id) {
+        return ApiResponse.ok(invitationService.getInvitation(id));
+    }
+
     @GetMapping("/api/v1/admin/invitations/{id}/guestbook")
     public ApiResponse<List<AdminGuestbookEntryDTO>> listAllGuestbook(@PathVariable UUID id) {
         return ApiResponse.ok(invitationService.listAllGuestbook(id));
@@ -116,8 +121,8 @@ public class InvitationApiController {
 
     @PutMapping("/api/v1/admin/invitations/{id}/status")
     public ApiResponse<Void> updateStatus(@PathVariable UUID id,
-                                          @RequestParam InvitationStatus status) {
-        invitationService.updateStatus(id, status);
+                                          @RequestBody java.util.Map<String, String> body) {
+        invitationService.updateStatus(id, InvitationStatus.valueOf(body.get("status")));
         return ApiResponse.ok(null, "Status undangan diperbarui");
     }
 

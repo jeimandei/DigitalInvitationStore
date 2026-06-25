@@ -23,6 +23,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderAdminClient {
 
+    private static final String ADMIN_USER_ID = "00000000-0000-0000-0000-000000000001";
+
     @Qualifier("orderRestClient")
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -39,6 +41,8 @@ public class OrderAdminClient {
             }
 
             JsonNode root = restClient.get().uri(uri.toString())
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", ADMIN_USER_ID)
                     .retrieve().body(JsonNode.class);
             JsonNode data = root.path("data");
             List<OrderDTO> items = objectMapper.convertValue(
@@ -64,7 +68,7 @@ public class OrderAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/orders/" + id)
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", ADMIN_USER_ID)
                     .retrieve().body(JsonNode.class);
             return Optional.of(objectMapper.convertValue(root.path("data"), OrderDTO.class));
         } catch (RestClientException e) {
@@ -78,7 +82,7 @@ public class OrderAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/orders/" + orderId + "/revisions")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", ADMIN_USER_ID)
                     .retrieve().body(JsonNode.class);
             return objectMapper.convertValue(root.path("data"), new TypeReference<>() {});
         } catch (RestClientException e) {
@@ -92,7 +96,7 @@ public class OrderAdminClient {
             JsonNode root = restClient.put()
                     .uri("/api/v1/orders/revisions/" + revisionId + "/complete")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", ADMIN_USER_ID)
                     .retrieve().body(JsonNode.class);
             return Optional.of(objectMapper.convertValue(root.path("data"), OrderRevisionDTO.class));
         } catch (RestClientException e) {
@@ -109,7 +113,7 @@ public class OrderAdminClient {
             restClient.put()
                     .uri("/api/v1/orders/" + id + "/status")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", ADMIN_USER_ID)
                     .body(body)
                     .retrieve().toBodilessEntity();
             return true;
