@@ -24,7 +24,7 @@
       });
       const data = await res.json();
       if (!res.ok) { this.error = data.message || 'Gagal mendaftar, coba lagi.'; return; }
-      sessionStorage.setItem('buyer_token', data.accessToken);
+      sessionStorage.setItem('buyer_token', data.access_token);
       window.location.href = this.redirect;
     } catch(e) { this.error = 'Terjadi kesalahan, coba lagi.'; }
     finally { this.loading = false; }

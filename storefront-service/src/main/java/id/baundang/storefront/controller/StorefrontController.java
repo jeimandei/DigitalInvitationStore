@@ -54,8 +54,9 @@ public class StorefrontController {
     }
 
     @GetMapping("/pesan")
-    public String order(Model model) {
+    public String order(@RequestParam(required = false) String templateId, Model model) {
         model.addAttribute("tiers", pricing.getTiers());
+        model.addAttribute("templateId", templateId != null ? templateId : "");
         return "pesan";
     }
 
