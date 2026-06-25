@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: dir(title=~{::title},mainContent=~{::main})}">
+
+<title>Pembayaran Gagal — baundang.id</title>
+
+<main th:fragment="main-content">
+  <section class="max-w-lg mx-auto px-4 py-20 text-center">
+
+    <div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
+      <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </div>
+
+    <h1 class="text-2xl font-bold text-stone-800 mb-3">Pembayaran Gagal</h1>
+    <p class="text-stone-500 mb-2">Maaf, pembayaranmu tidak dapat diproses saat ini.</p>
+    <p class="text-stone-500 mb-8">Pesananmu masih tersimpan. Kamu bisa mencoba pembayaran kembali atau hubungi kami untuk bantuan.</p>
+
+    <div class="bg-stone-50 rounded-xl p-5 text-sm text-left space-y-3 mb-8" th:if="${orderId != null and !orderId.isEmpty()}">
+      <div class="flex justify-between">
+        <span class="text-stone-500">Nomor Transaksi</span>
+        <span class="font-mono font-semibold text-stone-800" th:text="${orderId}"></span>
+      </div>
+      <div class="flex justify-between" th:if="${transactionStatus != null}">
+        <span class="text-stone-500">Status</span>
+        <span class="font-semibold text-red-700 capitalize" th:text="${transactionStatus}"></span>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+      <!-- Strip the BND- prefix to get the orderId for retry -->
+      <a th:if="${orderId != null and orderId.startsWith('BND-')}"
+         th:href="@{/bayar/{id}(id=${#strings.substringAfter(orderId, 'BND-')})}"
+         class="inline-block bg-rose-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-rose-700 transition-colors text-sm">
+        Coba Lagi
+      </a>
+      <a href="/"
+         class="inline-block border border-stone-200 text-stone-600 px-8 py-3 rounded-full font-semibold hover:bg-stone-50 transition-colors text-sm">
+        Kembali ke Beranda
+      </a>
+    </div>
+
+  </section>
+</main>
+</html>

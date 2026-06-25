@@ -87,6 +87,36 @@ public class StorefrontController {
         return "bayar";
     }
 
+    @GetMapping("/bayar/selesai")
+    public String paymentFinish(
+            @RequestParam(name = "order_id", required = false) String orderId,
+            @RequestParam(name = "transaction_status", required = false) String transactionStatus,
+            Model model) {
+        model.addAttribute("orderId", orderId);
+        model.addAttribute("transactionStatus", transactionStatus);
+        return "bayar-selesai";
+    }
+
+    @GetMapping("/bayar/pending")
+    public String paymentPending(
+            @RequestParam(name = "order_id", required = false) String orderId,
+            @RequestParam(name = "transaction_status", required = false) String transactionStatus,
+            Model model) {
+        model.addAttribute("orderId", orderId);
+        model.addAttribute("transactionStatus", transactionStatus);
+        return "bayar-pending";
+    }
+
+    @GetMapping("/bayar/gagal")
+    public String paymentError(
+            @RequestParam(name = "order_id", required = false) String orderId,
+            @RequestParam(name = "transaction_status", required = false) String transactionStatus,
+            Model model) {
+        model.addAttribute("orderId", orderId);
+        model.addAttribute("transactionStatus", transactionStatus);
+        return "bayar-gagal";
+    }
+
     @GetMapping("/templates/{slug}")
     public String templateDetail(@PathVariable String slug, Model model) {
         TemplatePage page = templateClient.fetchTemplates(0, 50, null);
