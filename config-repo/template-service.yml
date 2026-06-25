@@ -23,3 +23,7 @@ app:
     secret-key: ${MINIO_ROOT_PASSWORD}
     bucket: ${MINIO_BUCKET:baundang-templates}
     presign-expiry-minutes: 60
+
+logging:
+  level:
+    id.baundang.common.logging.ServiceLoggingAspect: DEBUG

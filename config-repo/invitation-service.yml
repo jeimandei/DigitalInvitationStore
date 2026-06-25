@@ -24,3 +24,7 @@ app:
   midtrans:
     client-key: ${MIDTRANS_CLIENT_KEY}
     snap-js-url: ${MIDTRANS_SNAP_JS_URL:https://app.sandbox.midtrans.com/snap/snap.js}
+
+logging:
+  level:
+    id.baundang.common.logging.ServiceLoggingAspect: DEBUG

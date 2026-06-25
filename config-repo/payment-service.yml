@@ -21,3 +21,7 @@ spring:
     properties:
       hibernate:
         default_schema: payment
+
+logging:
+  level:
+    id.baundang.common.logging.ServiceLoggingAspect: DEBUG

@@ -101,3 +101,7 @@ spring:
 app:
   auth:
     public-key-uri: http://auth-service:1081/api/v1/auth/public-key
+
+logging:
+  level:
+    id.baundang.common.logging.ServiceLoggingAspect: DEBUG

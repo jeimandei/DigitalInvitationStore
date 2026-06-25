@@ -48,3 +48,7 @@ app:
           - 2x revisi desain
           - Prioritas dukungan
         highlight: false
+
+logging:
+  level:
+    id.baundang.common.logging.ServiceLoggingAspect: DEBUG

@@ -26,3 +26,7 @@ app:
     template-service: ${TEMPLATE_SERVICE_URL:http://template-service:1083}
     auth-service: ${AUTH_SERVICE_URL:http://auth-service:1081}
     notification-service: ${NOTIFICATION_SERVICE_URL:http://notification-service:1087}
+
+logging:
+  level:
+    id.baundang.common.logging.ServiceLoggingAspect: DEBUG
