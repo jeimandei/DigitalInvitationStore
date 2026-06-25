@@ -7,9 +7,9 @@ networks:
     external: true
 
 volumes:
-  baundang-postgres-data:
-  baundang-minio-data:
-  baundang-rabbitmq-data:
+  baundang-postgres:
+  baundang-minio:
+  baundang-rabbitmq:
 
 services:
 
@@ -26,7 +26,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - baundang-postgres-data:/var/lib/postgresql/data
+      - baundang-postgres:/var/lib/postgresql/data
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -73,7 +73,7 @@ services:
     ports:
       - "15672:15672"
     volumes:
-      - baundang-rabbitmq-data:/var/lib/rabbitmq
+      - baundang-rabbitmq:/var/lib/rabbitmq
     security_opt:
       - label=disable
     networks: [baundang-network]
@@ -100,7 +100,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - baundang-minio-data:/data
+      - baundang-minio:/data
     security_opt:
       - label=disable
     networks: [baundang-network]
