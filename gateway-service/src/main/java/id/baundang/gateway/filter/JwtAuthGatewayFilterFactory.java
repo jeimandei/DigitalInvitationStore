@@ -48,7 +48,18 @@ public class JwtAuthGatewayFilterFactory
         return (exchange, chain) -> {
             String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-            if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
+            // Also accept token from cookie (set by admin login page for browser navigation)
+            String token = null;
+            if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
+                token = authHeader.substring(BEARER_PREFIX.length());
+            } else {
+                var cookie = exchange.getRequest().getCookies().getFirst("admin_token");
+                if (cookie != null) {
+                    token = cookie.getValue();
+                }
+            }
+
+            if (token == null) {
                 // Redirect browser navigation to login page; return 401 for API/HTMX calls
                 String accept = exchange.getRequest().getHeaders().getFirst(HttpHeaders.ACCEPT);
                 boolean isBrowserNav = accept != null && accept.contains(MediaType.TEXT_HTML_VALUE)
@@ -60,8 +71,6 @@ public class JwtAuthGatewayFilterFactory
                 }
                 return unauthorized(exchange, "Missing or malformed Authorization header");
             }
-
-            String token = authHeader.substring(BEARER_PREFIX.length());
 
             Claims claims;
             try {

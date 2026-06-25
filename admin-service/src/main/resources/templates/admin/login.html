@@ -65,6 +65,8 @@
       const data = await res.json();
       sessionStorage.setItem('admin_token', data.accessToken);
       sessionStorage.setItem('admin_refresh', data.refreshToken);
+      // Cookie lets the gateway authenticate browser navigation requests
+      document.cookie = 'admin_token=' + data.accessToken + '; path=/; SameSite=Strict';
       window.location.href = '/admin';
     } catch (err) {
       errEl.textContent = err.message;
