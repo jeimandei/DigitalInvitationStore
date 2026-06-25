@@ -44,6 +44,8 @@
                         <select name="category" required
                                 class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400">
                             <option value="">Pilih Kategori</option>
+                            <option value="GENERAL" th:selected="${form != null and form.category() == 'GENERAL'}">General</option>
+                            <option value="CHRISTIAN" th:selected="${form != null and form.category() == 'CHRISTIAN'}">Christian</option>
                             <option value="WEDDING" th:selected="${form != null and form.category() == 'WEDDING'}">Wedding</option>
                             <option value="BIRTHDAY" th:selected="${form != null and form.category() == 'BIRTHDAY'}">Birthday</option>
                             <option value="GRADUATION" th:selected="${form != null and form.category() == 'GRADUATION'}">Graduation</option>
@@ -63,10 +65,14 @@
                 </div>
                 <div>
                     <label class="block text-xs text-gray-500 mb-1">Style Preset</label>
-                    <input type="text" name="stylePreset"
-                           th:value="${form != null ? form.stylePreset() : ''}"
-                           placeholder="elegant, modern, rustic..."
-                           class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400"/>
+                    <select name="stylePreset"
+                            class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400">
+                        <option value="">— Tanpa Preset —</option>
+                        <option value="GRACE" th:selected="${form != null and form.stylePreset() == 'GRACE'}">Grace</option>
+                        <option value="COVENANT" th:selected="${form != null and form.stylePreset() == 'COVENANT'}">Covenant</option>
+                        <option value="EDEN" th:selected="${form != null and form.stylePreset() == 'EDEN'}">Eden</option>
+                        <option value="GLORIA" th:selected="${form != null and form.stylePreset() == 'GLORIA'}">Gloria</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-xs text-gray-500 mb-1">URL Thumbnail</label>

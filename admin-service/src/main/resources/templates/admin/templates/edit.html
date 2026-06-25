@@ -42,6 +42,8 @@
                         <label class="block text-xs text-gray-500 mb-1">Kategori *</label>
                         <select name="category" required
                                 class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400">
+                            <option value="GENERAL" th:selected="${template.category() == 'GENERAL'}">General</option>
+                            <option value="CHRISTIAN" th:selected="${template.category() == 'CHRISTIAN'}">Christian</option>
                             <option value="WEDDING" th:selected="${template.category() == 'WEDDING'}">Wedding</option>
                             <option value="BIRTHDAY" th:selected="${template.category() == 'BIRTHDAY'}">Birthday</option>
                             <option value="GRADUATION" th:selected="${template.category() == 'GRADUATION'}">Graduation</option>
@@ -61,9 +63,14 @@
                 </div>
                 <div>
                     <label class="block text-xs text-gray-500 mb-1">Style Preset</label>
-                    <input type="text" name="stylePreset"
-                           th:value="${template.stylePreset()}"
-                           class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400"/>
+                    <select name="stylePreset"
+                            class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400">
+                        <option value="">— Tanpa Preset —</option>
+                        <option value="GRACE" th:selected="${template.stylePreset() == 'GRACE'}">Grace</option>
+                        <option value="COVENANT" th:selected="${template.stylePreset() == 'COVENANT'}">Covenant</option>
+                        <option value="EDEN" th:selected="${template.stylePreset() == 'EDEN'}">Eden</option>
+                        <option value="GLORIA" th:selected="${template.stylePreset() == 'GLORIA'}">Gloria</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-xs text-gray-500 mb-1">URL Thumbnail</label>
