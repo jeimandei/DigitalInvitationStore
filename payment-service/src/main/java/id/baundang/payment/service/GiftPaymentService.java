@@ -33,7 +33,7 @@ public class GiftPaymentService {
 
         JsonNode snap = midtransClient.createSnapTransaction(
                 midtransOrderId, req.amount(),
-                req.senderName(), "guest@baundang.id", "-"
+                req.senderName(), "guest@baundang.id", "-", "Hadiah Digital"
         );
 
         GiftPayment gift = new GiftPayment();
