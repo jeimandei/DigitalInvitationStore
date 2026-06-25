@@ -9,6 +9,7 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
       (function () {
+        if (window.location.pathname === '/admin/login') return;
         var token = sessionStorage.getItem('admin_token');
         if (!token) { window.location.replace('/admin/login'); return; }
         document.addEventListener('htmx:configRequest', function (e) {
