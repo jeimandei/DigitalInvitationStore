@@ -1,7 +1,7 @@
 FROM docker.io/eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /workspace
 COPY . .
-RUN ./mvnw package -pl invitation-service -am -DskipTests -q
+RUN --mount=type=cache,target=/root/.m2 ./mvnw package -pl invitation-service -am -DskipTests -q
 
 FROM docker.io/eclipse-temurin:21-jre-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
