@@ -16,7 +16,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
-
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -54,8 +55,8 @@ public class JwtAuthGatewayFilterFactory
                 token = authHeader.substring(BEARER_PREFIX.length());
             } else {
                 var cookie = exchange.getRequest().getCookies().getFirst("admin_token");
-                if (cookie != null) {
-                    token = cookie.getValue();
+                if (cookie != null && !cookie.getValue().isBlank()) {
+                    token = URLDecoder.decode(cookie.getValue(), StandardCharsets.UTF_8);
                 }
             }
 
