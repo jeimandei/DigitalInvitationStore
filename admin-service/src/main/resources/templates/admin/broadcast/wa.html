@@ -94,11 +94,13 @@ async function sendTestWa() {
     resultEl.classList.add('hidden');
 
     try {
+        const token = sessionStorage.getItem('admin_token');
         const res = await fetch('/api/v1/notifications/test-wa', {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + sessionStorage.getItem('admin_token')
+                ...(token ? { 'Authorization': 'Bearer ' + token } : {})
             },
             body: JSON.stringify({ phone, message })
         });

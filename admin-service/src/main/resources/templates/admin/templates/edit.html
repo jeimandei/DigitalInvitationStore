@@ -42,11 +42,8 @@
                         <label class="block text-xs text-gray-500 mb-1">Kategori *</label>
                         <select name="category" required
                                 class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400">
-                            <option value="WEDDING" th:selected="${template.category() == 'WEDDING'}">Wedding</option>
-                            <option value="BIRTHDAY" th:selected="${template.category() == 'BIRTHDAY'}">Birthday</option>
-                            <option value="GRADUATION" th:selected="${template.category() == 'GRADUATION'}">Graduation</option>
-                            <option value="CORPORATE" th:selected="${template.category() == 'CORPORATE'}">Corporate</option>
-                            <option value="OTHER" th:selected="${template.category() == 'OTHER'}">Other</option>
+                            <option value="GENERAL" th:selected="${template.category() == 'GENERAL'}">Umum (Islam / Sipil)</option>
+                            <option value="CHRISTIAN" th:selected="${template.category() == 'CHRISTIAN'}">Kristen / Katolik</option>
                         </select>
                     </div>
                     <div>

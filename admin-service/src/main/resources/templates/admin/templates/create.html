@@ -44,11 +44,8 @@
                         <select name="category" required
                                 class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-rose-400">
                             <option value="">Pilih Kategori</option>
-                            <option value="WEDDING" th:selected="${form != null and form.category() == 'WEDDING'}">Wedding</option>
-                            <option value="BIRTHDAY" th:selected="${form != null and form.category() == 'BIRTHDAY'}">Birthday</option>
-                            <option value="GRADUATION" th:selected="${form != null and form.category() == 'GRADUATION'}">Graduation</option>
-                            <option value="CORPORATE" th:selected="${form != null and form.category() == 'CORPORATE'}">Corporate</option>
-                            <option value="OTHER" th:selected="${form != null and form.category() == 'OTHER'}">Other</option>
+                            <option value="GENERAL" th:selected="${form != null and form.category() == 'GENERAL'}">Umum (Islam / Sipil)</option>
+                            <option value="CHRISTIAN" th:selected="${form != null and form.category() == 'CHRISTIAN'}">Kristen / Katolik</option>
                         </select>
                     </div>
                     <div>

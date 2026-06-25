@@ -36,7 +36,7 @@ public class InvitationAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/admin/invitations?page=" + page + "&size=" + size)
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().body(JsonNode.class);
             JsonNode data = root.path("data");
             List<InvitationDTO> items = objectMapper.convertValue(
@@ -57,7 +57,7 @@ public class InvitationAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/admin/invitations/" + id)
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().body(JsonNode.class);
             return objectMapper.convertValue(root.path("data"), InvitationDTO.class);
         } catch (RestClientException e) {
@@ -71,7 +71,7 @@ public class InvitationAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/guestbook")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().body(JsonNode.class);
             return objectMapper.convertValue(root.path("data"), new TypeReference<>() {});
         } catch (RestClientException e) {
@@ -85,7 +85,7 @@ public class InvitationAdminClient {
             restClient.put()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/content")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .body(contentPatch)
                     .retrieve().toBodilessEntity();
             return true;
@@ -100,7 +100,7 @@ public class InvitationAdminClient {
             restClient.put()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/approve-guestbook/" + entryId)
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().toBodilessEntity();
             return true;
         } catch (RestClientException e) {
@@ -114,7 +114,7 @@ public class InvitationAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/rsvp")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().body(JsonNode.class);
             return objectMapper.convertValue(root.path("data"), new TypeReference<>() {});
         } catch (RestClientException e) {
@@ -128,7 +128,7 @@ public class InvitationAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/guests")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().body(JsonNode.class);
             return objectMapper.convertValue(root.path("data"), new TypeReference<>() {});
         } catch (RestClientException e) {
@@ -142,7 +142,7 @@ public class InvitationAdminClient {
             restClient.post()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/guests")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .body(req)
                     .retrieve().toBodilessEntity();
             return true;
@@ -157,7 +157,7 @@ public class InvitationAdminClient {
             restClient.delete()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/guests/" + guestId)
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().toBodilessEntity();
             return true;
         } catch (RestClientException e) {
@@ -171,7 +171,7 @@ public class InvitationAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/attendance")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().body(JsonNode.class);
             return objectMapper.convertValue(root.path("data"), AttendanceDTO.class);
         } catch (RestClientException e) {
@@ -185,7 +185,7 @@ public class InvitationAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/gifts")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().body(JsonNode.class);
             return objectMapper.convertValue(root.path("data"), GiftSummaryDTO.class);
         } catch (RestClientException e) {
@@ -199,7 +199,7 @@ public class InvitationAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/gift-accounts")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().body(JsonNode.class);
             return objectMapper.convertValue(root.path("data"), GiftAccountDTO.class);
         } catch (RestClientException e) {
@@ -213,7 +213,7 @@ public class InvitationAdminClient {
             restClient.put()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/gift-accounts")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .body(req)
                     .retrieve().toBodilessEntity();
             return true;
@@ -228,7 +228,7 @@ public class InvitationAdminClient {
             restClient.put()
                     .uri("/api/v1/admin/invitations/" + invitationId + "/status")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .body(Map.of("status", status))
                     .retrieve().toBodilessEntity();
             return true;
