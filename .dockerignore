@@ -1,0 +1,14 @@
+# Build artifacts — recompiled inside the builder stage
+**/target/
+# Local runtime logs (volume-mounted at runtime)
+logs/
+**/logs/
+# VCS / IDE
+.git/
+.gitignore
+.idea/
+*.iml
+.vscode/
+# Docs and misc not needed for the build
+docs/
+*.md
