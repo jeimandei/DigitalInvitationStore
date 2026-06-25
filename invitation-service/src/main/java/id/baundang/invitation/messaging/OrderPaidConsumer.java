@@ -34,7 +34,10 @@ public class OrderPaidConsumer {
                 return;
             }
 
-            UUID templateId = UUID.fromString(event.get("templateId").toString());
+            Object templateIdRaw = event.get("templateId");
+            UUID templateId = (templateIdRaw != null && !templateIdRaw.toString().isBlank())
+                    ? UUID.fromString(templateIdRaw.toString()) : null;
+
             Invitation invitation = new Invitation();
             invitation.setOrderId(orderId);
             invitation.setCoupleSlug(slug);
