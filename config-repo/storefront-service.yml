@@ -16,7 +16,7 @@ spring:
 
 app:
   services:
-    template: ${TEMPLATE_SERVICE_URL:http://template-service:8083}
+    template: ${TEMPLATE_SERVICE_URL:http://template-service:1083}
   pricing:
     tiers:
       - name: Dasar
