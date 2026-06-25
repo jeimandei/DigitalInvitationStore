@@ -126,8 +126,6 @@
             this.snapToken = data.snapToken || data.snap_token;
             if (!this.snapToken) throw new Error('Token pembayaran tidak tersedia');
             this.state = 'ready';
-            // Auto-open Snap on first load
-            this.$nextTick(() => this.openSnap());
           } catch (e) {
             this.errorMsg = e.message;
             this.state = 'error';
@@ -136,6 +134,11 @@
 
         openSnap() {
           if (!this.snapToken) return;
+          if (!window.snap) {
+            this.errorMsg = 'Skrip pembayaran belum siap. Muat ulang halaman dan coba lagi.';
+            this.state = 'error';
+            return;
+          }
           this.paying = true;
           window.snap.pay(this.snapToken, {
             onSuccess: (result) => {
