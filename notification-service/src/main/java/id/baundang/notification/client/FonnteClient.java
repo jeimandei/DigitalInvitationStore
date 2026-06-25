@@ -64,10 +64,11 @@ public class FonnteClient {
                 "delay", 0,
                 "countryCode", "62"
         );
-        restClient.post()
+        String response = restClient.post()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .retrieve()
-                .toBodilessEntity();
+                .body(String.class);
+        log.info("Fonnte response for target {}: {}", target, response);
     }
 }
