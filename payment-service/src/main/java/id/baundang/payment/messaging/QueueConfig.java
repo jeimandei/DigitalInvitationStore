@@ -26,4 +26,20 @@ public class QueueConfig {
                 .to(ordersExchange)
                 .with("order.created");
     }
+
+    // Declared here so the queue exists even when order-service is restarting.
+    // Messages published during order-service downtime are held by RabbitMQ
+    // and delivered once order-service reconnects.
+    @Bean
+    Queue orderPaymentProcessingQueue() {
+        return QueueBuilder.durable("order.payment.processing").build();
+    }
+
+    @Bean
+    Binding orderPaymentProcessingBinding(Queue orderPaymentProcessingQueue,
+                                          TopicExchange ordersExchange) {
+        return BindingBuilder.bind(orderPaymentProcessingQueue)
+                .to(ordersExchange)
+                .with("order.paid");
+    }
 }
