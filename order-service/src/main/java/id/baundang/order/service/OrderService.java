@@ -84,7 +84,10 @@ public class OrderService {
             }
         }
         String searchFilter = (search != null && !search.isBlank()) ? search.trim() : null;
-        return orderRepository.search(statusFilter, searchFilter, pageable).map(OrderDTO::from);
+        Page<Order> page = statusFilter != null
+                ? orderRepository.searchByStatus(statusFilter, searchFilter, pageable)
+                : orderRepository.searchAll(searchFilter, pageable);
+        return page.map(OrderDTO::from);
     }
 
     @Transactional

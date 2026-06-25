@@ -17,13 +17,23 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     @Query("""
             SELECT o FROM Order o
-            WHERE (:status IS NULL OR o.status = :status)
+            WHERE o.status = :status
               AND (:search IS NULL
                    OR LOWER(o.coupleName) LIKE LOWER(CONCAT('%', :search, '%'))
                    OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
                    OR LOWER(o.contactEmail) LIKE LOWER(CONCAT('%', :search, '%')))
             """)
-    Page<Order> search(@Param("status") OrderStatusPg status,
-                       @Param("search") String search,
-                       Pageable pageable);
+    Page<Order> searchByStatus(@Param("status") OrderStatusPg status,
+                               @Param("search") String search,
+                               Pageable pageable);
+
+    @Query("""
+            SELECT o FROM Order o
+            WHERE (:search IS NULL
+                   OR LOWER(o.coupleName) LIKE LOWER(CONCAT('%', :search, '%'))
+                   OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+                   OR LOWER(o.contactEmail) LIKE LOWER(CONCAT('%', :search, '%')))
+            """)
+    Page<Order> searchAll(@Param("search") String search,
+                          Pageable pageable);
 }
