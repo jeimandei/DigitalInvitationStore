@@ -26,8 +26,9 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/error").permitAll()
-                        // Midtrans webhook is public — signature validates authenticity
-                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook/midtrans").permitAll()
+                        // Midtrans webhook is public — signature validates authenticity.
+                        // Covers base, recurring and pay-account notification URLs.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook/**").permitAll()
                         // Internal charge endpoint: called by consumer thread (no JWT), must be on internal net
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/charge").permitAll()
                         // Snap token is fetched by buyers (may be guests without JWT)
