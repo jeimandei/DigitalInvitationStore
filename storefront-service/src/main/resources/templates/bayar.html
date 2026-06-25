@@ -112,8 +112,8 @@
             const res = await fetch('/api/v1/payments/snap-token/' + this.orderId, {
               headers: buyerToken ? { 'Authorization': 'Bearer ' + buyerToken } : {}
             });
-            if (res.status === 404) {
-              // Payment not created yet by consumer — retry after delay
+            if (res.status === 404 || res.status === 403) {
+              // Payment not created yet by consumer, or security not refreshed — retry after delay
               setTimeout(() => this.loadPayment(), 3000);
               return;
             }

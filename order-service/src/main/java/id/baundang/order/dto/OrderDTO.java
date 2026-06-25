@@ -11,6 +11,7 @@ public record OrderDTO(
         UUID buyerId,
         UUID templateId,
         short tier,
+        long amount,
         String coupleName,
         String contactWhatsapp,
         String contactEmail,
@@ -27,7 +28,8 @@ public record OrderDTO(
     public static OrderDTO from(Order o) {
         return new OrderDTO(
                 o.getId(), o.getOrderNumber(), o.getBuyerId(), o.getTemplateId(),
-                o.getTier(), o.getCoupleName(), o.getContactWhatsapp(), o.getContactEmail(),
+                o.getTier(), o.getAmount() != null ? o.getAmount() : 0L,
+                o.getCoupleName(), o.getContactWhatsapp(), o.getContactEmail(),
                 o.getStatus().name(), o.getMidtransTransactionId(), o.getPaidAt(),
                 o.getRevisionCount(), o.getMaxRevisions(), o.getCoupleSlug(), o.getNotes(),
                 o.getCreatedAt(), o.getUpdatedAt()

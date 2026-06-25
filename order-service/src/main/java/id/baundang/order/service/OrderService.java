@@ -9,6 +9,7 @@ import id.baundang.order.dto.CreateOrderRequest;
 import id.baundang.order.dto.CreateOrderResponse;
 import id.baundang.order.dto.OrderDTO;
 import id.baundang.order.dto.OrderRevisionDTO;
+import id.baundang.order.dto.PublicOrderDTO;
 import id.baundang.order.dto.UpdateStatusRequest;
 import id.baundang.order.config.PricingProperties;
 import id.baundang.order.messaging.OrderEventPublisher;
@@ -108,6 +109,11 @@ public class OrderService {
         }
         return revisionRepository.findAllByOrderIdOrderByCreatedAtAsc(orderId)
                 .stream().map(OrderRevisionDTO::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PublicOrderDTO getPublicOrder(UUID id) {
+        return PublicOrderDTO.from(findOrThrow(id));
     }
 
     private Order findOrThrow(UUID id) {

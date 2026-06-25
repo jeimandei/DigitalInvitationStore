@@ -46,6 +46,18 @@ public class PaymentController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/webhook/midtrans/recurring")
+    public ResponseEntity<Void> webhookRecurring(@RequestBody JsonNode notification) {
+        paymentService.handleWebhook(notification);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/webhook/midtrans/pay-account")
+    public ResponseEntity<Void> webhookPayAccount(@RequestBody JsonNode notification) {
+        paymentService.handleWebhook(notification);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/gifts/charge")
     public ResponseEntity<ApiResponse<GiftChargeResponse>> chargeGift(
             @Valid @RequestBody GiftChargeRequest req) {

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: dir(title=~{::title},mainContent=~{::main})}">
+
+<title>Pembayaran Berhasil — baundang.id</title>
+
+<main th:fragment="main-content">
+  <section class="max-w-lg mx-auto px-4 py-20 text-center">
+
+    <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+      <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+    </div>
+
+    <h1 class="text-2xl font-bold text-stone-800 mb-3">Pembayaran Berhasil!</h1>
+    <p class="text-stone-500 mb-2" th:if="${order != null}">
+      Terima kasih, <strong th:text="${order.coupleName()}"></strong>! Pembayaran kamu sudah kami terima.
+    </p>
+    <p class="text-stone-500 mb-2" th:unless="${order != null}">Terima kasih, pembayaran kamu sudah kami terima.</p>
+    <p class="text-stone-500 mb-8">Tim kami akan segera memproses undangan digitalmu dan menghubungi kamu via WhatsApp dalam 1×24 jam.</p>
+
+    <div class="bg-stone-50 rounded-xl p-5 text-sm text-left space-y-3 mb-8"
+         th:if="${orderId != null and !orderId.isEmpty()}">
+      <div class="flex justify-between">
+        <span class="text-stone-500">Nomor Transaksi</span>
+        <span class="font-mono font-semibold text-stone-800" th:text="${orderId}"></span>
+      </div>
+      <div class="flex justify-between" th:if="${order != null}">
+        <span class="text-stone-500">Nomor Pesanan</span>
+        <span class="font-mono font-semibold text-stone-800" th:text="${order.orderNumber()}"></span>
+      </div>
+      <div class="flex justify-between" th:if="${order != null}">
+        <span class="text-stone-500">Nama Pasangan</span>
+        <span class="font-semibold text-stone-800" th:text="${order.coupleName()}"></span>
+      </div>
+      <div class="flex justify-between" th:if="${order != null}">
+        <span class="text-stone-500">Paket</span>
+        <span class="font-semibold text-stone-800">
+          Paket
+          <span th:switch="${order.tier()}">
+            <span th:case="1">Dasar</span>
+            <span th:case="2">Standar</span>
+            <span th:case="3">Premium</span>
+          </span>
+        </span>
+      </div>
+      <div class="flex justify-between" th:if="${order != null}">
+        <span class="text-stone-500">Total Bayar</span>
+        <span class="font-semibold text-stone-800"
+              th:text="${'Rp ' + #numbers.formatInteger(order.amount(), 1, 'POINT')}"></span>
+      </div>
+      <div class="flex justify-between" th:if="${transactionStatus != null}">
+        <span class="text-stone-500">Status</span>
+        <span class="font-semibold text-green-700 capitalize" th:text="${transactionStatus}"></span>
+      </div>
+    </div>
+
+    <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800 mb-8 text-left">
+      <p class="font-semibold mb-1">Langkah selanjutnya</p>
+      <p>Simpan nomor transaksi di atas sebagai bukti pembayaran. Tim kami akan menghubungimu via WhatsApp untuk konfirmasi dan memulai proses pembuatan undangan.</p>
+    </div>
+
+    <a href="/"
+       class="inline-block bg-rose-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-rose-700 transition-colors text-sm">
+      Kembali ke Beranda
+    </a>
+
+  </section>
+</main>
+</html>

@@ -22,7 +22,8 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(adminHeaderFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/api/v1/templates/**", "/actuator/health").permitAll()
+                        .requestMatchers("/actuator/health", "/error").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/templates/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/templates").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/templates/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/templates/**").hasRole("ADMIN")

@@ -1,5 +1,7 @@
 package id.baundang.storefront.controller;
 
+import id.baundang.storefront.client.OrderApiClient;
+import id.baundang.storefront.client.OrderApiClient.PublicOrderDTO;
 import id.baundang.storefront.client.TemplateApiClient;
 import id.baundang.storefront.client.TemplateApiClient.TemplatePage;
 import id.baundang.storefront.client.TemplateSummaryDTO;
@@ -13,18 +15,22 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.UUID;
+
 @Controller
 public class StorefrontController {
 
     private final PricingProperties pricing;
     private final TemplateApiClient templateClient;
     private final MidtransProperties midtrans;
+    private final OrderApiClient orderClient;
 
     public StorefrontController(PricingProperties pricing, TemplateApiClient templateClient,
-                                MidtransProperties midtrans) {
+                                MidtransProperties midtrans, OrderApiClient orderClient) {
         this.pricing        = pricing;
         this.templateClient = templateClient;
         this.midtrans       = midtrans;
+        this.orderClient    = orderClient;
     }
 
     @GetMapping("/")
@@ -85,6 +91,54 @@ public class StorefrontController {
         model.addAttribute("midtransClientKey", midtrans.getClientKey());
         model.addAttribute("snapJsUrl", midtrans.getSnapJsUrl());
         return "bayar";
+    }
+
+    @GetMapping("/bayar/selesai")
+    public String paymentFinish(
+            @RequestParam(name = "order_id", required = false) String midtransOrderId,
+            @RequestParam(name = "transaction_status", required = false) String transactionStatus,
+            Model model) {
+        model.addAttribute("orderId", midtransOrderId);
+        model.addAttribute("transactionStatus", transactionStatus);
+        enrichWithOrderDetail(midtransOrderId, model);
+        return "bayar-selesai";
+    }
+
+    @GetMapping("/bayar/pending")
+    public String paymentPending(
+            @RequestParam(name = "order_id", required = false) String midtransOrderId,
+            @RequestParam(name = "transaction_status", required = false) String transactionStatus,
+            Model model) {
+        model.addAttribute("orderId", midtransOrderId);
+        model.addAttribute("transactionStatus", transactionStatus);
+        enrichWithOrderDetail(midtransOrderId, model);
+        return "bayar-pending";
+    }
+
+    @GetMapping("/bayar/gagal")
+    public String paymentError(
+            @RequestParam(name = "order_id", required = false) String midtransOrderId,
+            @RequestParam(name = "transaction_status", required = false) String transactionStatus,
+            Model model) {
+        model.addAttribute("orderId", midtransOrderId);
+        model.addAttribute("transactionStatus", transactionStatus);
+        enrichWithOrderDetail(midtransOrderId, model);
+        return "bayar-gagal";
+    }
+
+    private void enrichWithOrderDetail(String midtransOrderId, Model model) {
+        if (midtransOrderId == null || midtransOrderId.isBlank()) return;
+        try {
+            String uuidStr = midtransOrderId.startsWith("BND-")
+                    ? midtransOrderId.substring(4)
+                    : midtransOrderId;
+            UUID orderId = UUID.fromString(uuidStr);
+            PublicOrderDTO order = orderClient.fetchPublicOrder(orderId);
+            if (order != null) {
+                model.addAttribute("order", order);
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
     }
 
     @GetMapping("/templates/{slug}")

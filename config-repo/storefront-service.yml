@@ -17,6 +17,7 @@ spring:
 app:
   services:
     template: ${TEMPLATE_SERVICE_URL:http://template-service:1083}
+    order: ${ORDER_SERVICE_URL:http://order-service:1085}
   midtrans:
     client-key: ${MIDTRANS_CLIENT_KEY}
     snap-js-url: ${MIDTRANS_SNAP_JS_URL:https://app.sandbox.midtrans.com/snap/snap.js}
