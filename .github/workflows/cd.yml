@@ -322,19 +322,20 @@ jobs:
                 || JAVA_HOME="\$JAVA_HOME" ./mvnw -q -DskipTests -pl "\$module" -am clean package
             done
 
-            echo "→ Stopping and removing old containers and images"
+            echo "→ Stopping and removing old containers (and any dependents) and images"
             for svc in $SERVICES; do
-              # remove via compose identity AND by explicit container name — belt and suspenders
               podman compose --env-file .env rm -sf \$svc 2>/dev/null || true
-              podman rm -f "baundang-\$svc" 2>/dev/null || true
+              # --depend also removes containers that depend on this one (e.g. gateway),
+              # otherwise podman refuses with "has dependent containers"
+              podman rm -f --depend "baundang-\$svc" 2>/dev/null || true
               podman rmi -f "baundang/\$svc" 2>/dev/null || true
             done
 
             echo "→ Confirming old containers are gone"
             for svc in $SERVICES; do
               if podman container exists "baundang-\$svc"; then
-                echo "  ✗ baundang-\$svc still present — forcing removal"
-                podman rm -f "baundang-\$svc" || true
+                echo "  ✗ baundang-\$svc still present — forcing removal with dependents"
+                podman rm -f --depend "baundang-\$svc" || true
               else
                 echo "  ✓ baundang-\$svc removed"
               fi
@@ -347,6 +348,9 @@ jobs:
 
             echo "→ Creating brand-new containers"
             podman compose --env-file .env up -d --no-deps --force-recreate $SERVICES
+
+            echo "→ Restoring any dependent containers removed during teardown"
+            podman compose --env-file .env up -d
 
             echo "→ Verifying containers were recreated"
             for svc in $SERVICES; do
