@@ -1,5 +1,8 @@
 server:
   port: 1088
+  # Honour X-Forwarded-* headers from the gateway so redirects (e.g. after
+  # creating a template) use the public domain, not the internal host:port.
+  forward-headers-strategy: framework
 
 spring:
   thymeleaf:
