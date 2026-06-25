@@ -61,6 +61,26 @@ public final class MessageTemplates {
         ));
     }
 
+    public static String orderPaidEmailBuyer(String orderNumber, String coupleName,
+                                              long amount, String dashboardUrl) {
+        return """
+                Halo %s,
+
+                Pembayaran untuk pesanan Anda telah kami terima. Berikut detailnya:
+
+                  No. Pesanan : %s
+                  Total Bayar : Rp %,d
+
+                Tim kami akan segera memproses undangan digital Anda dan menghubungi Anda via WhatsApp.
+                Pantau status pesanan di: %s
+
+                Terima kasih telah memilih baundang.id ❤️
+
+                —
+                Tim baundang.id
+                """.formatted(coupleName, orderNumber, amount, dashboardUrl);
+    }
+
     public static String orderPaidAdmin(String orderNumber, String coupleName,
                                         String contactEmail, String contactWhatsapp,
                                         long amount) {

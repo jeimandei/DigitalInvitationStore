@@ -88,6 +88,19 @@ public class OrderService {
     }
 
     @Transactional
+    public void markPaid(UUID orderId, String midtransTransactionId, Instant paidAt) {
+        Order order = findOrThrow(orderId);
+        if (order.getStatus() == OrderStatusPg.PAID) return; // idempotent
+        order.setStatus(OrderStatusPg.PAID);
+        order.setPaidAt(paidAt != null ? paidAt : Instant.now());
+        if (midtransTransactionId != null && !midtransTransactionId.isBlank()) {
+            order.setMidtransTransactionId(midtransTransactionId);
+        }
+        orderRepository.save(order);
+        eventPublisher.publishOrderPaid(order);
+    }
+
+    @Transactional
     public OrderDTO updateStatus(UUID id, UpdateStatusRequest req) {
         Order order = findOrThrow(id);
         order.setStatus(req.status());
