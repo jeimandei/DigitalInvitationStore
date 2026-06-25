@@ -12,31 +12,71 @@
       <p class="text-stone-400 mt-2">Isi informasi berikut untuk memulai undangan digitalmu</p>
     </div>
 
-    <div class="flex items-center gap-2 mb-10 text-xs font-semibold">
-      <div class="flex items-center gap-2 text-rose-600">
-        <span class="w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center">1</span>
-        <span>Data Pasangan</span>
-      </div>
-      <div class="flex-1 h-px bg-stone-200"></div>
-      <div class="flex items-center gap-2 text-stone-300">
-        <span class="w-6 h-6 rounded-full border-2 border-stone-200 flex items-center justify-center">2</span>
-        <span>Pilih Paket</span>
-      </div>
-      <div class="flex-1 h-px bg-stone-200"></div>
-      <div class="flex items-center gap-2 text-stone-300">
-        <span class="w-6 h-6 rounded-full border-2 border-stone-200 flex items-center justify-center">3</span>
-        <span>Pembayaran</span>
-      </div>
-    </div>
-
     <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-8"
          x-data="{
            step: 1,
+           loading: false,
+           error: '',
+           orderId: '',
            form: { namaPria: '', namaWanita: '', tanggal: '', lokasi: '', paket: '' },
-           next() { if (this.step < 2) this.step++ },
-           prev() { if (this.step > 1) this.step-- }
+           next() { if (this.step < 3) this.step++ },
+           prev() { if (this.step > 1) this.step-- },
+           async submitOrder() {
+             this.loading = true;
+             this.error = '';
+             try {
+               const res = await fetch('/api/v1/orders', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({
+                   groomName: this.form.namaPria,
+                   brideName: this.form.namaWanita,
+                   weddingDate: this.form.tanggal,
+                   venue: this.form.lokasi,
+                   packageName: this.form.paket
+                 })
+               });
+               if (res.status === 401) {
+                 window.location.href = '/masuk?redirect=/pesan';
+                 return;
+               }
+               if (!res.ok) {
+                 const body = await res.json().catch(() => ({}));
+                 throw new Error(body.message || 'Gagal membuat pesanan');
+               }
+               const data = await res.json();
+               this.orderId = data.id || data.orderId || '';
+               this.step = 3;
+             } catch(e) {
+               this.error = e.message;
+             } finally {
+               this.loading = false;
+             }
+           }
          }">
 
+      <!-- Stepper -->
+      <div class="flex items-center gap-2 mb-10 text-xs font-semibold">
+        <div class="flex items-center gap-2" :class="step >= 1 ? 'text-rose-600' : 'text-stone-300'">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center"
+                :class="step >= 1 ? 'bg-rose-600 text-white' : 'border-2 border-stone-200'">1</span>
+          <span>Data Pasangan</span>
+        </div>
+        <div class="flex-1 h-px" :class="step >= 2 ? 'bg-rose-300' : 'bg-stone-200'"></div>
+        <div class="flex items-center gap-2" :class="step >= 2 ? 'text-rose-600' : 'text-stone-300'">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center"
+                :class="step >= 2 ? 'bg-rose-600 text-white' : 'border-2 border-stone-200'">2</span>
+          <span>Pilih Paket</span>
+        </div>
+        <div class="flex-1 h-px" :class="step >= 3 ? 'bg-rose-300' : 'bg-stone-200'"></div>
+        <div class="flex items-center gap-2" :class="step >= 3 ? 'text-rose-600' : 'text-stone-300'">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center"
+                :class="step >= 3 ? 'bg-rose-600 text-white' : 'border-2 border-stone-200'">3</span>
+          <span>Pembayaran</span>
+        </div>
+      </div>
+
+      <!-- Step 1: Data Pasangan -->
       <div x-show="step === 1">
         <h2 class="text-lg font-semibold text-stone-800 mb-6">Data Pasangan</h2>
         <div class="space-y-4">
@@ -61,7 +101,6 @@
                    class="w-full border border-stone-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"/>
           </div>
         </div>
-
         <button @click="next()"
                 :disabled="!form.namaPria || !form.namaWanita || !form.tanggal"
                 class="mt-8 w-full bg-rose-600 text-white py-3 rounded-full text-sm font-semibold hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
@@ -69,6 +108,7 @@
         </button>
       </div>
 
+      <!-- Step 2: Pilih Paket -->
       <div x-show="step === 2" x-cloak>
         <h2 class="text-lg font-semibold text-stone-800 mb-6">Pilih Paket</h2>
 
@@ -90,17 +130,56 @@
           </label>
         </div>
 
+        <div x-show="error" class="mt-4 text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3" x-text="error"></div>
+
         <div class="flex gap-3 mt-8">
           <button @click="prev()"
                   class="flex-1 border border-stone-200 text-stone-600 py-3 rounded-full text-sm font-semibold hover:bg-stone-50 transition-colors">
             ← Kembali
           </button>
-          <button @click="$dispatch('submit-order', form)"
-                  :disabled="!form.paket"
-                  class="flex-1 bg-rose-600 text-white py-3 rounded-full text-sm font-semibold hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-            Lanjut ke Pembayaran →
+          <button @click="submitOrder()"
+                  :disabled="!form.paket || loading"
+                  class="flex-1 bg-rose-600 text-white py-3 rounded-full text-sm font-semibold hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  x-text="loading ? 'Memproses...' : 'Lanjut ke Pembayaran →'">
           </button>
         </div>
+      </div>
+
+      <!-- Step 3: Konfirmasi Pesanan -->
+      <div x-show="step === 3" x-cloak>
+        <div class="text-center mb-8">
+          <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <h2 class="text-lg font-semibold text-stone-800">Pesanan Dibuat!</h2>
+          <p class="text-sm text-stone-400 mt-1">Tim kami akan menghubungi Anda untuk proses pembayaran.</p>
+        </div>
+
+        <div class="bg-stone-50 rounded-xl p-5 space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-stone-500">Nomor Pesanan</span>
+            <span class="font-mono font-semibold text-stone-800" x-text="orderId || '-'"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-stone-500">Pasangan</span>
+            <span class="font-semibold text-stone-800" x-text="form.namaPria + ' & ' + form.namaWanita"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-stone-500">Tanggal</span>
+            <span class="font-semibold text-stone-800" x-text="form.tanggal"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-stone-500">Paket</span>
+            <span class="font-semibold text-stone-800" x-text="form.paket"></span>
+          </div>
+        </div>
+
+        <a href="/"
+           class="mt-8 block text-center w-full border border-stone-200 text-stone-600 py-3 rounded-full text-sm font-semibold hover:bg-stone-50 transition-colors">
+          Kembali ke Beranda
+        </a>
       </div>
 
     </div>
