@@ -167,6 +167,7 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      ADMIN_SEED_KEY: ${ADMIN_SEED_KEY}
     ports:
       - "1081:1081"
     volumes:
