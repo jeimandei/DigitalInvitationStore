@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import java.util.UUID;
 
 public record CreateOrderRequest(
-        @NotNull UUID templateId,
+        UUID templateId,
         @NotNull Short tier,
         @NotBlank String coupleName,
         @NotBlank @Pattern(regexp = "^\\+?[0-9]{8,15}$") String contactWhatsapp,
