@@ -84,9 +84,10 @@ services:
           cpus: "0.5"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 15s
+      interval: 10s
       timeout: 10s
-      retries: 5
+      start_period: 60s
+      retries: 10
 
   minio:
     container_name: baundang-minio
@@ -194,7 +195,7 @@ services:
       redis:
         condition: service_started
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
 
   storefront-service:
     container_name: baundang-storefront-service
@@ -315,7 +316,7 @@ services:
       redis:
         condition: service_started
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
 
   order-service:
     container_name: baundang-order-service
@@ -357,7 +358,7 @@ services:
       postgres:
         condition: service_started
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
 
   payment-service:
     container_name: baundang-payment-service
@@ -401,7 +402,7 @@ services:
       postgres:
         condition: service_started
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
 
   notification-service:
     container_name: baundang-notification-service
@@ -448,7 +449,7 @@ services:
       postgres:
         condition: service_started
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
 
   admin-service:
     container_name: baundang-admin-service
