@@ -40,7 +40,7 @@ spring:
           predicates:
             - Path=/admin, /admin/**
           filters:
-            - "JwtAuth=ROLE_ADMIN"
+            - "JwtAuth=ADMIN"
 
         - id: template-service
           uri: http://template-service:1083
@@ -89,14 +89,14 @@ spring:
           predicates:
             - Path=/api/v1/admin/**
           filters:
-            - "JwtAuth=ROLE_ADMIN"
+            - "JwtAuth=ADMIN"
 
         - id: notification-service
           uri: http://notification-service:1087
           predicates:
             - Path=/api/v1/notifications/**
           filters:
-            - "JwtAuth=ROLE_ADMIN"
+            - "JwtAuth=ADMIN"
 
         - id: invitation-api
           uri: http://invitation-service:1084

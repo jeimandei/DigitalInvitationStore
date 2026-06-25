@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * Usage in routes:
  *   - JwtAuth               -> requires any valid JWT (Buyer)
- *   - "JwtAuth=ROLE_ADMIN"  -> requires ROLE_ADMIN claim
+ *   - "JwtAuth=ADMIN"  -> requires ADMIN role claim
  */
 @Component
 public class JwtAuthGatewayFilterFactory
