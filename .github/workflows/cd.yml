@@ -335,7 +335,7 @@ jobs:
             done
 
             echo "→ Starting new containers"
-            podman compose --env-file .env up -d --no-deps $SERVICES
+            podman compose --env-file .env up -d --no-deps --force-recreate $SERVICES
 
             echo "→ Restarting gateway"
             podman compose --env-file .env restart gateway
