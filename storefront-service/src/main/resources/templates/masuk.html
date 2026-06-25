@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id"
+      th:replace="~{layout/base :: dir(~{::title}, ~{::main})}">
+<head>
+  <title>Masuk — baundang.id</title>
+</head>
+<body>
+<main x-data="{
+  email: '',
+  password: '',
+  loading: false,
+  error: '',
+  redirect: new URLSearchParams(window.location.search).get('redirect') || '/',
+  async submit() {
+    this.loading = true; this.error = '';
+    try {
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: this.email, password: this.password })
+      });
+      const data = await res.json();
+      if (!res.ok) { this.error = data.message || 'Email atau kata sandi salah'; return; }
+      sessionStorage.setItem('buyer_token', data.accessToken);
+      window.location.href = this.redirect;
+    } catch(e) { this.error = 'Terjadi kesalahan, coba lagi.'; }
+    finally { this.loading = false; }
+  }
+}" class="min-h-[70vh] flex items-center justify-center px-4 py-16">
+
+  <div class="w-full max-w-md">
+    <div class="text-center mb-8">
+      <h1 class="text-2xl font-semibold text-stone-800">Masuk ke Akun</h1>
+      <p class="text-stone-500 mt-1 text-sm">Lanjutkan perjalanan undangan digitalmu</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-stone-100 p-8">
+      <div x-show="error" x-cloak
+           class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"
+           x-text="error"></div>
+
+      <form @submit.prevent="submit" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-stone-700 mb-1">Email</label>
+          <input type="email" x-model="email" required autocomplete="email"
+                 class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                 placeholder="kamu@email.com"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-stone-700 mb-1">Kata Sandi</label>
+          <input type="password" x-model="password" required autocomplete="current-password"
+                 class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                 placeholder="••••••••"/>
+        </div>
+        <button type="submit" :disabled="loading"
+                class="w-full bg-rose-600 text-white py-2.5 rounded-full font-medium hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <span x-show="!loading">Masuk</span>
+          <span x-show="loading" x-cloak>Memproses…</span>
+        </button>
+      </form>
+
+      <p class="mt-6 text-center text-sm text-stone-500">
+        Belum punya akun?
+        <a th:href="@{/daftar(redirect=${#request.getParameter('redirect')})}"
+           class="text-rose-600 font-medium hover:underline">Daftar sekarang</a>
+      </p>
+    </div>
+  </div>
+</main>
+</body>
+</html>

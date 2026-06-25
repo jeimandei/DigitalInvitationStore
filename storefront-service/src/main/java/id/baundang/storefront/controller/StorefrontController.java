@@ -64,6 +64,16 @@ public class StorefrontController {
         return "tentang";
     }
 
+    @GetMapping("/masuk")
+    public String login() {
+        return "masuk";
+    }
+
+    @GetMapping("/daftar")
+    public String register() {
+        return "daftar";
+    }
+
     @GetMapping("/templates/{slug}")
     public String templateDetail(@PathVariable String slug, Model model) {
         TemplatePage page = templateClient.fetchTemplates(0, 50, null);

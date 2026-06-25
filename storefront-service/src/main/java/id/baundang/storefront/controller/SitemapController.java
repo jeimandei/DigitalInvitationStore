@@ -21,6 +21,12 @@ public class SitemapController {
         this.templateClient = templateClient;
     }
 
+    @GetMapping(value = "/robots.txt", produces = MediaType.TEXT_PLAIN_VALUE)
+    @ResponseBody
+    public String robots() {
+        return "User-agent: *\nAllow: /\nSitemap: https://baundang.id/sitemap.xml\n";
+    }
+
     @GetMapping(value = "/sitemap.xml", produces = MediaType.APPLICATION_XML_VALUE)
     @ResponseBody
     public String sitemap() {
