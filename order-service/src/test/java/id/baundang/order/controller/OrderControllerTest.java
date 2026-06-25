@@ -54,7 +54,7 @@ class OrderControllerTest {
     private OrderDTO sampleOrderDTO() {
         return new OrderDTO(
                 UUID.randomUUID(), "ORD-001", UUID.randomUUID(), UUID.randomUUID(),
-                (short) 1, "Budi & Sari", "+628123456789", "budi@email.com",
+                (short) 1, 199000L, "Budi & Sari", "+628123456789", "budi@email.com",
                 "PENDING", null, null, (short) 0, (short) 3, "budi-sari",
                 null, Instant.now(), Instant.now()
         );
