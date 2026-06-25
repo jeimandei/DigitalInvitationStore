@@ -53,7 +53,7 @@ class PaymentControllerTest {
 
         String body = objectMapper.writeValueAsString(
                 new id.baundang.payment.dto.ChargeRequest(
-                        orderId, 100000L, "Budi & Sari", "budi@email.com", "+628123456789")
+                        orderId, 100000L, "Budi & Sari", "budi@email.com", "+628123456789", "Standar")
         );
 
         mockMvc.perform(post("/api/v1/payments/charge")
