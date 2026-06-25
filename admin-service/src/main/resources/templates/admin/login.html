@@ -63,10 +63,10 @@
       }
 
       const data = await res.json();
-      sessionStorage.setItem('admin_token', data.accessToken);
-      sessionStorage.setItem('admin_refresh', data.refreshToken);
+      sessionStorage.setItem('admin_token', data.access_token);
+      sessionStorage.setItem('admin_refresh', data.refresh_token);
       // Cookie lets the gateway authenticate browser navigation requests
-      document.cookie = 'admin_token=' + encodeURIComponent(data.accessToken) + '; path=/; SameSite=Strict';
+      document.cookie = 'admin_token=' + encodeURIComponent(data.access_token) + '; path=/; SameSite=Strict';
       window.location.href = '/admin';
     } catch (err) {
       errEl.textContent = err.message;
