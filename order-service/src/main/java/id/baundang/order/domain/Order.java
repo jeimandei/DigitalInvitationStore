@@ -1,6 +1,7 @@
 package id.baundang.order.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,7 +54,7 @@ public class Order {
 
     @Type(JsonBinaryType.class)
     @Column(name = "content_draft", columnDefinition = "jsonb")
-    private JsonNode contentDraft;
+    private JsonNode contentDraft = JsonNodeFactory.instance.objectNode();
 
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "order_status_enum")
