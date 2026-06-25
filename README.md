@@ -27,17 +27,17 @@ A production-ready SaaS platform for creating and managing digital wedding invit
                         ┌──────────────────────────────────┐
                         │        baundang-network           │
                         │                                   │
-  Browser / Client ────▶│  Gateway :8080                    │
+  Browser / Client ────▶│  Gateway :1080                    │
                         │    │                              │
-                        │    ├──▶ Storefront   :8082        │
-                        │    ├──▶ Auth         :8081        │
-                        │    ├──▶ Template     :8083        │
-                        │    ├──▶ Invitation   :8084        │
-                        │    ├──▶ Order        :8085        │
-                        │    ├──▶ Payment      :8086        │
-                        │    ├──▶ Notification :8087        │
-                        │    ├──▶ Admin        :8088        │
-                        │    └──▶ Media        :8089        │
+                        │    ├──▶ Storefront   :1082        │
+                        │    ├──▶ Auth         :1081        │
+                        │    ├──▶ Template     :1083        │
+                        │    ├──▶ Invitation   :1084        │
+                        │    ├──▶ Order        :1085        │
+                        │    ├──▶ Payment      :1086        │
+                        │    ├──▶ Notification :1087        │
+                        │    ├──▶ Admin        :1088        │
+                        │    └──▶ Media        :1089        │
                         │                                   │
                         │  Infrastructure                   │
                         │    PostgreSQL  :5432              │
@@ -56,16 +56,16 @@ All services communicate on a Podman bridge network (`baundang-network`) with DN
 
 | Service | Port | Description |
 |---|---|---|
-| **gateway-service** | 8080 | Spring Cloud Gateway — routing, JWT auth, rate limiting (Redis) |
-| **auth-service** | 8081 | User registration, login, RS256 JWT issuance, refresh tokens |
-| **storefront-service** | 8082 | Public landing page, template catalogue, pricing (Thymeleaf + HTMX) |
-| **template-service** | 8083 | Template CRUD, MinIO presigned URLs, Bible verse catalogue |
-| **invitation-service** | 8084 | Invitation lifecycle, RSVP, guestbook, gift registry (Thymeleaf view) |
-| **order-service** | 8085 | Order creation, status machine, revision requests |
-| **payment-service** | 8086 | Midtrans Snap payment, webhook handling |
-| **notification-service** | 8087 | WhatsApp (Fonnte), email (SMTP), RabbitMQ consumers, broadcast |
-| **admin-service** | 8088 | Back-office web UI — orders, invitations, templates, CSV export |
-| **media-service** | 8089 | Client-side MinIO presigned upload/download |
+| **gateway-service** | 1080 | Spring Cloud Gateway — routing, JWT auth, rate limiting (Redis) |
+| **auth-service** | 1081 | User registration, login, RS256 JWT issuance, refresh tokens, admin seeding |
+| **storefront-service** | 1082 | Public website — landing, template catalogue, order flow, buyer login/register (Thymeleaf + HTMX + Alpine.js) |
+| **template-service** | 1083 | Template CRUD, MinIO presigned URLs, Bible verse catalogue |
+| **invitation-service** | 1084 | Invitation lifecycle, RSVP, guestbook, gift registry (Thymeleaf view) |
+| **order-service** | 1085 | Order creation, status machine, revision requests |
+| **payment-service** | 1086 | Midtrans Snap payment, public webhook handler |
+| **notification-service** | 1087 | WhatsApp (Fonnte), email (SMTP), RabbitMQ consumers, broadcast |
+| **admin-service** | 1088 | Back-office web UI — orders, invitations, templates, CSV export, broadcast |
+| **media-service** | 1089 | Client-side MinIO presigned upload/download |
 | **config-server** | 8888 | Spring Cloud Config — centralised YAML for all services |
 
 ---
@@ -88,9 +88,10 @@ All services communicate on a Podman bridge network (`baundang-network`) with DN
 | Payments | Midtrans Snap |
 | WhatsApp | Fonnte API (`@Retryable`, Guava `RateLimiter`) |
 | Containers | Podman + podman-compose (rootless OCI images) |
+| Observability | AOP service-layer logging (`ServiceLoggingAspect`) + request/response interceptor |
 | Code quality | Checkstyle 10 (Google style, 120-char lines) |
 | CI | GitHub Actions — build + test + checkstyle on PRs |
-| CD | GitHub Actions — SSH deploy on push to `main` |
+| CD | GitHub Actions — SSH deploy with per-service build/restart via checkboxes |
 
 ---
 
@@ -120,16 +121,16 @@ mvn -q clean package -DskipTests
 ### 3. Start the stack
 
 ```bash
-podman compose -f podman-compose.yml up -d
+podman compose --env-file .env up -d
 ```
 
-Services start in dependency order. The config-server must be healthy before application services start (health-check enforced in compose).
+Services start in dependency order. The config-server must be healthy before application services start; RabbitMQ must be healthy before messaging services start (all enforced via `condition: service_healthy` in compose).
 
 ### 4. Verify
 
 ```bash
-curl http://localhost:8080/actuator/health   # gateway
-curl http://localhost:8082/                  # storefront landing page
+curl http://localhost:1080/actuator/health   # gateway
+curl http://localhost:1082/                  # storefront landing page
 ```
 
 ### 5. Run tests
@@ -137,8 +138,6 @@ curl http://localhost:8082/                  # storefront landing page
 ```bash
 mvn clean verify
 ```
-
-All 88 `@WebMvcTest` unit tests cover every controller across all 9 application services.
 
 ---
 
@@ -158,6 +157,7 @@ config-repo/
   storefront-service.yml
   template-service.yml
   admin-service.yml
+  media-service.yml
 ```
 
 ### Environment variables (`.env`)
@@ -167,11 +167,15 @@ config-repo/
 | `DB_USER` / `DB_PASSWORD` | PostgreSQL credentials |
 | `REDIS_PASSWORD` | Redis auth password |
 | `RABBITMQ_USER` / `RABBITMQ_PASSWORD` | RabbitMQ credentials |
+| `RABBITMQ_VHOST` | RabbitMQ virtual host (default: `baundang`) |
+| `RABBITMQ_ERLANG_COOKIE` | RabbitMQ cluster cookie |
 | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` | MinIO root credentials |
 | `CONFIG_SERVER_USER` / `CONFIG_SERVER_PASSWORD` | Config server HTTP basic auth |
 | `JWT_SECRET` | 256-bit base64 secret for RS256 key generation |
+| `ADMIN_SEED_KEY` | Secret key for seeding the first admin account via `/api/v1/auth/register-admin` |
 | `MIDTRANS_SERVER_KEY` / `MIDTRANS_CLIENT_KEY` | Midtrans payment gateway keys |
 | `WHATSAPP_API_TOKEN` | Fonnte WhatsApp API token |
+| `ADMIN_WHATSAPP` | Admin WhatsApp number for notifications |
 | `EMAIL_HOST` / `EMAIL_PORT` / `EMAIL_USERNAME` / `EMAIL_PASSWORD` | SMTP settings |
 
 See [`.env.example`](.env.example) for the full list with placeholder values.
@@ -193,21 +197,35 @@ A single PostgreSQL instance hosts all schemas in database `baundang`:
 
 Each service connects with `currentSchema=<schema>` in the JDBC URL so Flyway and Hibernate are fully isolated. `max_connections` is set to 200; HikariCP pool is 5 per service.
 
+### Seeding the first admin account
+
+Once the stack is running, use the seed endpoint to create the initial admin:
+
+```bash
+curl -X POST https://<your-domain>/api/v1/auth/register-admin \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Seed-Key: <ADMIN_SEED_KEY value from .env>" \
+  -d '{"email":"admin@baundang.id","password":"YourPassword123"}'
+```
+
+The returned `accessToken` can be used immediately. The admin UI is at `/admin/login`.
+
 ---
 
 ## API Reference
 
-All public endpoints are exposed through the gateway on port **8080**.
+All public endpoints are exposed through the gateway on port **1080**.
 
 ### Auth — `/api/v1/auth`
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/login` | Email + password → JWT tokens |
-| `POST` | `/register` | Create buyer account → JWT tokens |
-| `GET` | `/public-key` | RS256 public key (PEM) for token verification |
-| `POST` | `/token/refresh` | Exchange refresh token → new access token |
-| `POST` | `/order-token` | Issue short-lived order-scoped token |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/login` | — | Email + password → JWT tokens |
+| `POST` | `/register` | — | Create buyer account → JWT tokens |
+| `GET` | `/public-key` | — | RS256 public key (PEM) for token verification |
+| `POST` | `/token/refresh` | — | Exchange refresh token → new access token |
+| `POST` | `/order-token` | — | Issue short-lived order-scoped token |
+| `POST` | `/register-admin` | Seed key (`X-Admin-Seed-Key` header) | Create admin account |
 
 ### Templates — `/api/v1/templates`
 
@@ -219,7 +237,7 @@ All public endpoints are exposed through the gateway on port **8080**.
 | `POST` | `/` | Admin | Create template |
 | `PUT` | `/{id}` | Admin | Update template |
 | `DELETE` | `/{id}` | Admin | Soft-delete template |
-| `GET` | `/christian/verses` | — | Bible verse catalogue (filter by translation, category) |
+| `GET` | `/christian/verses` | — | Bible verse catalogue |
 
 ### Orders — `/api/v1/orders`
 
@@ -235,22 +253,25 @@ All public endpoints are exposed through the gateway on port **8080**.
 
 ### Payments — `/api/v1/payments`
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/charge` | Create Midtrans Snap charge |
-| `GET` | `/snap-token/{orderId}` | Get Snap token for existing order |
-| `POST` | `/webhook/midtrans` | Midtrans payment notification webhook |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/charge` | Buyer JWT | Create Midtrans Snap charge |
+| `GET` | `/snap-token/{orderId}` | Buyer JWT | Get Snap token for existing order |
+| `POST` | `/webhook/midtrans` | — (public) | Midtrans payment notification webhook |
+| `POST` | `/gifts/charge` | — | Gift payment charge |
 
 ### Invitations — `/api/v1/invitations`
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/{slug}/rsvp` | Submit RSVP |
-| `GET` | `/{slug}/guestbook` | List approved guestbook entries |
-| `POST` | `/{slug}/guestbook` | Submit guestbook message |
-| `GET` | `/{slug}/events` | List wedding events |
-| `GET` | `/{slug}/gift-accounts` | Get gift registry info |
-| `POST` | `/{slug}/gift-confirm` | Confirm gift transfer |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/{slug}/rsvp` | — | Submit RSVP |
+| `GET` | `/{slug}/guestbook` | — | List approved guestbook entries |
+| `POST` | `/{slug}/guestbook` | — | Submit guestbook message |
+| `GET` | `/{slug}/events` | — | List wedding events |
+| `GET` | `/{slug}/gift-accounts` | — | Get gift registry info |
+| `POST` | `/{slug}/gift-confirm` | — | Confirm gift transfer |
+| `GET` | `/{slug}/checkin/{code}` | — | Guest check-in lookup |
+| `POST` | `/{slug}/checkin/{code}` | — | Mark guest checked in |
 
 Invitation pages are rendered server-side at `/i/{slug}`.
 
@@ -258,20 +279,31 @@ Invitation pages are rendered server-side at `/i/{slug}`.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/upload/presign` | Buyer | Request presigned PUT URL for direct MinIO upload |
-| `GET` | `/download/**` | Buyer | Request presigned GET URL |
-| `DELETE` | `/**` | Admin | Delete object |
-| `POST` | `/template/upload` | Admin | Server-side template asset upload |
+| `POST` | `/upload/presign` | Buyer JWT | Request presigned PUT URL for direct MinIO upload |
+| `GET` | `/download/**` | Buyer JWT | Request presigned GET URL |
+| `DELETE` | `/**` | Admin JWT | Delete object |
+| `POST` | `/template/upload` | Admin JWT | Server-side template asset upload |
 
 ### Notifications — `/api/v1/notifications`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/broadcast` | Internal | Broadcast WhatsApp message (`ALL_ACTIVE`, `EXPIRING_7D`) |
+| `POST` | `/broadcast` | Admin JWT | Broadcast WhatsApp message (`ALL_ACTIVE`, `EXPIRING_7D`) |
 
-### Admin UI
+### Storefront pages
 
-The admin back-office is a Thymeleaf web application accessible via the gateway under `/admin`. It provides order management, invitation approval, template toggling, guestbook moderation, revision handling, WhatsApp broadcast, and CSV export.
+| Path | Description |
+|---|---|
+| `/` | Landing page |
+| `/templates` | Template catalogue |
+| `/templates/{slug}` | Template detail |
+| `/pesan` | Order flow (package selection → details → confirmation) |
+| `/masuk` | Buyer login (JWT stored in sessionStorage, supports `?redirect=`) |
+| `/daftar` | Buyer registration |
+| `/tentang` | About page |
+| `/admin/login` | Admin login |
+| `/admin` | Admin back-office (requires admin JWT) |
+| `/i/{slug}` | Invitation viewer |
 
 ---
 
@@ -291,19 +323,18 @@ The admin back-office is a Thymeleaf web application accessible via the gateway 
 
 Runs on every pull request targeting `develop` or `main`:
 
-1. **Build & Test** — `mvn clean verify` (Java 25 / Temurin on the runner)
+1. **Build & Test** — `mvn clean verify`
 2. **Checkstyle** — `mvn checkstyle:check` (Google style, 120-char limit)
 3. Surefire reports uploaded as CI artifacts on failure
 
 ### Continuous Deployment (`.github/workflows/cd.yml`)
 
-Triggered on push to `main`:
+`workflow_dispatch` with per-service checkboxes:
 
-1. SSH into the production server using `webfactory/ssh-agent`
-2. `git pull origin main`
-3. `mvn -q -DskipTests clean package`
-4. `podman compose pull && podman compose up -d --remove-orphans`
-5. `podman image prune -f`
+- **build-service** — SSH in, pull latest, build selected services with Maven, rebuild container images, restart containers
+- **restart-service** — SSH in, restart selected service containers without rebuilding
+- **deploy-config** — SSH in, signal config-server to reload YAML from `config-repo/`
+- **full-deploy** — Full stack teardown and fresh `podman compose up -d`
 
 #### Required GitHub Secrets
 
@@ -311,18 +342,9 @@ Triggered on push to `main`:
 |---|---|
 | `SSH_KEY` | Private SSH key for the deploy user |
 | `SSH_USER` | Deploy user on the server |
-| `SSH_URL` | Server hostname or IP |
-| `SSH_PATH` | Deployment directory (e.g. `/opt/baundang`) |
-
-#### First-time server provisioning
-
-```bash
-SSH_PATH=/opt/baundang \
-REPO_URL=git@github.com:jeimandei/DigitalInvitationStore.git \
-  bash docs/server-setup.sh
-```
-
-This installs Java, Maven, Podman, clones the repo, and starts the initial stack.
+| `SSH_HOST` | Server hostname or IP |
+| `SSH_PORT` | SSH port |
+| `DEPLOY_DIR` | Deployment directory (e.g. `/opt/baundang`) |
 
 ---
 
@@ -331,12 +353,12 @@ This installs Java, Maven, Podman, clones the repo, and starts the initial stack
 ```
 DigitalInvitationStore/
 ├── pom.xml                   # Parent POM — dependency management, Checkstyle
-├── common/                   # Shared library: ApiResponse, PagedResponse, exceptions
+├── common/                   # Shared library: ApiResponse, ServiceLoggingAspect, exceptions
 ├── config-server/            # Spring Cloud Config Server
 ├── config-repo/              # YAML configuration files for all services
 ├── gateway-service/          # API Gateway — routing, JWT filter, rate limiting
 ├── auth-service/             # Authentication & JWT issuance
-├── storefront-service/       # Public-facing website (Thymeleaf + HTMX)
+├── storefront-service/       # Public-facing website (Thymeleaf + HTMX + Alpine.js)
 ├── template-service/         # Wedding template catalogue
 ├── invitation-service/       # Digital invitation pages and interactions
 ├── order-service/            # Order lifecycle management
@@ -346,8 +368,6 @@ DigitalInvitationStore/
 ├── media-service/            # Object storage (MinIO) proxy
 ├── checkstyle/
 │   └── checkstyle.xml        # Checkstyle rules (Google style)
-├── docs/
-│   └── server-setup.sh       # One-time server provisioning script
 ├── podman-compose.yml        # Full stack orchestration
 └── .env.example              # Environment variable template
 ```
