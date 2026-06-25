@@ -7,10 +7,11 @@ import org.springframework.http.MediaType;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Component
@@ -58,15 +59,12 @@ public class FonnteClient {
     }
 
     private void doSend(String target, String message) {
-        Map<String, Object> body = Map.of(
-                "target", target,
-                "message", message,
-                "delay", 0,
-                "countryCode", "62"
-        );
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("target", target);
+        form.add("message", message);
         String response = restClient.post()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(form)
                 .retrieve()
                 .body(String.class);
         log.info("Fonnte response for target {}: {}", target, response);
