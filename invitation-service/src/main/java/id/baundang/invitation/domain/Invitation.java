@@ -43,6 +43,7 @@ public class Invitation {
 
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "invitation_status_enum")
+    @org.hibernate.annotations.JdbcType(org.hibernate.dialect.PostgreSQLEnumJdbcType.class)
     private InvitationStatus status = InvitationStatus.DRAFT;
 
     @Column(name = "active_until")

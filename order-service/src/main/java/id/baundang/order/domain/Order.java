@@ -57,6 +57,7 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "order_status_enum")
+    @org.hibernate.annotations.JdbcType(org.hibernate.dialect.PostgreSQLEnumJdbcType.class)
     private OrderStatusPg status = OrderStatusPg.PENDING;
 
     @Column(name = "midtrans_transaction_id")
