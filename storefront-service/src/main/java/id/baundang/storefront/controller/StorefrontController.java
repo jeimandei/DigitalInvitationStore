@@ -2,11 +2,15 @@ package id.baundang.storefront.controller;
 
 import id.baundang.storefront.client.TemplateApiClient;
 import id.baundang.storefront.client.TemplateApiClient.TemplatePage;
+import id.baundang.storefront.client.TemplateSummaryDTO;
 import id.baundang.storefront.config.PricingProperties;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 
 @Controller
 public class StorefrontController {
@@ -58,5 +62,26 @@ public class StorefrontController {
     @GetMapping("/tentang")
     public String about() {
         return "tentang";
+    }
+
+    @GetMapping("/masuk")
+    public String login() {
+        return "masuk";
+    }
+
+    @GetMapping("/daftar")
+    public String register() {
+        return "daftar";
+    }
+
+    @GetMapping("/templates/{slug}")
+    public String templateDetail(@PathVariable String slug, Model model) {
+        TemplatePage page = templateClient.fetchTemplates(0, 50, null);
+        TemplateSummaryDTO template = page.content().stream()
+                .filter(t -> slug.equals(t.slug()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        model.addAttribute("template", template);
+        return "template-detail";
     }
 }

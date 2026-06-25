@@ -28,7 +28,19 @@ spring:
         - id: storefront
           uri: http://storefront-service:8082
           predicates:
-            - Path=/, /templates/**, /pesan/**, /tentang/**, /sitemap.xml, /robots.txt
+            - Path=/, /templates, /templates/**, /pesan, /pesan/**, /tentang, /tentang/**, /masuk, /masuk/**, /daftar, /daftar/**, /sitemap.xml, /robots.txt
+
+        - id: admin-login
+          uri: http://admin-service:8088
+          predicates:
+            - Path=/admin/login
+
+        - id: admin-ui
+          uri: http://admin-service:8088
+          predicates:
+            - Path=/admin, /admin/**
+          filters:
+            - "JwtAuth=ROLE_ADMIN"
 
         - id: template-service
           uri: http://template-service:8083
@@ -52,6 +64,11 @@ spring:
             - Path=/api/v1/orders/**
           filters:
             - JwtAuth
+
+        - id: payment-webhook
+          uri: http://payment-service:8086
+          predicates:
+            - Path=/api/v1/payments/webhook/**
 
         - id: payment-service
           uri: http://payment-service:8086
@@ -89,3 +106,7 @@ spring:
 app:
   auth:
     public-key-uri: http://auth-service:8081/api/v1/auth/public-key
+
+logging:
+  level:
+    id.baundang.common.logging.ServiceLoggingAspect: DEBUG
