@@ -324,9 +324,20 @@ jobs:
 
             echo "→ Stopping and removing old containers and images"
             for svc in $SERVICES; do
-              podman compose --env-file .env stop \$svc || true
+              # remove via compose identity AND by explicit container name — belt and suspenders
+              podman compose --env-file .env rm -sf \$svc 2>/dev/null || true
               podman rm -f "baundang-\$svc" 2>/dev/null || true
               podman rmi -f "baundang/\$svc" 2>/dev/null || true
+            done
+
+            echo "→ Confirming old containers are gone"
+            for svc in $SERVICES; do
+              if podman container exists "baundang-\$svc"; then
+                echo "  ✗ baundang-\$svc still present — forcing removal"
+                podman rm -f "baundang-\$svc" || true
+              else
+                echo "  ✓ baundang-\$svc removed"
+              fi
             done
 
             echo "→ Rebuilding images (no cache)"
@@ -334,8 +345,14 @@ jobs:
               podman compose --env-file .env build --no-cache \$svc
             done
 
-            echo "→ Starting new containers"
+            echo "→ Creating brand-new containers"
             podman compose --env-file .env up -d --no-deps --force-recreate $SERVICES
+
+            echo "→ Verifying containers were recreated"
+            for svc in $SERVICES; do
+              podman ps --filter "name=baundang-\$svc" \
+                --format '  {{.Names}} | {{.Status}} | created {{.CreatedAt}}'
+            done
 
             echo "→ Restarting gateway"
             podman compose --env-file .env restart gateway
