@@ -47,7 +47,83 @@
             </form>
         </div>
 
+        <!-- Test WA Section -->
+        <div class="bg-white rounded-xl shadow p-6 mt-6">
+            <h2 class="text-sm font-semibold text-gray-700 mb-1">Kirim Pesan Test</h2>
+            <p class="text-sm text-gray-500 mb-4">Kirim pesan ke satu nomor untuk memverifikasi koneksi Fonnte.</p>
+
+            <div id="test-result" class="hidden mb-4 text-sm rounded-lg px-4 py-3"></div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp</label>
+                    <input id="test-phone" type="text" placeholder="6281234567890"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+                    <p class="text-xs text-gray-400 mt-1">Format internasional tanpa +, contoh: 6281234567890</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Pesan</label>
+                    <textarea id="test-message" rows="4"
+                              placeholder="Halo, ini pesan test dari baundang.id"
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"></textarea>
+                </div>
+                <button id="test-btn" onclick="sendTestWa()"
+                        class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors disabled:opacity-50">
+                    Kirim Test
+                </button>
+            </div>
+        </div>
+
     </main>
 </div>
+
+<script>
+async function sendTestWa() {
+    const phone = document.getElementById('test-phone').value.trim();
+    const message = document.getElementById('test-message').value.trim();
+    const resultEl = document.getElementById('test-result');
+    const btn = document.getElementById('test-btn');
+
+    if (!phone || !message) {
+        showResult('error', 'Nomor dan pesan wajib diisi.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Mengirim...';
+    resultEl.classList.add('hidden');
+
+    try {
+        const res = await fetch('/api/v1/notifications/test-wa', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + sessionStorage.getItem('admin_token')
+            },
+            body: JSON.stringify({ phone, message })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            showResult('error', data.error || 'Gagal mengirim pesan.');
+        } else {
+            showResult('success', '✓ Pesan berhasil dikirim ke ' + data.phone);
+        }
+    } catch (e) {
+        showResult('error', 'Terjadi kesalahan: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Kirim Test';
+    }
+}
+
+function showResult(type, msg) {
+    const el = document.getElementById('test-result');
+    el.textContent = msg;
+    el.className = type === 'success'
+        ? 'mb-4 text-sm rounded-lg px-4 py-3 bg-green-50 border border-green-200 text-green-800'
+        : 'mb-4 text-sm rounded-lg px-4 py-3 bg-red-50 border border-red-200 text-red-800';
+    el.classList.remove('hidden');
+}
+</script>
 </body>
 </html>
