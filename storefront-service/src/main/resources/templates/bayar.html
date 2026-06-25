@@ -121,7 +121,8 @@
               const body = await res.json().catch(() => ({}));
               throw new Error(body.message || 'Gagal memuat data pembayaran');
             }
-            const data = await res.json();
+            const body = await res.json();
+            const data = body.data || body;
             this.snapToken = data.snapToken || data.snap_token;
             if (!this.snapToken) throw new Error('Token pembayaran tidak tersedia');
             this.state = 'ready';
