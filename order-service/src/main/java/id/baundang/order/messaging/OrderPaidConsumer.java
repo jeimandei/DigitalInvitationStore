@@ -27,13 +27,23 @@ public class OrderPaidConsumer {
             }
             UUID orderId = UUID.fromString(orderIdRaw.toString());
             String midtransOrderId = event.getOrDefault("midtransOrderId", "").toString();
-            Instant paidAt = event.get("paidAt") != null
-                    ? Instant.parse(event.get("paidAt").toString()) : Instant.now();
+            Instant paidAt = parseInstant(event.get("paidAt"));
 
             orderService.markPaid(orderId, midtransOrderId, paidAt);
             log.info("Order {} marked as PAID from payment event", orderId);
         } catch (Exception e) {
             log.error("Failed to process payment.paid event: {}", e.getMessage(), e);
+        }
+    }
+
+    private Instant parseInstant(Object value) {
+        if (value == null) return Instant.now();
+        String s = value.toString();
+        try {
+            return Instant.parse(s);
+        } catch (Exception e) {
+            // fallback: numeric epoch seconds (e.g. 1.782400701E9)
+            return Instant.ofEpochSecond((long) Double.parseDouble(s));
         }
     }
 }
