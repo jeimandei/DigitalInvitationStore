@@ -56,7 +56,7 @@ public class Template {
     private JsonNode config;
 
     @Column(nullable = false)
-    private boolean active = true;
+    private boolean active = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
