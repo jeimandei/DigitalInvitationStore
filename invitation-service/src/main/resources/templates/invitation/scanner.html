@@ -2,10 +2,17 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
     <title th:text="'Scanner Check-in — ' + ${coupleName}">Scanner Check-in</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        /* Let html5-qrcode control the video — do NOT override its size or
+           object-fit, or the canvas coordinate space diverges from the visible
+           preview and decoding fails. */
+        #reader img { display: none !important; }
+        #reader div[style*="border"] { border: none !important; box-shadow: none !important; }
+    </style>
 </head>
 <body class="bg-stone-900 min-h-screen flex flex-col items-center justify-center px-4 py-8">
 
@@ -63,7 +70,7 @@
 </div>
 
 <script>
-    // Plain (non-Thymeleaf) bootstrap so even a template-inlining problem can't kill logging.
+    // Standalone bootstrap so logging survives even a main-script problem.
     (function () {
         var diagEl = document.getElementById('diag');
         window.__log = function (msg) {
@@ -74,15 +81,11 @@
             } catch (e) {}
         };
         window.addEventListener('error', function (e) {
-            window.__log('JS ERROR: ' + (e.message || e.error || e) + (e.filename ? ' @ ' + e.filename + ':' + e.lineno : ''));
+            window.__log('JS ERROR: ' + (e.message || e.error || e));
             var box = document.getElementById('error-box');
-            if (box) { box.textContent = 'Terjadi error skrip — lihat Log diagnostik di bawah.'; box.classList.remove('hidden'); }
-        });
-        window.addEventListener('unhandledrejection', function (e) {
-            window.__log('PROMISE REJECTED: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+            if (box) { box.textContent = 'Terjadi error skrip — lihat Log diagnostik.'; box.classList.remove('hidden'); }
         });
         window.__log('Halaman dimuat. secureContext=' + window.isSecureContext +
-            ', mediaDevices=' + !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) +
             ', Html5Qrcode=' + (typeof Html5Qrcode !== 'undefined'));
     })();
 </script>
@@ -92,8 +95,8 @@
     var slug = /*[[${slug}]]*/ '';
     var origin = window.location.origin;
     var lastScanned = '';
-    var cooldown = false;
-    var html5QrCode = null;
+    var scanning = true;
+    var scanner = null;
     var running = false;
 
     var statusEl = document.getElementById('status');
@@ -108,24 +111,39 @@
     function setStatus(msg) { statusEl.textContent = msg; }
     function checkinUrlFor(code) { return origin + '/i/' + slug + '/checkin/' + encodeURIComponent(code); }
 
-    function onScanSuccess(decodedText) {
-        if (cooldown || decodedText === lastScanned) return;
-        lastScanned = decodedText;
-        cooldown = true;
-        window.__log('Scan: ' + decodedText);
+    // Minimal, proven config — do not add aspectRatio / applyConstraints, they
+    // break the decode coordinate mapping.
+    var SCAN_CONFIG = {
+        fps: 10,
+        qrbox: function (w, h) { var s = Math.round(Math.min(w, h) * 0.8); return { width: s, height: s }; }
+    };
 
-        var target = ('' + decodedText).trim();
-        var expectedPrefix = origin + '/i/' + slug + '/checkin/';
+    function onScanSuccess(text) {
+        if (!scanning) return;
+        var decoded = ('' + text).trim();
+        if (decoded === lastScanned) return;
+        lastScanned = decoded;
+        scanning = false;
+        window.__log('Scan: ' + decoded);
 
-        if (target.indexOf(expectedPrefix) === 0) {
+        var target = decoded;
+        var prefix = origin + '/i/' + slug + '/checkin/';
+        if (target.indexOf(prefix) === 0) {
             // full URL — use as-is
         } else if (/^[A-Za-z0-9_-]+$/.test(target)) {
             target = checkinUrlFor(target);
         } else {
-            showError('QR Code tidak valid untuk undangan ini.');
-            window.__log('QR ditolak (bukan untuk undangan ini).');
-            setTimeout(function () { cooldown = false; lastScanned = ''; }, 2500);
-            return;
+            // maybe a URL with an id/code query param
+            try {
+                var u = new URL(decoded);
+                var q = u.searchParams.get('code') || u.searchParams.get('id');
+                if (q) { target = checkinUrlFor(q); }
+                else { throw new Error('no code'); }
+            } catch (_) {
+                showError('QR Code tidak dikenali.');
+                setTimeout(function () { scanning = true; lastScanned = ''; clearError(); }, 2000);
+                return;
+            }
         }
 
         clearError();
@@ -138,113 +156,57 @@
         window.__log('Tombol Mulai Scan ditekan.');
 
         if (typeof Html5Qrcode === 'undefined') {
-            showError('Gagal memuat pustaka pemindai. Periksa koneksi internet lalu muat ulang.');
-            window.__log('Html5Qrcode tidak terdefinisi — pustaka gagal dimuat.');
+            showError('Gagal memuat pustaka pemindai. Periksa koneksi lalu muat ulang.');
             return;
         }
         if (!window.isSecureContext) {
             showError('Kamera hanya bisa diakses lewat HTTPS.');
-            window.__log('Bukan secure context.');
-            return;
-        }
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showError('Browser ini tidak mendukung akses kamera.');
-            window.__log('mediaDevices.getUserMedia tidak tersedia.');
             return;
         }
 
-        if (!html5QrCode) {
-            // verbose:false; enable native BarcodeDetector when the browser supports it
-            html5QrCode = new Html5Qrcode('reader', {
-                verbose: false,
-                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-            });
-        }
+        scanner = new Html5Qrcode('reader');
         setStatus('Meminta izin kamera...');
         startBtn.disabled = true;
-        window.__log('Memanggil html5QrCode.start()...');
+        window.__log('Memanggil start() facingMode=environment...');
 
-        // Adaptive scan box: ~80% of the smaller viewfinder dimension, so the
-        // whole visible QR is inside the decode region regardless of phone size.
-        function qrboxFn(vfW, vfH) {
-            var size = Math.floor(Math.min(vfW, vfH) * 0.8);
-            return { width: size, height: size };
-        }
-
-        // NOTE: html5-qrcode requires the first arg to have exactly ONE key.
-        // HD resolution + continuous focus are applied to the track AFTER start.
-        html5QrCode.start(
-            { facingMode: 'environment' },
-            { fps: 15, qrbox: qrboxFn, aspectRatio: 1.777, disableFlip: false },
-            onScanSuccess,
-            function () { /* per-frame misses */ }
-        ).then(function () {
-            running = true;
-            startBtn.disabled = false;
-            startBtn.classList.add('hidden');
-            stopBtn.classList.remove('hidden');
-            setStatus('Arahkan kamera ke QR Code tamu');
-            window.__log('Kamera berjalan. Mendeteksi... arahkan QR ke dalam kotak.');
-
-            // Upgrade the live track to HD + continuous focus AFTER start (start
-            // itself only accepts a single-key constraint). This sharpens dense
-            // QRs that the default low-res stream renders as an unreadable blur.
-            try {
-                var video = document.querySelector('#reader video');
-                if (video && video.srcObject) {
-                    var track = video.srcObject.getVideoTracks()[0];
-                    if (track) {
-                        var logSettings = function (tag) {
-                            var s = track.getSettings ? track.getSettings() : {};
-                            window.__log(tag + ' ' + (s.width || '?') + 'x' + (s.height || '?') +
-                                ' focusMode=' + (s.focusMode || 'n/a'));
-                        };
-                        logSettings('Resolusi awal:');
-
-                        var caps = track.getCapabilities ? track.getCapabilities() : {};
-                        var advanced = [];
-                        if (caps.focusMode && caps.focusMode.indexOf('continuous') !== -1) {
-                            advanced.push({ focusMode: 'continuous' });
+        scanner.start({ facingMode: 'environment' }, SCAN_CONFIG, onScanSuccess, function () {})
+            .then(onStarted)
+            .catch(function (err) {
+                window.__log('environment gagal: ' + err + ' — coba kamera depan');
+                // Fallback to front camera
+                scanner = new Html5Qrcode('reader');
+                scanner.start({ facingMode: 'user' }, SCAN_CONFIG, onScanSuccess, function () {})
+                    .then(onStarted)
+                    .catch(function (err2) {
+                        startBtn.disabled = false;
+                        setStatus('');
+                        var m = '' + err2;
+                        if (m.indexOf('NotAllowedError') !== -1 || m.indexOf('Permission') !== -1) {
+                            showError('Izin kamera ditolak. Aktifkan izin kamera untuk situs ini lalu coba lagi.');
+                        } else if (m.indexOf('NotFoundError') !== -1) {
+                            showError('Kamera tidak ditemukan di perangkat ini.');
+                        } else {
+                            showError('Tidak dapat mengakses kamera: ' + m);
                         }
-                        var wanted = {
-                            width: { ideal: 1920 },
-                            height: { ideal: 1080 }
-                        };
-                        if (advanced.length) wanted.advanced = advanced;
+                        window.__log('start() GAGAL total: ' + m);
+                    });
+            });
+    }
 
-                        track.applyConstraints(wanted)
-                            .then(function () { logSettings('Resolusi setelah upgrade:'); })
-                            .catch(function (ae) { window.__log('applyConstraints gagal (lanjut pakai default): ' + ae); });
-                    }
-                }
-            } catch (fx) { window.__log('Tidak bisa baca info video: ' + fx); }
-            // Heartbeat so we can confirm scanning is actively running
-            var beats = 0;
-            var hb = setInterval(function () {
-                if (!running) { clearInterval(hb); return; }
-                beats++;
-                if (beats <= 6) window.__log('Memindai... (' + beats + ')');
-                else clearInterval(hb);
-            }, 2000);
-        }).catch(function (err) {
-            startBtn.disabled = false;
-            setStatus('');
-            var m = (err && err.toString ? err.toString() : String(err));
-            window.__log('start() GAGAL: ' + m);
-            if (m.indexOf('NotAllowedError') !== -1 || m.indexOf('Permission') !== -1) {
-                showError('Izin kamera ditolak. Aktifkan izin kamera untuk situs ini lalu coba lagi.');
-            } else if (m.indexOf('NotFoundError') !== -1) {
-                showError('Kamera tidak ditemukan di perangkat ini.');
-            } else {
-                showError('Tidak dapat mengakses kamera: ' + m);
-            }
-        });
+    function onStarted() {
+        running = true;
+        scanning = true;
+        startBtn.disabled = false;
+        startBtn.classList.add('hidden');
+        stopBtn.classList.remove('hidden');
+        setStatus('Arahkan kamera ke QR Code tamu');
+        window.__log('Kamera berjalan.');
     }
 
     function stopScanner() {
-        if (html5QrCode && running) {
+        if (scanner && running) {
             running = false;
-            return html5QrCode.stop().then(function () {
+            return scanner.stop().then(function () {
                 stopBtn.classList.add('hidden');
                 startBtn.classList.remove('hidden');
             }).catch(function () {});
@@ -258,7 +220,7 @@
         setStatus('Pemindaian dihentikan. Tekan Mulai Scan untuk melanjutkan.');
     });
 
-    // Scan from a photo / picked image — autofocus on capture makes this reliable
+    // Scan from a photo / picked image — reliable when live focus struggles
     document.getElementById('qr-file').addEventListener('change', function (e) {
         var file = e.target.files && e.target.files[0];
         if (!file) return;
@@ -266,29 +228,21 @@
         setStatus('Memindai foto...');
         window.__log('Memindai dari file: ' + file.name);
 
-        var scanner = html5QrCode;
-        var freshlyMade = false;
-        if (!scanner) {
-            scanner = new Html5Qrcode('reader', { verbose: false });
-            freshlyMade = true;
-        }
-
+        var fileScanner = new Html5Qrcode('reader');
         var doScan = function () {
-            scanner.scanFile(file, false).then(function (decodedText) {
+            fileScanner.scanFile(file, false).then(function (decodedText) {
                 window.__log('File decoded: ' + decodedText);
+                scanning = true;
                 onScanSuccess(decodedText);
             }).catch(function (err) {
-                var m = (err && err.toString ? err.toString() : String(err));
-                window.__log('scanFile GAGAL: ' + m);
+                window.__log('scanFile GAGAL: ' + err);
                 showError('Tidak menemukan QR pada foto. Pastikan QR terlihat jelas dan coba lagi.');
                 setStatus('');
             }).finally(function () {
-                if (freshlyMade) { try { scanner.clear(); } catch (x) {} }
+                try { fileScanner.clear(); } catch (x) {}
                 e.target.value = '';
             });
         };
-
-        // scanFile cannot run while live camera is active — stop it first
         if (running) { stopScanner().then(doScan); } else { doScan(); }
     });
 
