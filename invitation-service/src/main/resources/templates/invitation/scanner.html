@@ -4,73 +4,79 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
     <title th:text="'Scanner Check-in — ' + ${coupleName}">Scanner Check-in</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-        /* Let html5-qrcode control the video — do NOT override its size or
-           object-fit, or the canvas coordinate space diverges from the visible
-           preview and decoding fails. */
-        #reader img { display: none !important; }
-        #reader div[style*="border"] { border: none !important; box-shadow: none !important; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root { --rose:#e11d48; --rose-d:#be123c; --bg:#1c1917; --panel:#292524; --line:#44403c; --txt:#fafaf9; --muted:#a8a29e; }
+        html, body { height:100%; background:var(--bg); color:var(--txt); font-family:system-ui,-apple-system,sans-serif; }
+        body { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:2rem 1rem; min-height:100%; }
+        .wrap { width:100%; max-width:420px; }
+        .head { text-align:center; margin-bottom:1.5rem; }
+        .head .label { font-size:.8rem; color:var(--muted); margin-bottom:.25rem; }
+        .head h1 { font-size:1.5rem; font-weight:700; }
+        /* Let html5-qrcode control the video — do NOT override its size/object-fit
+           or the canvas coordinate space diverges from the preview. */
+        #reader { width:100%; border-radius:14px; overflow:hidden; background:#000; min-height:120px; }
+        #reader img { display:none !important; }
+        #reader div[style*="border"] { border:none !important; box-shadow:none !important; }
+        #status { text-align:center; font-size:.85rem; color:var(--muted); margin-top:1rem; }
+        #error-box { display:none; margin-top:1rem; background:rgba(190,18,60,.18); color:#fda4af; font-size:.85rem; border-radius:12px; padding:.75rem 1rem; text-align:center; }
+        #error-box.show { display:block; }
+        button, .btn { width:100%; border:none; border-radius:999px; padding:.85rem; font-size:.85rem; font-weight:600; cursor:pointer; font-family:inherit; }
+        .btn-primary { background:var(--rose); color:#fff; margin-top:1.25rem; }
+        .btn-primary:hover { background:var(--rose-d); }
+        .btn-outline { background:transparent; color:var(--muted); border:1px solid var(--line); margin-top:.75rem; display:none; }
+        .btn-outline.show { display:block; }
+        .btn-gray { background:var(--panel); color:#fff; display:block; text-align:center; }
+        .file-wrap { margin-top:1.5rem; }
+        .file-wrap p { text-align:center; font-size:.72rem; color:var(--muted); margin-top:.5rem; }
+        .manual { margin-top:2rem; border-top:1px solid var(--line); padding-top:1.5rem; }
+        .manual p { text-align:center; font-size:.72rem; color:var(--muted); margin-bottom:.75rem; }
+        .manual .row { display:flex; gap:.5rem; }
+        .manual input { flex:1; background:var(--panel); border:1px solid var(--line); color:#fff; border-radius:10px; padding:.6rem .9rem; font-size:.85rem; outline:none; }
+        .manual input:focus { border-color:var(--rose); }
+        .manual button { width:auto; background:var(--panel); padding:.6rem 1rem; border-radius:10px; }
+        details { margin-top:1.5rem; }
+        summary { color:#57534e; font-size:.72rem; cursor:pointer; }
+        #diag { margin-top:.5rem; background:rgba(0,0,0,.4); color:var(--muted); font-size:10px; line-height:1.5; border-radius:8px; padding:.75rem; white-space:pre-wrap; word-break:break-all; max-height:12rem; overflow:auto; }
     </style>
 </head>
-<body class="bg-stone-900 min-h-screen flex flex-col items-center justify-center px-4 py-8">
-
-<div class="w-full max-w-sm">
-    <div class="text-center mb-6">
-        <p class="text-stone-400 text-sm mb-1">Scanner Check-in</p>
-        <h1 class="text-white text-xl font-bold" th:text="${coupleName}">Nama Pasangan</h1>
+<body>
+<div class="wrap">
+    <div class="head">
+        <p class="label">Scanner Check-in</p>
+        <h1 th:text="${coupleName}">Nama Pasangan</h1>
     </div>
 
-    <div id="reader" class="w-full rounded-2xl overflow-hidden bg-black min-h-[120px]"></div>
+    <div id="reader"></div>
 
-    <div id="status" class="mt-4 text-center text-sm text-stone-400">
-        Tekan tombol di bawah untuk mulai memindai
+    <div id="status">Tekan tombol di bawah untuk mulai memindai</div>
+    <div id="error-box"></div>
+
+    <button id="start-btn" class="btn-primary">Mulai Scan</button>
+    <button id="stop-btn" class="btn-outline">Hentikan</button>
+
+    <div class="file-wrap">
+        <label for="qr-file" class="btn btn-gray">Pindai dari Foto</label>
+        <input id="qr-file" type="file" accept="image/*" capture="environment" style="display:none"/>
+        <p>Ambil foto QR atau pilih dari galeri (lebih akurat saat kamera sulit fokus)</p>
     </div>
 
-    <div id="error-box" class="hidden mt-4 bg-red-900/50 text-red-300 text-sm rounded-xl px-4 py-3 text-center"></div>
-
-    <button id="start-btn"
-            class="mt-5 w-full bg-rose-600 text-white py-3 rounded-full text-sm font-semibold hover:bg-rose-700 transition">
-        Mulai Scan
-    </button>
-    <button id="stop-btn"
-            class="hidden mt-3 w-full border border-stone-600 text-stone-300 py-3 rounded-full text-sm font-semibold hover:bg-stone-800 transition">
-        Hentikan
-    </button>
-
-    <!-- Photo fallback: take a photo / pick an image and decode it -->
-    <div class="mt-6">
-        <label for="qr-file"
-               class="block text-center bg-stone-700 text-white py-3 rounded-full text-sm font-semibold hover:bg-stone-600 cursor-pointer transition">
-            Pindai dari Foto
-        </label>
-        <input id="qr-file" type="file" accept="image/*" capture="environment" class="hidden"/>
-        <p class="text-stone-500 text-xs text-center mt-2">Ambil foto QR atau pilih dari galeri (lebih akurat saat kamera sulit fokus)</p>
-    </div>
-
-    <!-- Manual fallback -->
-    <div class="mt-8 border-t border-stone-700 pt-6">
-        <p class="text-stone-500 text-xs text-center mb-3">Atau masukkan kode undangan manual:</p>
-        <div class="flex gap-2">
-            <input id="manual-code" type="text" placeholder="Kode undangan"
-                   class="flex-1 bg-stone-800 border border-stone-700 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"/>
-            <button id="manual-go"
-                    class="bg-stone-700 text-white px-4 py-2 rounded-xl text-sm hover:bg-stone-600">
-                Buka
-            </button>
+    <div class="manual">
+        <p>Atau masukkan kode undangan manual:</p>
+        <div class="row">
+            <input id="manual-code" type="text" placeholder="Kode undangan"/>
+            <button id="manual-go">Buka</button>
         </div>
     </div>
 
-    <!-- Diagnostic log (collapsible) -->
-    <details class="mt-6">
-        <summary class="text-stone-600 text-xs cursor-pointer">Log diagnostik</summary>
-        <pre id="diag" class="mt-2 bg-black/40 text-stone-400 text-[10px] leading-relaxed rounded-lg p-3 whitespace-pre-wrap break-all max-h-48 overflow-auto"></pre>
+    <details>
+        <summary>Log diagnostik</summary>
+        <pre id="diag"></pre>
     </details>
 </div>
 
 <script>
-    // Standalone bootstrap so logging survives even a main-script problem.
     (function () {
         var diagEl = document.getElementById('diag');
         window.__log = function (msg) {
@@ -82,8 +88,6 @@
         };
         window.addEventListener('error', function (e) {
             window.__log('JS ERROR: ' + (e.message || e.error || e));
-            var box = document.getElementById('error-box');
-            if (box) { box.textContent = 'Terjadi error skrip — lihat Log diagnostik.'; box.classList.remove('hidden'); }
         });
         window.__log('Halaman dimuat. secureContext=' + window.isSecureContext +
             ', Html5Qrcode=' + (typeof Html5Qrcode !== 'undefined'));
@@ -106,13 +110,11 @@
 
     window.__log('Skrip utama jalan. slug=' + slug + ' origin=' + origin);
 
-    function showError(msg) { errorEl.textContent = msg; errorEl.classList.remove('hidden'); }
-    function clearError() { errorEl.classList.add('hidden'); }
+    function showError(msg) { errorEl.textContent = msg; errorEl.classList.add('show'); }
+    function clearError() { errorEl.classList.remove('show'); }
     function setStatus(msg) { statusEl.textContent = msg; }
     function checkinUrlFor(code) { return origin + '/i/' + slug + '/checkin/' + encodeURIComponent(code); }
 
-    // Minimal, proven config — do not add aspectRatio / applyConstraints, they
-    // break the decode coordinate mapping.
     var SCAN_CONFIG = {
         fps: 10,
         qrbox: function (w, h) { var s = Math.round(Math.min(w, h) * 0.8); return { width: s, height: s }; }
@@ -133,12 +135,10 @@
         } else if (/^[A-Za-z0-9_-]+$/.test(target)) {
             target = checkinUrlFor(target);
         } else {
-            // maybe a URL with an id/code query param
             try {
                 var u = new URL(decoded);
                 var q = u.searchParams.get('code') || u.searchParams.get('id');
-                if (q) { target = checkinUrlFor(q); }
-                else { throw new Error('no code'); }
+                if (q) { target = checkinUrlFor(q); } else { throw new Error('no code'); }
             } catch (_) {
                 showError('QR Code tidak dikenali.');
                 setTimeout(function () { scanning = true; lastScanned = ''; clearError(); }, 2000);
@@ -154,26 +154,18 @@
     function startScanner() {
         clearError();
         window.__log('Tombol Mulai Scan ditekan.');
-
-        if (typeof Html5Qrcode === 'undefined') {
-            showError('Gagal memuat pustaka pemindai. Periksa koneksi lalu muat ulang.');
-            return;
-        }
-        if (!window.isSecureContext) {
-            showError('Kamera hanya bisa diakses lewat HTTPS.');
-            return;
-        }
+        if (typeof Html5Qrcode === 'undefined') { showError('Gagal memuat pustaka pemindai.'); return; }
+        if (!window.isSecureContext) { showError('Kamera hanya bisa diakses lewat HTTPS.'); return; }
 
         scanner = new Html5Qrcode('reader');
         setStatus('Meminta izin kamera...');
         startBtn.disabled = true;
-        window.__log('Memanggil start() facingMode=environment...');
+        window.__log('start() facingMode=environment...');
 
         scanner.start({ facingMode: 'environment' }, SCAN_CONFIG, onScanSuccess, function () {})
             .then(onStarted)
             .catch(function (err) {
                 window.__log('environment gagal: ' + err + ' — coba kamera depan');
-                // Fallback to front camera
                 scanner = new Html5Qrcode('reader');
                 scanner.start({ facingMode: 'user' }, SCAN_CONFIG, onScanSuccess, function () {})
                     .then(onStarted)
@@ -197,8 +189,8 @@
         running = true;
         scanning = true;
         startBtn.disabled = false;
-        startBtn.classList.add('hidden');
-        stopBtn.classList.remove('hidden');
+        startBtn.style.display = 'none';
+        stopBtn.classList.add('show');
         setStatus('Arahkan kamera ke QR Code tamu');
         window.__log('Kamera berjalan.');
     }
@@ -207,8 +199,8 @@
         if (scanner && running) {
             running = false;
             return scanner.stop().then(function () {
-                stopBtn.classList.add('hidden');
-                startBtn.classList.remove('hidden');
+                stopBtn.classList.remove('show');
+                startBtn.style.display = 'block';
             }).catch(function () {});
         }
         return Promise.resolve();
@@ -220,14 +212,12 @@
         setStatus('Pemindaian dihentikan. Tekan Mulai Scan untuk melanjutkan.');
     });
 
-    // Scan from a photo / picked image — reliable when live focus struggles
     document.getElementById('qr-file').addEventListener('change', function (e) {
         var file = e.target.files && e.target.files[0];
         if (!file) return;
         clearError();
         setStatus('Memindai foto...');
         window.__log('Memindai dari file: ' + file.name);
-
         var fileScanner = new Html5Qrcode('reader');
         var doScan = function () {
             fileScanner.scanFile(file, false).then(function (decodedText) {
