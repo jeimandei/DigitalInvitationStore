@@ -45,54 +45,75 @@
         </div>
     </div>
 
-    <p class="mt-8 text-center text-stone-600 text-xs">
-        Scan akan otomatis membuka halaman check-in tamu
-    </p>
+    <!-- Diagnostic log (collapsible) -->
+    <details class="mt-6">
+        <summary class="text-stone-600 text-xs cursor-pointer">Log diagnostik</summary>
+        <pre id="diag" class="mt-2 bg-black/40 text-stone-400 text-[10px] leading-relaxed rounded-lg p-3 whitespace-pre-wrap break-all max-h-48 overflow-auto"></pre>
+    </details>
 </div>
 
+<script>
+    // Plain (non-Thymeleaf) bootstrap so even a template-inlining problem can't kill logging.
+    (function () {
+        var diagEl = document.getElementById('diag');
+        window.__log = function (msg) {
+            try {
+                var line = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+                if (diagEl) diagEl.textContent += line + '\n';
+                if (window.console) console.log(line);
+            } catch (e) {}
+        };
+        window.addEventListener('error', function (e) {
+            window.__log('JS ERROR: ' + (e.message || e.error || e) + (e.filename ? ' @ ' + e.filename + ':' + e.lineno : ''));
+            var box = document.getElementById('error-box');
+            if (box) { box.textContent = 'Terjadi error skrip — lihat Log diagnostik di bawah.'; box.classList.remove('hidden'); }
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+            window.__log('PROMISE REJECTED: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+        });
+        window.__log('Halaman dimuat. secureContext=' + window.isSecureContext +
+            ', mediaDevices=' + !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) +
+            ', Html5Qrcode=' + (typeof Html5Qrcode !== 'undefined'));
+    })();
+</script>
+
 <script th:inline="javascript">
-    const slug = /*[[${slug}]]*/ '';
-    const origin = window.location.origin;
-    let lastScanned = '';
-    let cooldown = false;
-    let html5QrCode = null;
-    let running = false;
+    /*<![CDATA[*/
+    var slug = /*[[${slug}]]*/ '';
+    var origin = window.location.origin;
+    var lastScanned = '';
+    var cooldown = false;
+    var html5QrCode = null;
+    var running = false;
 
-    const statusEl = document.getElementById('status');
-    const errorEl = document.getElementById('error-box');
-    const startBtn = document.getElementById('start-btn');
-    const stopBtn = document.getElementById('stop-btn');
+    var statusEl = document.getElementById('status');
+    var errorEl = document.getElementById('error-box');
+    var startBtn = document.getElementById('start-btn');
+    var stopBtn = document.getElementById('stop-btn');
 
-    function showError(msg) {
-        errorEl.textContent = msg;
-        errorEl.classList.remove('hidden');
-    }
-    function clearError() {
-        errorEl.classList.add('hidden');
-    }
-    function setStatus(msg) {
-        statusEl.textContent = msg;
-    }
+    window.__log('Skrip utama jalan. slug=' + slug + ' origin=' + origin);
 
-    function checkinUrlFor(code) {
-        return origin + '/i/' + slug + '/checkin/' + encodeURIComponent(code);
-    }
+    function showError(msg) { errorEl.textContent = msg; errorEl.classList.remove('hidden'); }
+    function clearError() { errorEl.classList.add('hidden'); }
+    function setStatus(msg) { statusEl.textContent = msg; }
+    function checkinUrlFor(code) { return origin + '/i/' + slug + '/checkin/' + encodeURIComponent(code); }
 
     function onScanSuccess(decodedText) {
         if (cooldown || decodedText === lastScanned) return;
         lastScanned = decodedText;
         cooldown = true;
+        window.__log('Scan: ' + decodedText);
 
-        let target = decodedText.trim();
-        const expectedPrefix = origin + '/i/' + slug + '/checkin/';
+        var target = ('' + decodedText).trim();
+        var expectedPrefix = origin + '/i/' + slug + '/checkin/';
 
-        if (target.startsWith(expectedPrefix)) {
-            // full URL — go directly
+        if (target.indexOf(expectedPrefix) === 0) {
+            // full URL — use as-is
         } else if (/^[A-Za-z0-9_-]+$/.test(target)) {
-            // bare code — build the URL
             target = checkinUrlFor(target);
         } else {
             showError('QR Code tidak valid untuk undangan ini.');
+            window.__log('QR ditolak (bukan untuk undangan ini).');
             setTimeout(function () { cooldown = false; lastScanned = ''; }, 2500);
             return;
         }
@@ -104,42 +125,48 @@
 
     function startScanner() {
         clearError();
+        window.__log('Tombol Mulai Scan ditekan.');
 
         if (typeof Html5Qrcode === 'undefined') {
-            showError('Gagal memuat pustaka pemindai. Periksa koneksi internet lalu muat ulang halaman.');
+            showError('Gagal memuat pustaka pemindai. Periksa koneksi internet lalu muat ulang.');
+            window.__log('Html5Qrcode tidak terdefinisi — pustaka gagal dimuat.');
             return;
         }
         if (!window.isSecureContext) {
-            showError('Kamera hanya bisa diakses lewat HTTPS. Buka halaman ini dengan alamat https://');
+            showError('Kamera hanya bisa diakses lewat HTTPS.');
+            window.__log('Bukan secure context.');
             return;
         }
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showError('Browser ini tidak mendukung akses kamera. Gunakan Chrome/Safari terbaru.');
+            showError('Browser ini tidak mendukung akses kamera.');
+            window.__log('mediaDevices.getUserMedia tidak tersedia.');
             return;
         }
 
         if (!html5QrCode) html5QrCode = new Html5Qrcode('reader');
-
         setStatus('Meminta izin kamera...');
         startBtn.disabled = true;
+        window.__log('Memanggil html5QrCode.start()...');
 
         html5QrCode.start(
             { facingMode: 'environment' },
             { fps: 10, qrbox: { width: 240, height: 240 } },
             onScanSuccess,
-            function onScanError() { /* per-frame decode misses — ignore */ }
+            function () { /* per-frame misses */ }
         ).then(function () {
             running = true;
             startBtn.disabled = false;
             startBtn.classList.add('hidden');
             stopBtn.classList.remove('hidden');
             setStatus('Arahkan kamera ke QR Code tamu');
+            window.__log('Kamera berjalan.');
         }).catch(function (err) {
             startBtn.disabled = false;
             setStatus('');
-            const m = (err && err.toString ? err.toString() : String(err));
+            var m = (err && err.toString ? err.toString() : String(err));
+            window.__log('start() GAGAL: ' + m);
             if (m.indexOf('NotAllowedError') !== -1 || m.indexOf('Permission') !== -1) {
-                showError('Izin kamera ditolak. Aktifkan izin kamera untuk situs ini di pengaturan browser, lalu coba lagi.');
+                showError('Izin kamera ditolak. Aktifkan izin kamera untuk situs ini lalu coba lagi.');
             } else if (m.indexOf('NotFoundError') !== -1) {
                 showError('Kamera tidak ditemukan di perangkat ini.');
             } else {
@@ -165,15 +192,17 @@
         setStatus('Pemindaian dihentikan. Tekan Mulai Scan untuk melanjutkan.');
     });
 
-    // Manual fallback
     document.getElementById('manual-go').addEventListener('click', function () {
-        const code = document.getElementById('manual-code').value.trim();
+        var code = document.getElementById('manual-code').value.trim();
         if (!code) return;
         window.location.href = checkinUrlFor(code);
     });
     document.getElementById('manual-code').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') document.getElementById('manual-go').click();
     });
+
+    window.__log('Handler tombol terpasang. Siap.');
+    /*]]>*/
 </script>
 </body>
 </html>
