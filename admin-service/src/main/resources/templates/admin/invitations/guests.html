@@ -1,15 +1,30 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="id">
-<head th:replace="~{layout/base :: head('Manajemen Tamu')}"></head>
+<head th:replace="~{layout/base :: head('Manajemen Tamu')}">
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; top: 0; left: 0; width: 100%; }
+            .qr-card { page-break-inside: avoid; display: inline-block; margin: 10px; text-align: center; }
+        }
+    </style>
+</head>
 <body class="bg-gray-100 min-h-screen flex">
 
 <div th:replace="~{layout/base :: sidebar('invitations')}"></div>
 
 <div class="flex-1 flex flex-col ml-64">
-    <header class="bg-white shadow-sm px-8 py-4">
-        <a th:href="@{/admin/invitations/{id}(id=${invitationId})}"
-           class="text-gray-400 hover:text-gray-600 text-sm">← Detail Undangan</a>
-        <h1 class="text-lg font-semibold text-gray-800 mt-1">Manajemen Tamu</h1>
+    <header class="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
+        <div>
+            <a th:href="@{/admin/invitations/{id}(id=${invitationId})}"
+               class="text-gray-400 hover:text-gray-600 text-sm">← Detail Undangan</a>
+            <h1 class="text-lg font-semibold text-gray-800 mt-1">Manajemen Tamu</h1>
+        </div>
+        <button onclick="printAllQr()"
+                class="bg-rose-600 text-white px-4 py-2 rounded text-sm hover:bg-rose-700">
+            Cetak Semua QR
+        </button>
     </header>
     <main class="flex-1 p-8 space-y-6">
 
@@ -56,6 +71,7 @@
                     <th class="px-4 py-3 text-left">Meja</th>
                     <th class="px-4 py-3 text-left">Jatah</th>
                     <th class="px-4 py-3 text-left">Check-in</th>
+                    <th class="px-4 py-3 text-left">QR</th>
                     <th class="px-4 py-3"></th>
                 </tr>
                 </thead>
@@ -73,6 +89,9 @@
                         <span th:unless="${g.checkedIn()}" class="text-gray-400 text-xs">Belum</span>
                     </td>
                     <td class="px-4 py-3">
+                        <div th:id="'qr-' + ${g.inviteCode()}" class="w-16 h-16"></div>
+                    </td>
+                    <td class="px-4 py-3">
                         <form th:action="@{/admin/invitations/{id}/guests/{gid}/delete(id=${invitationId},gid=${g.id()})}"
                               method="post"
                               onsubmit="return confirm('Hapus tamu ini?')">
@@ -81,7 +100,7 @@
                     </td>
                 </tr>
                 <tr th:if="${guests.isEmpty()}">
-                    <td colspan="7" class="px-4 py-8 text-center text-gray-400">Belum ada tamu.</td>
+                    <td colspan="8" class="px-4 py-8 text-center text-gray-400">Belum ada tamu.</td>
                 </tr>
                 </tbody>
             </table>
@@ -90,5 +109,86 @@
     </main>
 </div>
 
+<!-- Hidden print area -->
+<div id="print-area" style="display:none"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script th:inline="javascript">
+    const coupleSlug = /*[[${coupleSlug}]]*/ '';
+    const guests = /*[[${guests}]]*/ [];
+    const origin = window.location.origin;
+
+    function makeCheckinUrl(inviteCode) {
+        return origin + '/i/' + coupleSlug + '/checkin/' + inviteCode;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[id^="qr-"]').forEach(function (el) {
+            const code = el.id.replace('qr-', '');
+            new QRCode(el, {
+                text: makeCheckinUrl(code),
+                width: 64,
+                height: 64,
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        });
+    });
+
+    function printAllQr() {
+        const printArea = document.getElementById('print-area');
+        printArea.innerHTML = '<h2 style="font-family:sans-serif;margin-bottom:20px">QR Code Tamu — ' + coupleSlug + '</h2>';
+        printArea.style.display = 'block';
+
+        const rows = document.querySelectorAll('tbody tr[class]');
+        let rendered = 0;
+        rows.forEach(function (row) {
+            const nameTd = row.querySelector('td:first-child');
+            const codeTd = row.querySelector('td:nth-child(2)');
+            if (!nameTd || !codeTd) return;
+            const name = nameTd.textContent.trim();
+            const code = codeTd.textContent.trim();
+            if (!code) return;
+
+            const card = document.createElement('div');
+            card.className = 'qr-card';
+            card.style.cssText = 'display:inline-block;margin:12px;text-align:center;vertical-align:top';
+
+            const qrDiv = document.createElement('div');
+            card.appendChild(qrDiv);
+
+            const label = document.createElement('p');
+            label.style.cssText = 'font-family:sans-serif;font-size:12px;margin:4px 0 0';
+            label.textContent = name;
+            card.appendChild(label);
+
+            const codeLabel = document.createElement('p');
+            codeLabel.style.cssText = 'font-family:monospace;font-size:10px;color:#666;margin:2px 0 0';
+            codeLabel.textContent = code;
+            card.appendChild(codeLabel);
+
+            printArea.appendChild(card);
+
+            new QRCode(qrDiv, {
+                text: makeCheckinUrl(code),
+                width: 120,
+                height: 120,
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            rendered++;
+        });
+
+        if (rendered === 0) {
+            alert('Belum ada tamu untuk dicetak.');
+            printArea.style.display = 'none';
+            return;
+        }
+
+        setTimeout(function () {
+            window.print();
+            printArea.style.display = 'none';
+            printArea.innerHTML = '';
+        }, 400);
+    }
+</script>
 </body>
 </html>

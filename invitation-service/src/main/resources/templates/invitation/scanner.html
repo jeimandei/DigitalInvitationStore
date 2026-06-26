@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="'Scanner Check-in — ' + ${coupleName}">Scanner Check-in</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body class="bg-stone-900 min-h-screen flex flex-col items-center justify-center px-4">
+
+<div class="w-full max-w-sm">
+    <div class="text-center mb-6">
+        <p class="text-stone-400 text-sm mb-1">Scanner Check-in</p>
+        <h1 class="text-white text-xl font-bold" th:text="${coupleName}">Nama Pasangan</h1>
+    </div>
+
+    <div id="reader" class="w-full rounded-2xl overflow-hidden bg-black"></div>
+
+    <div id="status" class="mt-4 text-center text-sm text-stone-400">
+        Arahkan kamera ke QR Code tamu
+    </div>
+
+    <div id="error-box" class="hidden mt-4 bg-red-900/50 text-red-300 text-sm rounded-xl px-4 py-3 text-center"></div>
+
+    <p class="mt-8 text-center text-stone-600 text-xs">
+        Scan akan otomatis membuka halaman check-in tamu
+    </p>
+</div>
+
+<script th:inline="javascript">
+    const slug = /*[[${slug}]]*/ '';
+    const origin = window.location.origin;
+    let lastScanned = '';
+    let cooldown = false;
+
+    const html5QrCode = new Html5Qrcode('reader');
+
+    html5QrCode.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        function onScanSuccess(decodedText) {
+            if (cooldown || decodedText === lastScanned) return;
+            lastScanned = decodedText;
+            cooldown = true;
+
+            const expectedPrefix = origin + '/i/' + slug + '/checkin/';
+            if (!decodedText.startsWith(expectedPrefix)) {
+                document.getElementById('error-box').textContent = 'QR Code tidak valid untuk undangan ini.';
+                document.getElementById('error-box').classList.remove('hidden');
+                setTimeout(function () { cooldown = false; lastScanned = ''; }, 3000);
+                return;
+            }
+
+            document.getElementById('status').textContent = 'QR ditemukan, membuka halaman check-in...';
+            document.getElementById('error-box').classList.add('hidden');
+
+            html5QrCode.stop().then(function () {
+                window.location.href = decodedText;
+            });
+        },
+        null
+    ).catch(function (err) {
+        document.getElementById('status').textContent = '';
+        document.getElementById('error-box').textContent = 'Tidak dapat mengakses kamera: ' + err;
+        document.getElementById('error-box').classList.remove('hidden');
+    });
+</script>
+</body>
+</html>

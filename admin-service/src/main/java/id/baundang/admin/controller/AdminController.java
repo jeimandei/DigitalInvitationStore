@@ -242,6 +242,8 @@ public class AdminController {
     public String guests(@PathVariable UUID id, Model model) {
         model.addAttribute("invitationId", id);
         model.addAttribute("guests", invitationClient.listGuests(id));
+        InvitationDTO inv = invitationClient.getInvitation(id);
+        model.addAttribute("coupleSlug", inv != null ? inv.coupleSlug() : "");
         return "admin/invitations/guests";
     }
 

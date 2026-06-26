@@ -73,6 +73,15 @@ public class InvitationPageController {
         return "invitation/gift";
     }
 
+    @GetMapping("/{slug}/scan")
+    public String scanPage(@PathVariable String slug, Model model) {
+        Invitation inv = invitationService.getBySlugAndIncrementView(slug);
+        JsonNode content = inv.getContent();
+        model.addAttribute("slug", slug);
+        model.addAttribute("coupleName", textOf(content, "coupleName", slug));
+        return "invitation/scanner";
+    }
+
     @GetMapping("/{slug}/checkin/{code}")
     public String checkInPage(@PathVariable String slug, @PathVariable String code, Model model) {
         Invitation inv = invitationService.getBySlugAndIncrementView(slug);
