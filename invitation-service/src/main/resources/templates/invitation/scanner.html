@@ -171,18 +171,10 @@
             return { width: size, height: size };
         }
 
-        // High-resolution stream + continuous autofocus so dense QRs are sharp
-        // enough for the decoder (low-res blur is why live scan failed while
-        // photo scan worked).
-        var camConstraints = {
-            facingMode: 'environment',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            advanced: [{ focusMode: 'continuous' }]
-        };
-
+        // NOTE: html5-qrcode requires the first arg to have exactly ONE key.
+        // HD resolution + continuous focus are applied to the track AFTER start.
         html5QrCode.start(
-            camConstraints,
+            { facingMode: 'environment' },
             { fps: 15, qrbox: qrboxFn, aspectRatio: 1.777, disableFlip: false },
             onScanSuccess,
             function () { /* per-frame misses */ }
@@ -194,21 +186,35 @@
             setStatus('Arahkan kamera ke QR Code tamu');
             window.__log('Kamera berjalan. Mendeteksi... arahkan QR ke dalam kotak.');
 
-            // Report actual stream resolution + try to force continuous focus
+            // Upgrade the live track to HD + continuous focus AFTER start (start
+            // itself only accepts a single-key constraint). This sharpens dense
+            // QRs that the default low-res stream renders as an unreadable blur.
             try {
                 var video = document.querySelector('#reader video');
                 if (video && video.srcObject) {
                     var track = video.srcObject.getVideoTracks()[0];
                     if (track) {
-                        var s = track.getSettings ? track.getSettings() : {};
-                        window.__log('Resolusi video: ' + (s.width || '?') + 'x' + (s.height || '?') +
-                            ' focusMode=' + (s.focusMode || 'n/a'));
+                        var logSettings = function (tag) {
+                            var s = track.getSettings ? track.getSettings() : {};
+                            window.__log(tag + ' ' + (s.width || '?') + 'x' + (s.height || '?') +
+                                ' focusMode=' + (s.focusMode || 'n/a'));
+                        };
+                        logSettings('Resolusi awal:');
+
                         var caps = track.getCapabilities ? track.getCapabilities() : {};
+                        var advanced = [];
                         if (caps.focusMode && caps.focusMode.indexOf('continuous') !== -1) {
-                            track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
-                                .then(function () { window.__log('Continuous focus diterapkan.'); })
-                                .catch(function () {});
+                            advanced.push({ focusMode: 'continuous' });
                         }
+                        var wanted = {
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        };
+                        if (advanced.length) wanted.advanced = advanced;
+
+                        track.applyConstraints(wanted)
+                            .then(function () { logSettings('Resolusi setelah upgrade:'); })
+                            .catch(function (ae) { window.__log('applyConstraints gagal (lanjut pakai default): ' + ae); });
                     }
                 }
             } catch (fx) { window.__log('Tidak bisa baca info video: ' + fx); }
