@@ -171,9 +171,19 @@
             return { width: size, height: size };
         }
 
+        // High-resolution stream + continuous autofocus so dense QRs are sharp
+        // enough for the decoder (low-res blur is why live scan failed while
+        // photo scan worked).
+        var camConstraints = {
+            facingMode: 'environment',
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            advanced: [{ focusMode: 'continuous' }]
+        };
+
         html5QrCode.start(
-            { facingMode: 'environment' },
-            { fps: 15, qrbox: qrboxFn, aspectRatio: 1.0, disableFlip: false },
+            camConstraints,
+            { fps: 15, qrbox: qrboxFn, aspectRatio: 1.777, disableFlip: false },
             onScanSuccess,
             function () { /* per-frame misses */ }
         ).then(function () {
@@ -183,6 +193,25 @@
             stopBtn.classList.remove('hidden');
             setStatus('Arahkan kamera ke QR Code tamu');
             window.__log('Kamera berjalan. Mendeteksi... arahkan QR ke dalam kotak.');
+
+            // Report actual stream resolution + try to force continuous focus
+            try {
+                var video = document.querySelector('#reader video');
+                if (video && video.srcObject) {
+                    var track = video.srcObject.getVideoTracks()[0];
+                    if (track) {
+                        var s = track.getSettings ? track.getSettings() : {};
+                        window.__log('Resolusi video: ' + (s.width || '?') + 'x' + (s.height || '?') +
+                            ' focusMode=' + (s.focusMode || 'n/a'));
+                        var caps = track.getCapabilities ? track.getCapabilities() : {};
+                        if (caps.focusMode && caps.focusMode.indexOf('continuous') !== -1) {
+                            track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+                                .then(function () { window.__log('Continuous focus diterapkan.'); })
+                                .catch(function () {});
+                        }
+                    }
+                }
+            } catch (fx) { window.__log('Tidak bisa baca info video: ' + fx); }
             // Heartbeat so we can confirm scanning is actively running
             var beats = 0;
             var hb = setInterval(function () {
