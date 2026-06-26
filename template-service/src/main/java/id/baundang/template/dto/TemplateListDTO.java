@@ -11,7 +11,8 @@ public record TemplateListDTO(
         String category,
         String stylePreset,
         short priceLevel,
-        String thumbnailUrl
+        String thumbnailUrl,
+        boolean active
 ) {
     public static TemplateListDTO from(Template t) {
         return new TemplateListDTO(
@@ -21,7 +22,8 @@ public record TemplateListDTO(
                 t.getCategory().name(),
                 t.getStylePreset() != null ? t.getStylePreset().name() : null,
                 t.getPriceLevel(),
-                t.getThumbnailUrl()
+                t.getThumbnailUrl(),
+                t.isActive()
         );
     }
 }
