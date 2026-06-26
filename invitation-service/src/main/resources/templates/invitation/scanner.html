@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title th:text="'Scanner Check-in — ' + ${coupleName}">Scanner Check-in</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
-<body class="bg-stone-900 min-h-screen flex flex-col items-center justify-center px-4">
+<body class="bg-stone-900 min-h-screen flex flex-col items-center justify-center px-4 py-8">
 
 <div class="w-full max-w-sm">
     <div class="text-center mb-6">
@@ -15,13 +15,35 @@
         <h1 class="text-white text-xl font-bold" th:text="${coupleName}">Nama Pasangan</h1>
     </div>
 
-    <div id="reader" class="w-full rounded-2xl overflow-hidden bg-black"></div>
+    <div id="reader" class="w-full rounded-2xl overflow-hidden bg-black min-h-[120px]"></div>
 
     <div id="status" class="mt-4 text-center text-sm text-stone-400">
-        Arahkan kamera ke QR Code tamu
+        Tekan tombol di bawah untuk mulai memindai
     </div>
 
     <div id="error-box" class="hidden mt-4 bg-red-900/50 text-red-300 text-sm rounded-xl px-4 py-3 text-center"></div>
+
+    <button id="start-btn"
+            class="mt-5 w-full bg-rose-600 text-white py-3 rounded-full text-sm font-semibold hover:bg-rose-700 transition">
+        Mulai Scan
+    </button>
+    <button id="stop-btn"
+            class="hidden mt-3 w-full border border-stone-600 text-stone-300 py-3 rounded-full text-sm font-semibold hover:bg-stone-800 transition">
+        Hentikan
+    </button>
+
+    <!-- Manual fallback -->
+    <div class="mt-8 border-t border-stone-700 pt-6">
+        <p class="text-stone-500 text-xs text-center mb-3">Kamera bermasalah? Masukkan kode undangan manual:</p>
+        <div class="flex gap-2">
+            <input id="manual-code" type="text" placeholder="Kode undangan"
+                   class="flex-1 bg-stone-800 border border-stone-700 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"/>
+            <button id="manual-go"
+                    class="bg-stone-700 text-white px-4 py-2 rounded-xl text-sm hover:bg-stone-600">
+                Buka
+            </button>
+        </div>
+    </div>
 
     <p class="mt-8 text-center text-stone-600 text-xs">
         Scan akan otomatis membuka halaman check-in tamu
@@ -33,37 +55,124 @@
     const origin = window.location.origin;
     let lastScanned = '';
     let cooldown = false;
+    let html5QrCode = null;
+    let running = false;
 
-    const html5QrCode = new Html5Qrcode('reader');
+    const statusEl = document.getElementById('status');
+    const errorEl = document.getElementById('error-box');
+    const startBtn = document.getElementById('start-btn');
+    const stopBtn = document.getElementById('stop-btn');
 
-    html5QrCode.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        function onScanSuccess(decodedText) {
-            if (cooldown || decodedText === lastScanned) return;
-            lastScanned = decodedText;
-            cooldown = true;
+    function showError(msg) {
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+    }
+    function clearError() {
+        errorEl.classList.add('hidden');
+    }
+    function setStatus(msg) {
+        statusEl.textContent = msg;
+    }
 
-            const expectedPrefix = origin + '/i/' + slug + '/checkin/';
-            if (!decodedText.startsWith(expectedPrefix)) {
-                document.getElementById('error-box').textContent = 'QR Code tidak valid untuk undangan ini.';
-                document.getElementById('error-box').classList.remove('hidden');
-                setTimeout(function () { cooldown = false; lastScanned = ''; }, 3000);
-                return;
+    function checkinUrlFor(code) {
+        return origin + '/i/' + slug + '/checkin/' + encodeURIComponent(code);
+    }
+
+    function onScanSuccess(decodedText) {
+        if (cooldown || decodedText === lastScanned) return;
+        lastScanned = decodedText;
+        cooldown = true;
+
+        let target = decodedText.trim();
+        const expectedPrefix = origin + '/i/' + slug + '/checkin/';
+
+        if (target.startsWith(expectedPrefix)) {
+            // full URL — go directly
+        } else if (/^[A-Za-z0-9_-]+$/.test(target)) {
+            // bare code — build the URL
+            target = checkinUrlFor(target);
+        } else {
+            showError('QR Code tidak valid untuk undangan ini.');
+            setTimeout(function () { cooldown = false; lastScanned = ''; }, 2500);
+            return;
+        }
+
+        clearError();
+        setStatus('QR ditemukan, membuka halaman check-in...');
+        stopScanner().then(function () { window.location.href = target; });
+    }
+
+    function startScanner() {
+        clearError();
+
+        if (typeof Html5Qrcode === 'undefined') {
+            showError('Gagal memuat pustaka pemindai. Periksa koneksi internet lalu muat ulang halaman.');
+            return;
+        }
+        if (!window.isSecureContext) {
+            showError('Kamera hanya bisa diakses lewat HTTPS. Buka halaman ini dengan alamat https://');
+            return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showError('Browser ini tidak mendukung akses kamera. Gunakan Chrome/Safari terbaru.');
+            return;
+        }
+
+        if (!html5QrCode) html5QrCode = new Html5Qrcode('reader');
+
+        setStatus('Meminta izin kamera...');
+        startBtn.disabled = true;
+
+        html5QrCode.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 240, height: 240 } },
+            onScanSuccess,
+            function onScanError() { /* per-frame decode misses — ignore */ }
+        ).then(function () {
+            running = true;
+            startBtn.disabled = false;
+            startBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+            setStatus('Arahkan kamera ke QR Code tamu');
+        }).catch(function (err) {
+            startBtn.disabled = false;
+            setStatus('');
+            const m = (err && err.toString ? err.toString() : String(err));
+            if (m.indexOf('NotAllowedError') !== -1 || m.indexOf('Permission') !== -1) {
+                showError('Izin kamera ditolak. Aktifkan izin kamera untuk situs ini di pengaturan browser, lalu coba lagi.');
+            } else if (m.indexOf('NotFoundError') !== -1) {
+                showError('Kamera tidak ditemukan di perangkat ini.');
+            } else {
+                showError('Tidak dapat mengakses kamera: ' + m);
             }
+        });
+    }
 
-            document.getElementById('status').textContent = 'QR ditemukan, membuka halaman check-in...';
-            document.getElementById('error-box').classList.add('hidden');
+    function stopScanner() {
+        if (html5QrCode && running) {
+            running = false;
+            return html5QrCode.stop().then(function () {
+                stopBtn.classList.add('hidden');
+                startBtn.classList.remove('hidden');
+            }).catch(function () {});
+        }
+        return Promise.resolve();
+    }
 
-            html5QrCode.stop().then(function () {
-                window.location.href = decodedText;
-            });
-        },
-        null
-    ).catch(function (err) {
-        document.getElementById('status').textContent = '';
-        document.getElementById('error-box').textContent = 'Tidak dapat mengakses kamera: ' + err;
-        document.getElementById('error-box').classList.remove('hidden');
+    startBtn.addEventListener('click', startScanner);
+    stopBtn.addEventListener('click', function () {
+        stopScanner();
+        setStatus('Pemindaian dihentikan. Tekan Mulai Scan untuk melanjutkan.');
+    });
+
+    // Manual fallback
+    document.getElementById('manual-go').addEventListener('click', function () {
+        const code = document.getElementById('manual-code').value.trim();
+        if (!code) return;
+        window.location.href = checkinUrlFor(code);
+    });
+    document.getElementById('manual-code').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') document.getElementById('manual-go').click();
     });
 </script>
 </body>
