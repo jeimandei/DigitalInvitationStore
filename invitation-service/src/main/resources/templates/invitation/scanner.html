@@ -22,23 +22,16 @@
         #status { text-align:center; font-size:.85rem; color:var(--muted); margin-top:1rem; }
         #error-box { display:none; margin-top:1rem; background:rgba(190,18,60,.18); color:#fda4af; font-size:.85rem; border-radius:12px; padding:.75rem 1rem; text-align:center; }
         #error-box.show { display:block; }
-        button, .btn { width:100%; border:none; border-radius:999px; padding:.85rem; font-size:.85rem; font-weight:600; cursor:pointer; font-family:inherit; }
-        .btn-primary { background:var(--rose); color:#fff; margin-top:1.25rem; }
-        .btn-primary:hover { background:var(--rose-d); }
-        .btn-outline { background:transparent; color:var(--muted); border:1px solid var(--line); margin-top:.75rem; display:none; }
-        .btn-outline.show { display:block; }
-        .btn-gray { background:var(--panel); color:#fff; display:block; text-align:center; }
-        .file-wrap { margin-top:1.5rem; }
-        .file-wrap p { text-align:center; font-size:.72rem; color:var(--muted); margin-top:.5rem; }
+        button { width:100%; border:none; border-radius:999px; padding:.85rem; font-size:.85rem; font-weight:600; cursor:pointer; font-family:inherit; }
+        #retry-btn { background:var(--rose); color:#fff; margin-top:1.25rem; display:none; }
+        #retry-btn:hover { background:var(--rose-d); }
+        #retry-btn.show { display:block; }
         .manual { margin-top:2rem; border-top:1px solid var(--line); padding-top:1.5rem; }
         .manual p { text-align:center; font-size:.72rem; color:var(--muted); margin-bottom:.75rem; }
         .manual .row { display:flex; gap:.5rem; }
         .manual input { flex:1; background:var(--panel); border:1px solid var(--line); color:#fff; border-radius:10px; padding:.6rem .9rem; font-size:.85rem; outline:none; }
         .manual input:focus { border-color:var(--rose); }
         .manual button { width:auto; background:var(--panel); padding:.6rem 1rem; border-radius:10px; }
-        details { margin-top:1.5rem; }
-        summary { color:#57534e; font-size:.72rem; cursor:pointer; }
-        #diag { margin-top:.5rem; background:rgba(0,0,0,.4); color:var(--muted); font-size:10px; line-height:1.5; border-radius:8px; padding:.75rem; white-space:pre-wrap; word-break:break-all; max-height:12rem; overflow:auto; }
     </style>
 </head>
 <body>
@@ -50,17 +43,10 @@
 
     <div id="reader"></div>
 
-    <div id="status">Tekan tombol di bawah untuk mulai memindai</div>
+    <div id="status">Memulai kamera...</div>
     <div id="error-box"></div>
 
-    <button id="start-btn" class="btn-primary">Mulai Scan</button>
-    <button id="stop-btn" class="btn-outline">Hentikan</button>
-
-    <div class="file-wrap">
-        <label for="qr-file" class="btn btn-gray">Pindai dari Foto</label>
-        <input id="qr-file" type="file" accept="image/*" capture="environment" style="display:none"/>
-        <p>Ambil foto QR atau pilih dari galeri (lebih akurat saat kamera sulit fokus)</p>
-    </div>
+    <button id="retry-btn">Aktifkan Kamera</button>
 
     <div class="manual">
         <p>Atau masukkan kode undangan manual:</p>
@@ -69,30 +55,7 @@
             <button id="manual-go">Buka</button>
         </div>
     </div>
-
-    <details>
-        <summary>Log diagnostik</summary>
-        <pre id="diag"></pre>
-    </details>
 </div>
-
-<script>
-    (function () {
-        var diagEl = document.getElementById('diag');
-        window.__log = function (msg) {
-            try {
-                var line = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-                if (diagEl) diagEl.textContent += line + '\n';
-                if (window.console) console.log(line);
-            } catch (e) {}
-        };
-        window.addEventListener('error', function (e) {
-            window.__log('JS ERROR: ' + (e.message || e.error || e));
-        });
-        window.__log('Halaman dimuat. secureContext=' + window.isSecureContext +
-            ', Html5Qrcode=' + (typeof Html5Qrcode !== 'undefined'));
-    })();
-</script>
 
 <script th:inline="javascript">
     /*<![CDATA[*/
@@ -105,19 +68,14 @@
 
     var statusEl = document.getElementById('status');
     var errorEl = document.getElementById('error-box');
-    var startBtn = document.getElementById('start-btn');
-    var stopBtn = document.getElementById('stop-btn');
-
-    window.__log('Skrip utama jalan. slug=' + slug + ' origin=' + origin);
+    var retryBtn = document.getElementById('retry-btn');
 
     function showError(msg) { errorEl.textContent = msg; errorEl.classList.add('show'); }
     function clearError() { errorEl.classList.remove('show'); }
     function setStatus(msg) { statusEl.textContent = msg; }
     function checkinUrlFor(code) { return origin + '/i/' + slug + '/checkin/' + encodeURIComponent(code); }
 
-    // No qrbox: scan the FULL video frame. A qrbox function can compute a
-    // region larger than the frame on some aspect ratios, making html5-qrcode
-    // silently scan nothing (camera runs but never decodes).
+    // No qrbox: scan the full video frame.
     var SCAN_CONFIG = { fps: 10 };
 
     function onScanSuccess(text) {
@@ -126,7 +84,6 @@
         if (decoded === lastScanned) return;
         lastScanned = decoded;
         scanning = false;
-        window.__log('Scan: ' + decoded);
 
         var target = decoded;
         var prefix = origin + '/i/' + slug + '/checkin/';
@@ -153,34 +110,32 @@
 
     function startScanner() {
         clearError();
-        window.__log('Tombol Mulai Scan ditekan.');
+        retryBtn.classList.remove('show');
         if (typeof Html5Qrcode === 'undefined') { showError('Gagal memuat pustaka pemindai.'); return; }
         if (!window.isSecureContext) { showError('Kamera hanya bisa diakses lewat HTTPS.'); return; }
+        if (running) return;
 
         scanner = new Html5Qrcode('reader');
-        setStatus('Meminta izin kamera...');
-        startBtn.disabled = true;
-        window.__log('start() facingMode=environment...');
+        setStatus('Memulai kamera...');
 
         scanner.start({ facingMode: 'environment' }, SCAN_CONFIG, onScanSuccess, function () {})
             .then(onStarted)
-            .catch(function (err) {
-                window.__log('environment gagal: ' + err + ' — coba kamera depan');
+            .catch(function () {
+                // Fallback to front camera
                 scanner = new Html5Qrcode('reader');
                 scanner.start({ facingMode: 'user' }, SCAN_CONFIG, onScanSuccess, function () {})
                     .then(onStarted)
                     .catch(function (err2) {
-                        startBtn.disabled = false;
                         setStatus('');
                         var m = '' + err2;
                         if (m.indexOf('NotAllowedError') !== -1 || m.indexOf('Permission') !== -1) {
-                            showError('Izin kamera ditolak. Aktifkan izin kamera untuk situs ini lalu coba lagi.');
+                            showError('Izin kamera ditolak. Aktifkan izin kamera lalu coba lagi.');
                         } else if (m.indexOf('NotFoundError') !== -1) {
                             showError('Kamera tidak ditemukan di perangkat ini.');
                         } else {
-                            showError('Tidak dapat mengakses kamera: ' + m);
+                            showError('Tidak dapat mengakses kamera.');
                         }
-                        window.__log('start() GAGAL total: ' + m);
+                        retryBtn.classList.add('show');
                     });
             });
     }
@@ -188,67 +143,20 @@
     function onStarted() {
         running = true;
         scanning = true;
-        startBtn.disabled = false;
-        startBtn.style.display = 'none';
-        stopBtn.classList.add('show');
+        clearError();
+        retryBtn.classList.remove('show');
         setStatus('Arahkan kamera ke QR Code tamu');
-        window.__log('Kamera berjalan. Mendeteksi seluruh frame...');
-        try {
-            var v = document.querySelector('#reader video');
-            if (v) {
-                var t = v.srcObject && v.srcObject.getVideoTracks ? v.srcObject.getVideoTracks()[0] : null;
-                var s = t && t.getSettings ? t.getSettings() : {};
-                window.__log('Video: ' + (s.width||'?') + 'x' + (s.height||'?') + ' focus=' + (s.focusMode||'n/a'));
-            }
-        } catch (x) {}
-        var beats = 0;
-        var hb = setInterval(function () {
-            if (!running) { clearInterval(hb); return; }
-            if (++beats <= 8) window.__log('Memindai... (' + beats + ')');
-            else { window.__log('Masih memindai — jika tetap gagal, gunakan "Pindai dari Foto".'); clearInterval(hb); }
-        }, 2000);
     }
 
     function stopScanner() {
         if (scanner && running) {
             running = false;
-            return scanner.stop().then(function () {
-                stopBtn.classList.remove('show');
-                startBtn.style.display = 'block';
-            }).catch(function () {});
+            return scanner.stop().then(function () {}).catch(function () {});
         }
         return Promise.resolve();
     }
 
-    startBtn.addEventListener('click', startScanner);
-    stopBtn.addEventListener('click', function () {
-        stopScanner();
-        setStatus('Pemindaian dihentikan. Tekan Mulai Scan untuk melanjutkan.');
-    });
-
-    document.getElementById('qr-file').addEventListener('change', function (e) {
-        var file = e.target.files && e.target.files[0];
-        if (!file) return;
-        clearError();
-        setStatus('Memindai foto...');
-        window.__log('Memindai dari file: ' + file.name);
-        var fileScanner = new Html5Qrcode('reader');
-        var doScan = function () {
-            fileScanner.scanFile(file, false).then(function (decodedText) {
-                window.__log('File decoded: ' + decodedText);
-                scanning = true;
-                onScanSuccess(decodedText);
-            }).catch(function (err) {
-                window.__log('scanFile GAGAL: ' + err);
-                showError('Tidak menemukan QR pada foto. Pastikan QR terlihat jelas dan coba lagi.');
-                setStatus('');
-            }).finally(function () {
-                try { fileScanner.clear(); } catch (x) {}
-                e.target.value = '';
-            });
-        };
-        if (running) { stopScanner().then(doScan); } else { doScan(); }
-    });
+    retryBtn.addEventListener('click', startScanner);
 
     document.getElementById('manual-go').addEventListener('click', function () {
         var code = document.getElementById('manual-code').value.trim();
@@ -259,7 +167,13 @@
         if (e.key === 'Enter') document.getElementById('manual-go').click();
     });
 
-    window.__log('Handler tombol terpasang. Siap.');
+    // Camera always on: auto-start as soon as the page loads. If the browser
+    // blocks it (needs a tap), the "Aktifkan Kamera" button appears.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startScanner);
+    } else {
+        startScanner();
+    }
     /*]]>*/
 </script>
 </body>
