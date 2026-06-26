@@ -173,11 +173,14 @@ public class InvitationApiController {
         return ApiResponse.ok(invitationService.getGuestByCode(code));
     }
 
+    // Accepts the check-in form posted as application/x-www-form-urlencoded by
+    // the htmx check-in page (field: actualCount). Defaults to 1 if omitted.
     @PostMapping("/api/v1/invitations/{slug}/checkin/{code}")
     public ApiResponse<GuestDTO> checkIn(@PathVariable String slug,
                                           @PathVariable String code,
-                                          @Valid @RequestBody CheckInRequest req) {
-        return ApiResponse.ok(invitationService.checkIn(code, req), "Check-in berhasil");
+                                          @RequestParam(name = "actualCount", defaultValue = "1") short actualCount) {
+        short count = actualCount > 0 ? actualCount : 1;
+        return ApiResponse.ok(invitationService.checkIn(code, new CheckInRequest(count)), "Check-in berhasil");
     }
 
     @GetMapping("/api/v1/admin/invitations/{id}/attendance")
