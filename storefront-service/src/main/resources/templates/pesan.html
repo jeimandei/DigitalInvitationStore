@@ -20,9 +20,20 @@
            orderId: '',
            orderNumber: '',
            templateId: $el.dataset.templateId,
+           templatePriceLevel: parseInt($el.dataset.templatePriceLevel) || 0,
            form: {
              namaPria: '', namaWanita: '', whatsapp: '', email: '',
              tier: '', tierNum: 0, catatan: ''
+           },
+           init() {
+             if (this.templatePriceLevel > 0) {
+               const labels = $el.querySelectorAll('[data-num]');
+               labels.forEach(el => {
+                 if (parseInt(el.dataset.num) === this.templatePriceLevel) {
+                   this.selectTier(el.dataset.name, this.templatePriceLevel);
+                 }
+               });
+             }
            },
            next() { if (this.step < 3) this.step++ },
            prev() { if (this.step > 1) this.step-- },
@@ -61,7 +72,7 @@
              }
            }
          }"
-         th:attr="data-template-id=${templateId}">
+         th:attr="data-template-id=${templateId},data-template-price-level=${templatePriceLevel}">
 
       <!-- Stepper -->
       <div class="flex items-center gap-2 mb-10 text-xs font-semibold">
@@ -117,10 +128,10 @@
                       class="w-full border border-stone-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 resize-none"></textarea>
           </div>
         </div>
-        <button @click="next()"
+        <button @click="templatePriceLevel > 0 ? submitOrder() : next()"
                 :disabled="!form.namaPria || !form.namaWanita || !form.whatsapp || !form.email"
-                class="mt-8 w-full bg-rose-600 text-white py-3 rounded-full text-sm font-semibold hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-          Lanjut Pilih Paket →
+                class="mt-8 w-full bg-rose-600 text-white py-3 rounded-full text-sm font-semibold hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                x-text="templatePriceLevel > 0 ? (loading ? 'Memproses...' : 'Buat Pesanan →') : 'Lanjut Pilih Paket →'">
         </button>
       </div>
 

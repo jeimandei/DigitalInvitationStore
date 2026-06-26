@@ -21,14 +21,16 @@ public class AdminDashboardService {
         PagedResult<OrderDTO> allOrders = orderClient.listOrders(0, 1000, null, null);
         List<OrderDTO> orders = allOrders.content();
 
+        java.time.Instant startOfToday = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jakarta"))
+                .atStartOfDay(java.time.ZoneId.of("Asia/Jakarta")).toInstant();
+
         long ordersToday = orders.stream()
-                .filter(o -> o.createdAt() != null &&
-                        o.createdAt().isAfter(java.time.Instant.now().minus(1, java.time.temporal.ChronoUnit.DAYS)))
+                .filter(o -> o.createdAt() != null && o.createdAt().isAfter(startOfToday))
                 .count();
 
         long revenueToday = orders.stream()
                 .filter(o -> "PAID".equals(o.status()) && o.paidAt() != null &&
-                        o.paidAt().isAfter(java.time.Instant.now().minus(1, java.time.temporal.ChronoUnit.DAYS)))
+                        o.paidAt().isAfter(startOfToday))
                 .mapToLong(o -> o.amount() > 0 ? o.amount() : tierPrice(o.tier()))
                 .sum();
 

@@ -64,9 +64,22 @@ public class StorefrontController {
     }
 
     @GetMapping("/pesan")
-    public String order(@RequestParam(required = false) String templateId, Model model) {
+    public String order(@RequestParam(required = false) String template, Model model) {
         model.addAttribute("tiers", pricing.getTiers());
-        model.addAttribute("templateId", templateId != null ? templateId : "");
+        if (template != null && !template.isBlank()) {
+            TemplatePage page = templateClient.fetchTemplates(0, 50, null);
+            page.content().stream()
+                    .filter(t -> template.equals(t.slug()))
+                    .findFirst()
+                    .ifPresent(t -> {
+                        model.addAttribute("templateId", t.id());
+                        model.addAttribute("templatePriceLevel", t.priceLevel());
+                    });
+        }
+        if (!model.containsAttribute("templateId")) {
+            model.addAttribute("templateId", "");
+            model.addAttribute("templatePriceLevel", "");
+        }
         return "pesan";
     }
 
