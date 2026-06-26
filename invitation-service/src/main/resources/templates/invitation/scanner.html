@@ -115,10 +115,10 @@
     function setStatus(msg) { statusEl.textContent = msg; }
     function checkinUrlFor(code) { return origin + '/i/' + slug + '/checkin/' + encodeURIComponent(code); }
 
-    var SCAN_CONFIG = {
-        fps: 10,
-        qrbox: function (w, h) { var s = Math.round(Math.min(w, h) * 0.8); return { width: s, height: s }; }
-    };
+    // No qrbox: scan the FULL video frame. A qrbox function can compute a
+    // region larger than the frame on some aspect ratios, making html5-qrcode
+    // silently scan nothing (camera runs but never decodes).
+    var SCAN_CONFIG = { fps: 10 };
 
     function onScanSuccess(text) {
         if (!scanning) return;
@@ -192,7 +192,21 @@
         startBtn.style.display = 'none';
         stopBtn.classList.add('show');
         setStatus('Arahkan kamera ke QR Code tamu');
-        window.__log('Kamera berjalan.');
+        window.__log('Kamera berjalan. Mendeteksi seluruh frame...');
+        try {
+            var v = document.querySelector('#reader video');
+            if (v) {
+                var t = v.srcObject && v.srcObject.getVideoTracks ? v.srcObject.getVideoTracks()[0] : null;
+                var s = t && t.getSettings ? t.getSettings() : {};
+                window.__log('Video: ' + (s.width||'?') + 'x' + (s.height||'?') + ' focus=' + (s.focusMode||'n/a'));
+            }
+        } catch (x) {}
+        var beats = 0;
+        var hb = setInterval(function () {
+            if (!running) { clearInterval(hb); return; }
+            if (++beats <= 8) window.__log('Memindai... (' + beats + ')');
+            else { window.__log('Masih memindai — jika tetap gagal, gunakan "Pindai dari Foto".'); clearInterval(hb); }
+        }, 2000);
     }
 
     function stopScanner() {
