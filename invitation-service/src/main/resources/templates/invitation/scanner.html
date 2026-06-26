@@ -143,14 +143,27 @@
             return;
         }
 
-        if (!html5QrCode) html5QrCode = new Html5Qrcode('reader');
+        if (!html5QrCode) {
+            // verbose:false; enable native BarcodeDetector when the browser supports it
+            html5QrCode = new Html5Qrcode('reader', {
+                verbose: false,
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+            });
+        }
         setStatus('Meminta izin kamera...');
         startBtn.disabled = true;
         window.__log('Memanggil html5QrCode.start()...');
 
+        // Adaptive scan box: ~80% of the smaller viewfinder dimension, so the
+        // whole visible QR is inside the decode region regardless of phone size.
+        function qrboxFn(vfW, vfH) {
+            var size = Math.floor(Math.min(vfW, vfH) * 0.8);
+            return { width: size, height: size };
+        }
+
         html5QrCode.start(
             { facingMode: 'environment' },
-            { fps: 10, qrbox: { width: 240, height: 240 } },
+            { fps: 15, qrbox: qrboxFn, aspectRatio: 1.0, disableFlip: false },
             onScanSuccess,
             function () { /* per-frame misses */ }
         ).then(function () {
@@ -159,7 +172,15 @@
             startBtn.classList.add('hidden');
             stopBtn.classList.remove('hidden');
             setStatus('Arahkan kamera ke QR Code tamu');
-            window.__log('Kamera berjalan.');
+            window.__log('Kamera berjalan. Mendeteksi... arahkan QR ke dalam kotak.');
+            // Heartbeat so we can confirm scanning is actively running
+            var beats = 0;
+            var hb = setInterval(function () {
+                if (!running) { clearInterval(hb); return; }
+                beats++;
+                if (beats <= 6) window.__log('Memindai... (' + beats + ')');
+                else clearInterval(hb);
+            }, 2000);
         }).catch(function (err) {
             startBtn.disabled = false;
             setStatus('');
