@@ -32,9 +32,19 @@
         Hentikan
     </button>
 
+    <!-- Photo fallback: take a photo / pick an image and decode it -->
+    <div class="mt-6">
+        <label for="qr-file"
+               class="block text-center bg-stone-700 text-white py-3 rounded-full text-sm font-semibold hover:bg-stone-600 cursor-pointer transition">
+            Pindai dari Foto
+        </label>
+        <input id="qr-file" type="file" accept="image/*" capture="environment" class="hidden"/>
+        <p class="text-stone-500 text-xs text-center mt-2">Ambil foto QR atau pilih dari galeri (lebih akurat saat kamera sulit fokus)</p>
+    </div>
+
     <!-- Manual fallback -->
     <div class="mt-8 border-t border-stone-700 pt-6">
-        <p class="text-stone-500 text-xs text-center mb-3">Kamera bermasalah? Masukkan kode undangan manual:</p>
+        <p class="text-stone-500 text-xs text-center mb-3">Atau masukkan kode undangan manual:</p>
         <div class="flex gap-2">
             <input id="manual-code" type="text" placeholder="Kode undangan"
                    class="flex-1 bg-stone-800 border border-stone-700 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"/>
@@ -211,6 +221,40 @@
     stopBtn.addEventListener('click', function () {
         stopScanner();
         setStatus('Pemindaian dihentikan. Tekan Mulai Scan untuk melanjutkan.');
+    });
+
+    // Scan from a photo / picked image — autofocus on capture makes this reliable
+    document.getElementById('qr-file').addEventListener('change', function (e) {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        clearError();
+        setStatus('Memindai foto...');
+        window.__log('Memindai dari file: ' + file.name);
+
+        var scanner = html5QrCode;
+        var freshlyMade = false;
+        if (!scanner) {
+            scanner = new Html5Qrcode('reader', { verbose: false });
+            freshlyMade = true;
+        }
+
+        var doScan = function () {
+            scanner.scanFile(file, false).then(function (decodedText) {
+                window.__log('File decoded: ' + decodedText);
+                onScanSuccess(decodedText);
+            }).catch(function (err) {
+                var m = (err && err.toString ? err.toString() : String(err));
+                window.__log('scanFile GAGAL: ' + m);
+                showError('Tidak menemukan QR pada foto. Pastikan QR terlihat jelas dan coba lagi.');
+                setStatus('');
+            }).finally(function () {
+                if (freshlyMade) { try { scanner.clear(); } catch (x) {} }
+                e.target.value = '';
+            });
+        };
+
+        // scanFile cannot run while live camera is active — stop it first
+        if (running) { stopScanner().then(doScan); } else { doScan(); }
     });
 
     document.getElementById('manual-go').addEventListener('click', function () {
