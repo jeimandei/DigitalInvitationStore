@@ -89,7 +89,10 @@
                         <span th:unless="${g.checkedIn()}" class="text-gray-400 text-xs">Belum</span>
                     </td>
                     <td class="px-4 py-3">
-                        <div th:id="'qr-' + ${g.inviteCode()}" class="w-16 h-16"></div>
+                        <div th:id="'qr-' + ${g.inviteCode()}"
+                             th:attr="data-code=${g.inviteCode()},data-name=${g.name()}"
+                             class="qr-thumb w-16 h-16 cursor-pointer hover:opacity-80 transition"
+                             title="Klik untuk perbesar &amp; unduh"></div>
                     </td>
                     <td class="px-4 py-3">
                         <form th:action="@{/admin/invitations/{id}/guests/{gid}/delete(id=${invitationId},gid=${g.id()})}"
@@ -109,6 +112,26 @@
     </main>
 </div>
 
+<!-- QR Modal -->
+<div id="qr-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+     onclick="if(event.target===this) closeQrModal()">
+    <div class="bg-white rounded-2xl shadow-xl p-6 max-w-xs w-full text-center">
+        <h3 id="qr-modal-name" class="text-sm font-semibold text-gray-800 mb-1"></h3>
+        <p id="qr-modal-code" class="text-xs font-mono text-gray-400 mb-4"></p>
+        <div id="qr-modal-canvas" class="flex justify-center mb-4"></div>
+        <div class="flex gap-2">
+            <button onclick="downloadCurrentQr()"
+                    class="flex-1 bg-rose-600 text-white px-4 py-2 rounded text-sm hover:bg-rose-700">
+                Unduh PNG
+            </button>
+            <button onclick="closeQrModal()"
+                    class="flex-1 border border-gray-200 text-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50">
+                Tutup
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Hidden print area -->
 <div id="print-area" style="display:none"></div>
 
@@ -118,19 +141,69 @@
     const guests = /*[[${guests}]]*/ [];
     const origin = window.location.origin;
 
+    let currentQrName = '';
+    let currentQrCode = '';
+
     function makeCheckinUrl(inviteCode) {
         return origin + '/i/' + coupleSlug + '/checkin/' + inviteCode;
     }
 
+    function qrDataUrl(el) {
+        const canvas = el.querySelector('canvas');
+        if (canvas) return canvas.toDataURL('image/png');
+        const img = el.querySelector('img');
+        return img ? img.src : null;
+    }
+
+    function openQrModal(code, name) {
+        currentQrName = name;
+        currentQrCode = code;
+        document.getElementById('qr-modal-name').textContent = name;
+        document.getElementById('qr-modal-code').textContent = code;
+        const holder = document.getElementById('qr-modal-canvas');
+        holder.innerHTML = '';
+        new QRCode(holder, {
+            text: makeCheckinUrl(code),
+            width: 320,
+            height: 320,
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        document.getElementById('qr-modal').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+        document.getElementById('qr-modal').classList.add('hidden');
+    }
+
+    function downloadCurrentQr() {
+        const url = qrDataUrl(document.getElementById('qr-modal-canvas'));
+        if (!url) return;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'qr-' + (currentQrName || currentQrCode || 'tamu').replace(/\s+/g, '-') + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeQrModal();
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('[id^="qr-"]').forEach(function (el) {
-            const code = el.id.replace('qr-', '');
+        document.querySelectorAll('.qr-thumb').forEach(function (el) {
+            const code = el.dataset.code;
+            const name = el.dataset.name;
+            // Render at high resolution (256px) but display at 64px for crispness
             new QRCode(el, {
                 text: makeCheckinUrl(code),
-                width: 64,
-                height: 64,
-                correctLevel: QRCode.CorrectLevel.M
+                width: 256,
+                height: 256,
+                correctLevel: QRCode.CorrectLevel.H
             });
+            const inner = el.querySelector('canvas, img');
+            if (inner) { inner.style.width = '64px'; inner.style.height = '64px'; }
+            el.addEventListener('click', function () { openQrModal(code, name); });
         });
     });
 
@@ -170,10 +243,12 @@
 
             new QRCode(qrDiv, {
                 text: makeCheckinUrl(code),
-                width: 120,
-                height: 120,
-                correctLevel: QRCode.CorrectLevel.M
+                width: 300,
+                height: 300,
+                correctLevel: QRCode.CorrectLevel.H
             });
+            const printInner = qrDiv.querySelector('canvas, img');
+            if (printInner) { printInner.style.width = '150px'; printInner.style.height = '150px'; }
             rendered++;
         });
 
