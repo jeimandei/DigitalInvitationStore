@@ -45,8 +45,63 @@ public class AdminController {
     private final InvitationAdminClient invitationClient;
     private final TemplateAdminClient templateClient;
     private final NotificationAdminClient notificationClient;
+    private final id.baundang.admin.client.IntakeAdminClient intakeClient;
     private final AdminNoteRepository noteRepository;
     private final CsvExportService csvExportService;
+
+    // ─── Intake questionnaire builder ───────────────────────────────────────────
+
+    @GetMapping("/intake/questions")
+    public String intakeQuestions(Model model) {
+        model.addAttribute("questions", intakeClient.listQuestions());
+        return "admin/intake/questions";
+    }
+
+    @PostMapping("/intake/questions")
+    public String createIntakeQuestion(
+            @RequestParam String section,
+            @RequestParam String label,
+            @RequestParam String fieldKey,
+            @RequestParam(defaultValue = "TEXT") String inputType,
+            @RequestParam(required = false) String options,
+            @RequestParam(defaultValue = "1") short minTier,
+            @RequestParam(defaultValue = "false") boolean required,
+            @RequestParam(defaultValue = "0") int sortOrder) {
+        intakeClient.createQuestion(new id.baundang.admin.dto.IntakeQuestionRequest(
+                section, label, fieldKey, inputType, parseOptions(options),
+                minTier, required, sortOrder, true));
+        return "redirect:/admin/intake/questions";
+    }
+
+    @PostMapping("/intake/questions/{id}")
+    public String updateIntakeQuestion(
+            @PathVariable UUID id,
+            @RequestParam String section,
+            @RequestParam String label,
+            @RequestParam String fieldKey,
+            @RequestParam(defaultValue = "TEXT") String inputType,
+            @RequestParam(required = false) String options,
+            @RequestParam(defaultValue = "1") short minTier,
+            @RequestParam(defaultValue = "false") boolean required,
+            @RequestParam(defaultValue = "0") int sortOrder,
+            @RequestParam(defaultValue = "true") boolean active) {
+        intakeClient.updateQuestion(id, new id.baundang.admin.dto.IntakeQuestionRequest(
+                section, label, fieldKey, inputType, parseOptions(options),
+                minTier, required, sortOrder, active));
+        return "redirect:/admin/intake/questions";
+    }
+
+    @PostMapping("/intake/questions/{id}/delete")
+    public String deleteIntakeQuestion(@PathVariable UUID id) {
+        intakeClient.deleteQuestion(id);
+        return "redirect:/admin/intake/questions";
+    }
+
+    private java.util.List<String> parseOptions(String options) {
+        if (options == null || options.isBlank()) return java.util.List.of();
+        return java.util.Arrays.stream(options.split("\\r?\\n|,"))
+                .map(String::trim).filter(s -> !s.isBlank()).toList();
+    }
 
     // ─── Dashboard ────────────────────────────────────────────────────────────
 
