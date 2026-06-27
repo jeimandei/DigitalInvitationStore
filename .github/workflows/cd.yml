@@ -9,7 +9,7 @@ on:
           full-deploy       = git pull + mvn package + podman compose up --build (all services),
           build-service     = rebuild + restart specific service(s),
           restart-service   = restart specific service(s) without rebuild,
-          restart-all       = restart every running container,
+          restart-all       = remove every container and recreate from current images (no rebuild),
           deploy-config     = sync config-repo/ to server and refresh config server,
           deploy-env        = push .env from ENV_FILE secret to server
         required: true
@@ -393,17 +393,29 @@ jobs:
           ENDSSH
 
       # ══════════════════════════════════════════════════════════════════════
-      # restart-all — restart every container in the stack
+      # restart-all — tear down every container and recreate from current images
+      # (no rebuild), mirroring full-deploy's up step.
       # ══════════════════════════════════════════════════════════════════════
-      - name: "[restart-all] Restart all containers"
+      - name: "[restart-all] Remove and recreate all containers"
         if: inputs.action == 'restart-all'
         run: |
           ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << EOF
             set -e
             cd "${{ env.DEPLOY_DIR }}"
-            echo "→ Restarting all containers"
-            podman compose --env-file .env restart
-            echo "✓ All containers restarted"
+
+            [ -f .env ] || { echo "✗ .env not found — run deploy-env first"; exit 1; }
+
+            echo "→ Ensuring podman networks exist"
+            podman network exists baundang-network || podman network create baundang-network
+            podman network exists public           || podman network create public
+
+            echo "→ Stopping and removing all containers"
+            podman compose --env-file .env down --remove-orphans
+
+            echo "→ Creating brand-new containers from current images"
+            podman compose --env-file .env up -d --force-recreate --remove-orphans
+
+            echo "✓ All containers removed and recreated at \$(date)"
           EOF
 
       # ── Post-deploy: container status ──────────────────────────────────────
