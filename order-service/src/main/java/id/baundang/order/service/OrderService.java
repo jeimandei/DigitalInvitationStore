@@ -74,6 +74,11 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public Page<OrderDTO> listMyOrders(UUID buyerId, Pageable pageable) {
+        return orderRepository.findAllByBuyerId(buyerId, pageable).map(OrderDTO::from);
+    }
+
+    @Transactional(readOnly = true)
     public Page<OrderDTO> listAllOrders(String status, String search, Pageable pageable) {
         OrderStatusPg statusFilter = null;
         if (status != null && !status.isBlank()) {

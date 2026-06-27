@@ -63,6 +63,16 @@ public class OrderController {
         return ApiResponse.ok(orderService.getOrder(id, callerId, isAdmin));
     }
 
+    @GetMapping("/mine")
+    public ApiResponse<PagedResponse<OrderDTO>> listMine(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Authentication auth) {
+        UUID buyerId = UUID.fromString(auth.getName());
+        var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return ApiResponse.ok(PagedResponse.from(orderService.listMyOrders(buyerId, pageable)));
+    }
+
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PagedResponse<OrderDTO>> listAll(

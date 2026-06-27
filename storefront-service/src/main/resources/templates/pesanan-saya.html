@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id"
+      th:replace="~{layout/base :: dir(~{::title}, ~{::main})}">
+<head>
+  <title>Pesanan Saya — baundang.id</title>
+</head>
+<body>
+<main x-data="ordersApp()" x-init="load()" class="max-w-3xl mx-auto px-4 py-12">
+
+  <div class="mb-8 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-stone-800">Pesanan Saya</h1>
+      <p class="text-stone-500 mt-1 text-sm">Pantau status pesanan dan undanganmu</p>
+    </div>
+    <button @click="logout()" class="text-sm text-stone-400 hover:text-rose-600">Keluar</button>
+  </div>
+
+  <!-- Loading -->
+  <div x-show="loading" class="text-center py-20 text-stone-400 text-sm">Memuat pesanan…</div>
+
+  <!-- Error -->
+  <div x-show="error" x-cloak class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm" x-text="error"></div>
+
+  <!-- Empty -->
+  <div x-show="!loading && !error && orders.length === 0" x-cloak class="text-center py-20">
+    <p class="text-stone-500">Belum ada pesanan.</p>
+    <a href="/templates" class="inline-block mt-4 bg-rose-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-rose-700">Pilih Template</a>
+  </div>
+
+  <!-- Orders -->
+  <div x-show="!loading && orders.length > 0" x-cloak class="space-y-5">
+    <template x-for="o in orders" :key="o.id">
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-6">
+
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="font-semibold text-stone-800" x-text="o.coupleName || '—'"></p>
+            <p class="text-xs text-stone-400 font-mono mt-0.5" x-text="o.orderNumber"></p>
+          </div>
+          <span class="text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap"
+                :class="badgeClass(o.status)" x-text="statusLabel(o.status)"></span>
+        </div>
+
+        <!-- Progress timeline -->
+        <div class="mt-6" x-show="o.status !== 'CANCELLED'">
+          <div class="flex items-center">
+            <template x-for="(step, i) in steps" :key="i">
+              <div class="flex items-center" :class="i < steps.length - 1 ? 'flex-1' : ''">
+                <div class="flex flex-col items-center">
+                  <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold"
+                       :class="stepIndex(o.status) >= i ? 'bg-rose-600 text-white' : 'bg-stone-100 text-stone-400'">
+                    <span x-show="stepIndex(o.status) > i">✓</span>
+                    <span x-show="stepIndex(o.status) <= i" x-text="i + 1"></span>
+                  </div>
+                </div>
+                <div x-show="i < steps.length - 1" class="flex-1 h-0.5 mx-1"
+                     :class="stepIndex(o.status) > i ? 'bg-rose-400' : 'bg-stone-200'"></div>
+              </div>
+            </template>
+          </div>
+          <div class="flex justify-between mt-2">
+            <template x-for="(step, i) in steps" :key="i">
+              <span class="text-[10px] text-center flex-1"
+                    :class="stepIndex(o.status) >= i ? 'text-rose-600 font-medium' : 'text-stone-400'"
+                    x-text="step"></span>
+            </template>
+          </div>
+        </div>
+
+        <div x-show="o.status === 'CANCELLED'" x-cloak class="mt-4 text-sm text-stone-500">
+          Pesanan ini dibatalkan.
+        </div>
+
+        <!-- Meta -->
+        <div class="mt-6 grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p class="text-stone-400 text-xs">Paket</p>
+            <p class="text-stone-700 font-medium" x-text="tierName(o.tier)"></p>
+          </div>
+          <div>
+            <p class="text-stone-400 text-xs">Total</p>
+            <p class="text-stone-700 font-medium" x-text="formatRupiah(o.amount)"></p>
+          </div>
+          <div x-show="o.maxRevisions > 0">
+            <p class="text-stone-400 text-xs">Revisi terpakai</p>
+            <p class="text-stone-700 font-medium" x-text="o.revisionCount + ' / ' + o.maxRevisions"></p>
+          </div>
+          <div x-show="o.paidAt">
+            <p class="text-stone-400 text-xs">Dibayar</p>
+            <p class="text-stone-700 font-medium" x-text="formatDate(o.paidAt)"></p>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-6 flex flex-wrap gap-2">
+          <a x-show="o.status === 'PENDING'" :href="'/bayar/' + o.id"
+             class="bg-rose-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-rose-700">Bayar Sekarang</a>
+
+          <a x-show="o.status === 'PAID' || o.status === 'IN_REVISION' || o.status === 'COMPLETED'"
+             :href="'/pesanan/' + o.id + '/intake'"
+             class="bg-stone-800 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-stone-900"
+             x-text="o.intakeDone ? 'Lihat Jawaban' : 'Isi Detail Undangan'"></a>
+
+          <a x-show="o.coupleSlug" :href="'/i/' + o.coupleSlug" target="_blank"
+             class="border border-stone-200 text-stone-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-stone-50">Lihat Undangan ↗</a>
+        </div>
+
+      </div>
+    </template>
+  </div>
+
+  <script>
+    function ordersApp() {
+      return {
+        orders: [], loading: true, error: '',
+        steps: ['Dipesan', 'Dibayar', 'Dikerjakan', 'Selesai'],
+        token() { return sessionStorage.getItem('buyer_token'); },
+        async load() {
+          if (!this.token()) { window.location.href = '/masuk?redirect=/pesanan-saya'; return; }
+          try {
+            const res = await fetch('/api/v1/orders/mine', {
+              headers: { 'Authorization': 'Bearer ' + this.token() }
+            });
+            if (res.status === 401) { sessionStorage.removeItem('buyer_token'); window.location.href = '/masuk?redirect=/pesanan-saya'; return; }
+            if (!res.ok) throw new Error('Gagal memuat pesanan');
+            const data = await res.json();
+            this.orders = (data.data?.content || data.content || data.data || []);
+          } catch (e) { this.error = e.message; }
+          finally { this.loading = false; }
+        },
+        logout() { sessionStorage.removeItem('buyer_token'); window.location.href = '/'; },
+        stepIndex(status) {
+          switch (status) {
+            case 'PENDING': return 0;
+            case 'PAID': return 1;
+            case 'IN_REVISION': return 2;
+            case 'COMPLETED': return 3;
+            default: return 0;
+          }
+        },
+        statusLabel(s) {
+          return ({ PENDING: 'Menunggu Pembayaran', PAID: 'Dibayar', IN_REVISION: 'Dalam Pengerjaan',
+                    COMPLETED: 'Selesai', CANCELLED: 'Dibatalkan' })[s] || s;
+        },
+        badgeClass(s) {
+          return ({ PENDING: 'bg-amber-100 text-amber-700', PAID: 'bg-blue-100 text-blue-700',
+                    IN_REVISION: 'bg-indigo-100 text-indigo-700', COMPLETED: 'bg-green-100 text-green-700',
+                    CANCELLED: 'bg-stone-100 text-stone-500' })[s] || 'bg-stone-100 text-stone-600';
+        },
+        tierName(t) { return ({ 1: 'Dasar', 2: 'Standar', 3: 'Premium' })[t] || ('Paket ' + t); },
+        formatRupiah(n) { return 'Rp ' + (n || 0).toLocaleString('id-ID'); },
+        formatDate(s) { try { return new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); } catch(e){ return s; } }
+      };
+    }
+  </script>
+</main>
+</body>
+</html>

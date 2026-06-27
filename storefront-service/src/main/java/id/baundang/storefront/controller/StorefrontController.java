@@ -93,6 +93,11 @@ public class StorefrontController {
         return "masuk";
     }
 
+    @GetMapping("/pesanan-saya")
+    public String myOrders() {
+        return "pesanan-saya";
+    }
+
     @GetMapping("/daftar")
     public String register() {
         return "daftar";
