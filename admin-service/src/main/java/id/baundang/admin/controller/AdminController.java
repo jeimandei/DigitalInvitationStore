@@ -303,6 +303,12 @@ public class AdminController {
         return "admin/invitations/build";
     }
 
+    @PostMapping("/invitations/{id}/slug")
+    public String updateInvitationSlug(@PathVariable UUID id, @RequestParam String slug) {
+        invitationClient.updateSlug(id, slug);
+        return "redirect:/admin/invitations/" + id + "/build";
+    }
+
     @PostMapping("/invitations/{id}/build")
     public String saveInvitationContent(@PathVariable UUID id,
                                         @RequestParam java.util.Map<String, String> params) {

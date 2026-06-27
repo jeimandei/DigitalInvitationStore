@@ -30,9 +30,15 @@ public class InvitationPageController {
     private String midtransClientKey;
 
     @GetMapping("/{slug}")
-    public String viewInvitation(@PathVariable String slug, Model model) {
+    public String viewInvitation(@PathVariable String slug,
+                                 @org.springframework.web.bind.annotation.RequestParam(name = "to", required = false) String to,
+                                 Model model) {
         Invitation inv = invitationService.getBySlugAndIncrementView(slug);
         JsonNode content = inv.getContent();
+
+        // Per-guest greeting + optional PIN gate (stored in content)
+        model.addAttribute("guestGreeting", to != null ? to.trim() : "");
+        model.addAttribute("accessPin", textOf(content, "accessPin", ""));
 
         model.addAttribute("slug", slug);
         model.addAttribute("invitationId", inv.getId());

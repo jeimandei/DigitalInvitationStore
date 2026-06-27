@@ -108,14 +108,31 @@
 </head>
 <body x-data="invitationApp()" x-init="init()">
 
+<!-- PIN gate (only when an access PIN is set) -->
+<div th:if="${accessPin != ''}" x-show="!pinOk" x-cloak
+     style="position:fixed;inset:0;z-index:200;background:#2d1b12;display:flex;align-items:center;justify-content:center;padding:1.5rem">
+    <div style="text-align:center;max-width:320px;width:100%;padding:2rem;border:1px solid rgba(201,169,110,.35);border-radius:14px;background:rgba(255,255,255,.04)">
+        <p style="font-family:'Great Vibes',cursive;font-size:1.8rem;color:#c9a96e;margin-bottom:.5rem" th:text="${coupleName}">Pasangan</p>
+        <p style="font-size:.75rem;letter-spacing:.08em;color:#e8d5b0;opacity:.7;margin-bottom:1.25rem">Masukkan PIN untuk membuka undangan</p>
+        <input type="password" x-model="pinInput" @keydown.enter="checkPin()"
+               style="width:100%;padding:.7rem;text-align:center;letter-spacing:.3em;font-size:1.2rem;border:1px solid rgba(201,169,110,.4);border-radius:8px;background:rgba(255,255,255,.06);color:#fdf6ee;outline:none;margin-bottom:.9rem"/>
+        <button @click="checkPin()" style="width:100%;padding:.6rem;background:#c9a96e;color:#2d1b12;border:none;border-radius:8px;font-weight:600;cursor:pointer">Buka</button>
+        <p x-show="pinError" x-cloak style="margin-top:.7rem;font-size:.75rem;color:#e07070">PIN salah. Coba lagi.</p>
+    </div>
+</div>
+
 <!-- Cover -->
-<div class="cover" x-show="!opened">
+<div class="cover" x-show="!opened && pinOk">
     <img th:if="${coverPhotoUrl != ''}" th:src="${coverPhotoUrl}" alt="" class="cover-bg"/>
     <div class="cover-content">
         <p class="label">Undangan Pernikahan</p>
         <h1 th:text="${coupleName}">Nama Pasangan</h1>
         <div class="divider"></div>
         <p class="date" th:text="${receptionDate}">Tanggal Resepsi</p>
+        <div th:if="${guestGreeting != ''}" style="margin-top:1.5rem">
+            <p class="label" style="margin-bottom:.2rem">Kepada Yth.</p>
+            <p style="font-size:1.1rem;font-weight:600" th:text="${guestGreeting}">Nama Tamu</p>
+        </div>
         <button class="open-btn" @click="open()">Buka Undangan ✉</button>
     </div>
 </div>
@@ -261,6 +278,15 @@
     function invitationApp() {
         return {
             opened: false,
+            requiredPin: /*[[${accessPin}]]*/ '',
+            pinInput: '',
+            pinError: false,
+            get pinOk() { return !this.requiredPin || this._pinOk; },
+            _pinOk: false,
+            checkPin() {
+                if (this.pinInput === this.requiredPin) { this._pinOk = true; this.pinError = false; }
+                else { this.pinError = true; }
+            },
             open() {
                 this.opened = true;
                 document.body.style.overflow = '';

@@ -126,6 +126,13 @@ public class InvitationApiController {
         return ApiResponse.ok(null, "Status undangan diperbarui");
     }
 
+    @PutMapping("/api/v1/admin/invitations/{id}/slug")
+    public ApiResponse<Void> updateSlug(@PathVariable UUID id,
+                                        @RequestBody java.util.Map<String, String> body) {
+        invitationService.updateSlug(id, body.get("slug"));
+        return ApiResponse.ok(null, "URL undangan diperbarui");
+    }
+
     // --- Gift Registry ---
 
     @GetMapping("/api/v1/invitations/{slug}/gift-accounts")

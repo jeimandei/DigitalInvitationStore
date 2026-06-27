@@ -85,12 +85,51 @@
                     </div>
                 </section>
 
+                <section>
+                    <h3 class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-3">Akses</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="lbl">PIN Akses (opsional)</label>
+                            <input name="accessPin" class="inp" data-key="accessPin" placeholder="Kosongkan jika tidak perlu"/>
+                            <p class="text-xs text-gray-400 mt-1">Jika diisi, tamu harus memasukkan PIN untuk membuka undangan.</p>
+                        </div>
+                    </div>
+                </section>
+
                 <div class="flex justify-end pt-2 border-t border-gray-100">
                     <button type="submit" class="bg-rose-600 text-white px-6 py-2.5 rounded text-sm hover:bg-rose-700">
                         Simpan Konten Undangan
                     </button>
                 </div>
             </form>
+
+            <!-- Custom slug + per-guest link helper -->
+            <div class="bg-white rounded-xl shadow p-6 mt-6">
+                <h3 class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-3">URL & Tautan Tamu</h3>
+                <form th:action="@{/admin/invitations/{id}/slug(id=${invitation.id})}" method="post" class="flex items-end gap-3 mb-4">
+                    <div class="flex-1">
+                        <label class="lbl">URL Kustom (slug)</label>
+                        <div class="flex items-center gap-1">
+                            <span class="text-sm text-gray-400">/i/</span>
+                            <input name="slug" th:value="${invitation.coupleSlug}" pattern="[a-z0-9-]+" required
+                                   class="inp" placeholder="jei-angie"/>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Huruf kecil, angka, dan tanda hubung saja.</p>
+                    </div>
+                    <button type="submit" class="bg-stone-800 text-white px-4 py-2.5 rounded text-sm hover:bg-stone-900">Simpan URL</button>
+                </form>
+                <div class="border-t border-gray-100 pt-4">
+                    <label class="lbl">Tautan personal untuk tamu (otomatis menyapa nama)</label>
+                    <div class="flex items-center gap-2">
+                        <input id="guest-link" readonly
+                               th:value="'https://baundang.id/i/' + ${invitation.coupleSlug} + '?to=Nama+Tamu'"
+                               class="inp font-mono text-xs bg-gray-50"/>
+                        <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('guest-link').value)"
+                                class="text-xs border border-gray-200 px-3 py-2 rounded hover:bg-gray-50">Salin</button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Ganti <span class="font-mono">Nama+Tamu</span> dengan nama tamu (spasi pakai +).</p>
+                </div>
+            </div>
         </div>
     </main>
 </div>

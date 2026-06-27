@@ -187,6 +187,24 @@ public class InvitationService {
         return invitationRepository.save(inv);
     }
 
+    @Transactional
+    public Invitation updateSlug(UUID id, String rawSlug) {
+        Invitation inv = invitationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
+        if (rawSlug == null) throw new IllegalArgumentException("Slug kosong");
+        String slug = rawSlug.trim().toLowerCase();
+        if (!slug.matches("[a-z0-9-]+")) {
+            throw new IllegalArgumentException("Slug hanya boleh huruf kecil, angka, dan tanda hubung");
+        }
+        invitationRepository.findByCoupleSlug(slug).ifPresent(existing -> {
+            if (!existing.getId().equals(id)) {
+                throw new IllegalArgumentException("Slug sudah dipakai undangan lain");
+            }
+        });
+        inv.setCoupleSlug(slug);
+        return invitationRepository.save(inv);
+    }
+
     @Transactional(readOnly = true)
     public List<ExpiringInvitationDTO> findExpiring(int days) {
         LocalDate from = LocalDate.now();

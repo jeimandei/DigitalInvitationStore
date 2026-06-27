@@ -95,6 +95,21 @@ public class InvitationAdminClient {
         }
     }
 
+    public boolean updateSlug(UUID invitationId, String slug) {
+        try {
+            restClient.put()
+                    .uri("/api/v1/admin/invitations/" + invitationId + "/slug")
+                    .header("X-User-Role", "ADMIN")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
+                    .body(java.util.Map.of("slug", slug != null ? slug : ""))
+                    .retrieve().toBodilessEntity();
+            return true;
+        } catch (RestClientException e) {
+            log.error("Failed to update invitation slug {}: {}", invitationId, e.getMessage());
+            return false;
+        }
+    }
+
     public boolean approveGuestbook(UUID invitationId, UUID entryId) {
         try {
             restClient.put()
