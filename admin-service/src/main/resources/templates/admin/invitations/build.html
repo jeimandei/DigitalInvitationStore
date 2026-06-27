@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id">
+<head th:replace="~{layout/base :: head('Bangun Undangan')}"></head>
+<body class="bg-gray-100 min-h-screen flex">
+
+<div th:replace="~{layout/base :: sidebar('invitations')}"></div>
+
+<div class="flex-1 flex flex-col ml-64">
+    <header class="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
+        <div>
+            <a th:href="@{/admin/invitations/{id}(id=${invitation.id})}"
+               class="text-gray-400 hover:text-gray-600 text-sm">← Detail Undangan</a>
+            <h1 class="text-lg font-semibold text-gray-800 mt-1">Bangun Undangan</h1>
+            <p class="text-xs text-gray-400 mt-0.5" th:text="'/i/' + ${invitation.coupleSlug}"></p>
+        </div>
+        <a th:href="@{/i/{slug}(slug=${invitation.coupleSlug})}" target="_blank"
+           class="text-sm text-rose-600 hover:underline">Pratinjau ↗</a>
+    </header>
+
+    <main class="flex-1 p-8 grid grid-cols-3 gap-6">
+
+        <!-- Intake answers (client questionnaire) -->
+        <div class="col-span-1">
+            <div class="bg-white rounded-xl shadow p-5 sticky top-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-semibold text-gray-700">Jawaban Klien</h2>
+                    <button type="button" onclick="fillFromIntake()"
+                            class="text-xs bg-stone-800 text-white px-3 py-1.5 rounded hover:bg-stone-900">
+                        Isi dari Kuesioner →
+                    </button>
+                </div>
+                <div id="intake-panel" class="space-y-3 text-sm"></div>
+                <p id="intake-empty" class="text-gray-400 text-sm hidden">Klien belum mengisi kuesioner.</p>
+            </div>
+        </div>
+
+        <!-- Structured content editor -->
+        <div class="col-span-2">
+            <form th:action="@{/admin/invitations/{id}/build(id=${invitation.id})}" method="post"
+                  class="bg-white rounded-xl shadow p-6 space-y-6">
+
+                <section>
+                    <h3 class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-3">Pasangan</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2"><label class="lbl">Nama Tampilan Pasangan</label>
+                            <input name="coupleName" class="inp" data-key="coupleName"/></div>
+                        <div><label class="lbl">Nama Lengkap Pria</label>
+                            <input name="groomFullName" class="inp" data-key="groomFullName"/></div>
+                        <div><label class="lbl">Nama Lengkap Wanita</label>
+                            <input name="brideFullName" class="inp" data-key="brideFullName"/></div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-3">Pemberkatan (Matrimony)</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label class="lbl">Tanggal</label><input name="matrimonyDate" type="date" class="inp" data-key="matrimonyDate"/></div>
+                        <div><label class="lbl">Waktu</label><input name="matrimonyTime" type="time" class="inp" data-key="matrimonyTime"/></div>
+                        <div><label class="lbl">Lokasi</label><input name="matrimonyVenue" class="inp" data-key="matrimonyVenue"/></div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-3">Resepsi</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label class="lbl">Tanggal</label><input name="receptionDate" type="date" class="inp" data-key="receptionDate"/></div>
+                        <div><label class="lbl">Waktu</label><input name="receptionTime" type="time" class="inp" data-key="receptionTime"/></div>
+                        <div><label class="lbl">Lokasi</label><input name="receptionVenue" class="inp" data-key="receptionVenue"/></div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-3">Konten</h3>
+                    <div class="space-y-4">
+                        <div><label class="lbl">Kisah Cinta</label>
+                            <textarea name="loveStory" rows="3" class="inp resize-none" data-key="loveStory"></textarea></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="lbl">URL Foto Sampul</label><input name="coverPhotoUrl" class="inp" data-key="coverPhotoUrl"/></div>
+                            <div><label class="lbl">URL Google Maps</label><input name="mapsEmbedUrl" class="inp" data-key="mapsEmbedUrl"/></div>
+                            <div><label class="lbl">Palet Warna</label><input name="colorPalette" class="inp" data-key="colorPalette"/></div>
+                            <div><label class="lbl">Musik Latar</label><input name="backgroundMusic" class="inp" data-key="backgroundMusic"/></div>
+                        </div>
+                        <div><label class="lbl">Daftar Hadiah / Gift Registry</label>
+                            <textarea name="giftRegistry" rows="2" class="inp resize-none" data-key="giftRegistry"></textarea></div>
+                    </div>
+                </section>
+
+                <div class="flex justify-end pt-2 border-t border-gray-100">
+                    <button type="submit" class="bg-rose-600 text-white px-6 py-2.5 rounded text-sm hover:bg-rose-700">
+                        Simpan Konten Undangan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+<style>
+    .lbl { display:block; font-size:0.7rem; color:#6b7280; margin-bottom:0.25rem; }
+    .inp { width:100%; border:1px solid #e5e7eb; border-radius:0.375rem; padding:0.5rem 0.75rem; font-size:0.875rem; }
+    .inp:focus { outline:none; box-shadow:0 0 0 2px #fda4af; }
+</style>
+
+<script th:inline="javascript">
+    var content = /*[[${content}]]*/ {};
+    var intake = /*[[${intake}]]*/ {};
+    var questions = /*[[${intakeQuestions}]]*/ [];
+    var answers = (intake && intake.answers) ? intake.answers : {};
+
+    // Prefill the form from existing invitation content
+    document.querySelectorAll('[data-key]').forEach(function (el) {
+        var k = el.dataset.key;
+        if (content && content[k] != null) el.value = content[k];
+    });
+
+    // Render the client's intake answers panel
+    (function () {
+        var panel = document.getElementById('intake-panel');
+        if (!questions || questions.length === 0 || !answers || Object.keys(answers).length === 0) {
+            document.getElementById('intake-empty').classList.remove('hidden');
+            return;
+        }
+        questions.forEach(function (q) {
+            var val = answers[q.fieldKey];
+            if (val == null || val === '') return;
+            var row = document.createElement('div');
+            row.innerHTML = '<p class="text-gray-400 text-xs">' + q.label + '</p>' +
+                            '<p class="text-gray-800">' + String(val).replace(/</g, '&lt;') + '</p>';
+            panel.appendChild(row);
+        });
+        if (!panel.children.length) document.getElementById('intake-empty').classList.remove('hidden');
+    })();
+
+    // Copy intake answers into matching form fields (keys are aligned)
+    function fillFromIntake() {
+        document.querySelectorAll('[data-key]').forEach(function (el) {
+            var k = el.dataset.key;
+            if (answers && answers[k] != null && answers[k] !== '') el.value = answers[k];
+        });
+    }
+</script>
+</body>
+</html>

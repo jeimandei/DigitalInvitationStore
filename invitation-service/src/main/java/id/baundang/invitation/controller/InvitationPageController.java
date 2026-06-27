@@ -46,9 +46,9 @@ public class InvitationPageController {
         model.addAttribute("coupleName", textOf(content, "coupleName", slug));
         model.addAttribute("brideFullName", textOf(content, "brideFullName", ""));
         model.addAttribute("groomFullName", textOf(content, "groomFullName", ""));
-        model.addAttribute("akadDate", textOf(content, "akadDate", ""));
-        model.addAttribute("akadTime", textOf(content, "akadTime", ""));
-        model.addAttribute("akadVenue", textOf(content, "akadVenue", ""));
+        model.addAttribute("akadDate", textOf(content, "matrimonyDate", textOf(content, "akadDate", "")));
+        model.addAttribute("akadTime", textOf(content, "matrimonyTime", textOf(content, "akadTime", "")));
+        model.addAttribute("akadVenue", textOf(content, "matrimonyVenue", textOf(content, "akadVenue", "")));
         model.addAttribute("receptionDate", textOf(content, "receptionDate", ""));
         model.addAttribute("receptionTime", textOf(content, "receptionTime", ""));
         model.addAttribute("receptionVenue", textOf(content, "receptionVenue", ""));

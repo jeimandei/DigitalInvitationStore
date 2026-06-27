@@ -286,6 +286,40 @@ public class AdminController {
         return "redirect:/admin/invitations/" + id;
     }
 
+    // ─── Build invitation (intake answers + structured content editor) ──────────
+
+    @GetMapping("/invitations/{id}/build")
+    public String buildInvitation(@PathVariable UUID id, Model model) {
+        InvitationDTO inv = invitationClient.getInvitation(id);
+        if (inv == null) {
+            return "redirect:/admin/invitations";
+        }
+        model.addAttribute("invitation", inv);
+        model.addAttribute("content", inv.content());
+        if (inv.orderId() != null) {
+            model.addAttribute("intake", intakeClient.getOrderIntake(inv.orderId()));
+            model.addAttribute("intakeQuestions", intakeClient.questionsForOrder(inv.orderId()));
+        }
+        return "admin/invitations/build";
+    }
+
+    @PostMapping("/invitations/{id}/build")
+    public String saveInvitationContent(@PathVariable UUID id,
+                                        @RequestParam java.util.Map<String, String> params) {
+        com.fasterxml.jackson.databind.node.ObjectNode patch =
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+        params.forEach((k, v) -> {
+            if (k == null || k.isBlank() || "id".equals(k)) return;
+            if (v != null && !v.isBlank()) {
+                patch.put(k, v);
+            }
+        });
+        if (!patch.isEmpty()) {
+            invitationClient.updateContent(id, patch);
+        }
+        return "redirect:/admin/invitations/" + id + "/build";
+    }
+
     @GetMapping("/invitations/{id}/rsvp")
     public String rsvp(@PathVariable UUID id, Model model) {
         model.addAttribute("invitationId", id);
