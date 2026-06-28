@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         value = InvitationApiController.class,
         excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class}
 )
+@AutoConfigureMockMvc(addFilters = false)
 class InvitationApiControllerTest {
 
     @Autowired
@@ -123,7 +125,9 @@ class InvitationApiControllerTest {
         UUID id = UUID.randomUUID();
         when(invitationService.updateStatus(any(), any())).thenReturn(null);
 
-        mockMvc.perform(put("/api/v1/admin/invitations/" + id + "/status?status=ACTIVE"))
+        mockMvc.perform(put("/api/v1/admin/invitations/" + id + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"ACTIVE\"}"))
                 .andExpect(status().isOk());
     }
 

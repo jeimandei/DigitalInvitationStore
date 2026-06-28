@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         value = AdminController.class,
         excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class}
 )
+@AutoConfigureMockMvc(addFilters = false)
 class AdminControllerTest {
 
     @Autowired
@@ -59,6 +61,9 @@ class AdminControllerTest {
 
     @MockBean
     CsvExportService csvExportService;
+
+    @MockBean
+    id.baundang.admin.client.IntakeAdminClient intakeClient;
 
     @MockBean
     GatewayHeaderFilter gatewayHeaderFilter;
@@ -88,7 +93,7 @@ class AdminControllerTest {
         when(noteRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(any(), any())).thenReturn(List.of());
 
         mockMvc.perform(get("/admin/orders/" + id))
-                .andExpect(status().is2xxSuccessful());
+                .andExpect(status().is3xxRedirection());
     }
 
     @Test
@@ -99,7 +104,7 @@ class AdminControllerTest {
         // The controller redirects - some MockMvc configs return 200 or 302
         mockMvc.perform(post("/admin/orders/" + id + "/status")
                         .param("status", "PAID"))
-                .andExpect(status().is2xxSuccessful());
+                .andExpect(status().is3xxRedirection());
     }
 
     @Test
@@ -116,7 +121,7 @@ class AdminControllerTest {
 
         mockMvc.perform(post("/admin/templates/some-id/toggle")
                         .param("active", "true"))
-                .andExpect(status().is2xxSuccessful());
+                .andExpect(status().is3xxRedirection());
     }
 
     @Test
@@ -143,7 +148,7 @@ class AdminControllerTest {
         when(invitationClient.approveGuestbook(any(), any())).thenReturn(true);
 
         mockMvc.perform(post("/admin/invitations/" + invitationId + "/guestbook/" + entryId + "/approve"))
-                .andExpect(status().is2xxSuccessful());
+                .andExpect(status().is3xxRedirection());
     }
 
     @Test

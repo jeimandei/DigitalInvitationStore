@@ -37,7 +37,9 @@ public class OrderPaidConsumer {
     }
 
     private Instant parseInstant(Object value) {
-        if (value == null) return Instant.now();
+        if (value == null) {
+            return Instant.now();
+        }
         String s = value.toString();
         try {
             return Instant.parse(s);

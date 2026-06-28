@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -30,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         value = MediaController.class,
         excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class}
 )
+@AutoConfigureMockMvc(addFilters = false)
 class MediaControllerTest {
 
     @Autowired
@@ -61,7 +63,7 @@ class MediaControllerTest {
 
     @Test
     void presignUpload_emptyBody_returnsAny() throws Exception {
-        // Without valid body, controller may return 400 or 200 depending on validation config
+        // An empty body is missing required fields, so @Valid must reject it with 400.
         when(minioService.presignUpload(any())).thenReturn(
                 new PresignUploadResponse("https://minio.url/presign", "couples/test/file.jpg", 15)
         );
@@ -69,7 +71,7 @@ class MediaControllerTest {
         mockMvc.perform(post("/api/v1/media/upload/presign")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().is2xxSuccessful());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
