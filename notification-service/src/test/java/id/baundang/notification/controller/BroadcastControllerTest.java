@@ -1,6 +1,7 @@
 package id.baundang.notification.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import id.baundang.notification.client.FonnteClient;
 import id.baundang.notification.dto.BroadcastRequest;
 import id.baundang.notification.service.BroadcastService;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,9 @@ class BroadcastControllerTest {
 
     @MockBean
     BroadcastService broadcastService;
+
+    @MockBean
+    FonnteClient fonnteClient;
 
     @Test
     void broadcast_returns200() throws Exception {
