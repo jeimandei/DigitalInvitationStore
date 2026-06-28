@@ -41,8 +41,18 @@ public class QueueConfig {
     // --- queues ---
 
     @Bean
+    Queue notifOrderCreatedQueue() {
+        return QueueBuilder.durable("notification.order.created").build();
+    }
+
+    @Bean
     Queue notifOrderPaidQueue() {
         return QueueBuilder.durable("notification.order.paid").build();
+    }
+
+    @Bean
+    Queue notifOrderCompletedQueue() {
+        return QueueBuilder.durable("notification.order.completed").build();
     }
 
     @Bean
@@ -73,8 +83,18 @@ public class QueueConfig {
     // --- bindings ---
 
     @Bean
+    Binding orderCreatedBinding(Queue notifOrderCreatedQueue, TopicExchange ordersTopicExchange) {
+        return BindingBuilder.bind(notifOrderCreatedQueue).to(ordersTopicExchange).with("order.created");
+    }
+
+    @Bean
     Binding orderPaidBinding(Queue notifOrderPaidQueue, TopicExchange ordersTopicExchange) {
         return BindingBuilder.bind(notifOrderPaidQueue).to(ordersTopicExchange).with("order.paid");
+    }
+
+    @Bean
+    Binding orderCompletedBinding(Queue notifOrderCompletedQueue, TopicExchange ordersTopicExchange) {
+        return BindingBuilder.bind(notifOrderCompletedQueue).to(ordersTopicExchange).with("order.completed");
     }
 
     @Bean

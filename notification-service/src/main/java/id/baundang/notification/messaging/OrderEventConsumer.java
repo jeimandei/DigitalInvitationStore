@@ -20,17 +20,59 @@ public class OrderEventConsumer {
     @Value("${app.admin.whatsapp}")
     private String adminWhatsapp;
 
+    @RabbitListener(queues = "notification.order.created")
+    public void onOrderCreated(Map<String, Object> event) {
+        try {
+            if (event.get("orderNumber") == null) return;
+            String orderNumber  = event.get("orderNumber").toString();
+            String orderId      = event.getOrDefault("orderId", "").toString();
+            String coupleName   = event.getOrDefault("coupleName", "").toString();
+            String contactWa    = event.getOrDefault("contactWhatsapp", "").toString();
+            String contactEmail = event.getOrDefault("contactEmail", "").toString();
+            long   amount       = event.get("amount") instanceof Number n ? n.longValue() : 0L;
+            String paymentUrl   = orderId.isBlank()
+                    ? "https://baundang.id/lacak"
+                    : "https://baundang.id/bayar/" + orderId;
+
+            if (!contactEmail.isBlank()) {
+                notificationService.sendEmail(
+                        "order.created.buyer.email", contactEmail,
+                        "Pesanan Diterima — " + orderNumber,
+                        MessageTemplates.orderCreatedEmailBuyer(orderNumber, coupleName, amount, paymentUrl),
+                        event
+                );
+            }
+            if (!contactWa.isBlank()) {
+                notificationService.sendWhatsApp(
+                        "order.created.buyer", contactWa,
+                        MessageTemplates.orderCreatedBuyer(orderNumber, coupleName, paymentUrl),
+                        event
+                );
+            }
+        } catch (Exception e) {
+            log.error("Failed to handle order.created event: {}", e.getMessage(), e);
+        }
+    }
+
     @RabbitListener(queues = "notification.order.paid")
     public void onOrderPaid(Map<String, Object> event) {
         try {
-            String orderNumber    = event.get("orderNumber").toString();
-            String coupleName     = event.get("coupleName") != null ? event.get("coupleName").toString() : "";
-            String contactWa      = event.get("contactWhatsapp") != null ? event.get("contactWhatsapp").toString() : "";
-            String contactEmail   = event.get("contactEmail") != null ? event.get("contactEmail").toString() : "";
-            long   amount         = event.containsKey("amount") ? ((Number) event.get("amount")).longValue() : 0L;
-            String dashboardUrl   = "https://baundang.id/pesanan/" + orderNumber;
+            // Payment-service publishes a bare event (no orderNumber/coupleName).
+            // Order-service publishes a rich event after auto-updating the order to PAID.
+            // Skip bare events so we only notify once (from the rich order-service event).
+            if (event.get("orderNumber") == null) {
+                log.debug("Skipping bare payment event (no orderNumber) — waiting for order-service event");
+                return;
+            }
 
-            // WA to buyer
+            String orderNumber  = event.get("orderNumber").toString();
+            String coupleName   = event.getOrDefault("coupleName", "").toString();
+            String contactWa    = event.getOrDefault("contactWhatsapp", "").toString();
+            String contactEmail = event.getOrDefault("contactEmail", "").toString();
+            long   amount       = event.containsKey("amount") ? ((Number) event.get("amount")).longValue() : 0L;
+            String dashboardUrl = "https://baundang.id/pesanan/" + orderNumber;
+
+            // WhatsApp to buyer
             if (!contactWa.isBlank()) {
                 notificationService.sendWhatsApp(
                         "order.paid.buyer", contactWa,
@@ -39,7 +81,17 @@ public class OrderEventConsumer {
                 );
             }
 
-            // WA to admin
+            // Email to buyer
+            if (!contactEmail.isBlank()) {
+                notificationService.sendEmail(
+                        "order.paid.buyer.email", contactEmail,
+                        "Pembayaran Diterima — " + orderNumber,
+                        MessageTemplates.orderPaidEmailBuyer(orderNumber, coupleName, amount, dashboardUrl),
+                        event
+                );
+            }
+
+            // WhatsApp to admin
             notificationService.sendWhatsApp(
                     "order.paid.admin", adminWhatsapp,
                     MessageTemplates.orderPaidAdmin(orderNumber, coupleName, contactEmail, contactWa, amount),
@@ -47,6 +99,39 @@ public class OrderEventConsumer {
             );
         } catch (Exception e) {
             log.error("Failed to handle order.paid event: {}", e.getMessage(), e);
+        }
+    }
+
+    @RabbitListener(queues = "notification.order.completed")
+    public void onOrderCompleted(Map<String, Object> event) {
+        try {
+            if (event.get("orderNumber") == null) return;
+            String orderNumber  = event.get("orderNumber").toString();
+            String coupleName   = event.getOrDefault("coupleName", "").toString();
+            String contactWa    = event.getOrDefault("contactWhatsapp", "").toString();
+            String contactEmail = event.getOrDefault("contactEmail", "").toString();
+            String coupleSlug   = event.getOrDefault("coupleSlug", "").toString();
+            String invitationUrl = coupleSlug.isBlank()
+                    ? "https://baundang.id/lacak"
+                    : "https://baundang.id/i/" + coupleSlug;
+
+            if (!contactEmail.isBlank()) {
+                notificationService.sendEmail(
+                        "order.completed.buyer.email", contactEmail,
+                        "Undangan Anda Sudah Siap — " + orderNumber,
+                        MessageTemplates.orderCompletedEmailBuyer(orderNumber, coupleName, invitationUrl),
+                        event
+                );
+            }
+            if (!contactWa.isBlank()) {
+                notificationService.sendWhatsApp(
+                        "order.completed.buyer", contactWa,
+                        MessageTemplates.orderCompletedBuyer(orderNumber, coupleName, invitationUrl),
+                        event
+                );
+            }
+        } catch (Exception e) {
+            log.error("Failed to handle order.completed event: {}", e.getMessage(), e);
         }
     }
 

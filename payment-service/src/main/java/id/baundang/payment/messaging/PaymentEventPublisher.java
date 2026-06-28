@@ -31,13 +31,14 @@ public class PaymentEventPublisher {
     private String giftPaidKey;
 
     public void publishOrderPaid(Payment payment) {
+        Instant paidAt = payment.getPaidAt() != null ? payment.getPaidAt() : Instant.now();
         publish(paidKey, Map.of(
                 "orderId", payment.getOrderId(),
                 "midtransOrderId", payment.getMidtransOrderId(),
                 "paymentMethod", payment.getPaymentMethod() != null ? payment.getPaymentMethod() : "",
                 "amount", payment.getAmount(),
-                "paidAt", payment.getPaidAt(),
-                "occurredAt", Instant.now()
+                "paidAt", paidAt.toString(),
+                "occurredAt", Instant.now().toString()
         ));
     }
 

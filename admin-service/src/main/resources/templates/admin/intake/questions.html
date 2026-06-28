@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id">
+<head th:replace="~{layout/base :: head('Kuesioner')}"></head>
+<body class="bg-gray-100 min-h-screen flex">
+
+<div th:replace="~{layout/base :: sidebar('intake')}"></div>
+
+<div class="flex-1 flex flex-col ml-64" x-data="intakeBuilder()">
+    <header class="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
+        <div>
+            <h1 class="text-lg font-semibold text-gray-800">Kuesioner Undangan</h1>
+            <p class="text-xs text-gray-400 mt-0.5">Pertanyaan yang diisi klien setelah pembayaran. Tampil sesuai paket (tier).</p>
+        </div>
+        <button @click="openCreate()" class="bg-rose-600 text-white px-4 py-2 rounded text-sm hover:bg-rose-700">
+            + Tambah Pertanyaan
+        </button>
+    </header>
+
+    <main class="flex-1 p-8">
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                <tr>
+                    <th class="px-4 py-3 text-left">Urutan</th>
+                    <th class="px-4 py-3 text-left">Bagian</th>
+                    <th class="px-4 py-3 text-left">Pertanyaan</th>
+                    <th class="px-4 py-3 text-left">Field Key</th>
+                    <th class="px-4 py-3 text-left">Tipe</th>
+                    <th class="px-4 py-3 text-left">Min. Paket</th>
+                    <th class="px-4 py-3 text-left">Wajib</th>
+                    <th class="px-4 py-3 text-left">Aktif</th>
+                    <th class="px-4 py-3"></th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                <tr th:each="q : ${questions}" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-gray-500" th:text="${q.sortOrder()}"></td>
+                    <td class="px-4 py-3 text-gray-700" th:text="${q.section()}"></td>
+                    <td class="px-4 py-3 font-medium text-gray-800" th:text="${q.label()}"></td>
+                    <td class="px-4 py-3 font-mono text-xs text-gray-500" th:text="${q.fieldKey()}"></td>
+                    <td class="px-4 py-3 text-gray-500" th:text="${q.inputType()}"></td>
+                    <td class="px-4 py-3 text-gray-500"
+                        th:text="${q.minTier() == 1 ? 'Dasar' : (q.minTier() == 2 ? 'Standar' : 'Premium')}"></td>
+                    <td class="px-4 py-3">
+                        <span th:if="${q.required()}" class="text-rose-600 text-xs">Wajib</span>
+                        <span th:unless="${q.required()}" class="text-gray-300 text-xs">—</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span th:if="${q.active()}" class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Aktif</span>
+                        <span th:unless="${q.active()}" class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-xs">Nonaktif</span>
+                    </td>
+                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                        <button class="text-xs text-blue-600 hover:underline mr-3"
+                                th:attr="data-q=${q.id} + '|' + ${q.section} + '|' + ${q.label} + '|' + ${q.fieldKey} + '|' + ${q.inputType} + '|' + ${q.minTier} + '|' + ${q.required} + '|' + ${q.sortOrder} + '|' + ${q.active},data-options=${q.options}"
+                                @click="openEditFromEl($el)">Edit</button>
+                        <form th:action="@{/admin/intake/questions/{id}/delete(id=${q.id})}" method="post" class="inline"
+                              onsubmit="return confirm('Hapus pertanyaan ini?')">
+                            <button type="submit" class="text-xs text-red-500 hover:underline">Hapus</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${questions.isEmpty()}">
+                    <td colspan="9" class="px-4 py-8 text-center text-gray-400">Belum ada pertanyaan.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div x-show="show" x-cloak class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+         @click.self="show = false">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto">
+            <form :action="editId ? '/admin/intake/questions/' + editId : '/admin/intake/questions'" method="post" class="p-6">
+                <h2 class="text-base font-semibold text-gray-800 mb-4" x-text="editId ? 'Edit Pertanyaan' : 'Tambah Pertanyaan'"></h2>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Bagian / Section</label>
+                        <input name="section" x-model="form.section" required
+                               class="w-full border rounded px-3 py-2 text-sm"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Urutan</label>
+                        <input name="sortOrder" type="number" x-model="form.sortOrder"
+                               class="w-full border rounded px-3 py-2 text-sm"/>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs text-gray-500 mb-1">Pertanyaan / Label</label>
+                        <input name="label" x-model="form.label" required
+                               class="w-full border rounded px-3 py-2 text-sm"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Field Key (unik, tanpa spasi)</label>
+                        <input name="fieldKey" x-model="form.fieldKey" required pattern="[A-Za-z0-9_]+"
+                               class="w-full border rounded px-3 py-2 text-sm font-mono"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Tipe Input</label>
+                        <select name="inputType" x-model="form.inputType" class="w-full border rounded px-3 py-2 text-sm">
+                            <option>TEXT</option><option>TEXTAREA</option><option>DATE</option>
+                            <option>TIME</option><option>SELECT</option><option>COLOR</option><option>NUMBER</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2" x-show="form.inputType === 'SELECT'">
+                        <label class="block text-xs text-gray-500 mb-1">Pilihan (satu per baris)</label>
+                        <textarea name="options" x-model="form.options" rows="4"
+                                  class="w-full border rounded px-3 py-2 text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Minimal Paket</label>
+                        <select name="minTier" x-model="form.minTier" class="w-full border rounded px-3 py-2 text-sm">
+                            <option value="1">Dasar (semua)</option>
+                            <option value="2">Standar ke atas</option>
+                            <option value="3">Premium saja</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end gap-4">
+                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                            <input type="checkbox" name="required" value="true" x-model="form.required"/> Wajib
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700" x-show="editId">
+                            <input type="checkbox" name="active" value="true" x-model="form.active"/> Aktif
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-6">
+                    <button type="button" @click="show = false"
+                            class="px-4 py-2 rounded text-sm border border-gray-200 text-gray-600 hover:bg-gray-50">Batal</button>
+                    <button type="submit" class="px-4 py-2 rounded text-sm bg-rose-600 text-white hover:bg-rose-700">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function intakeBuilder() {
+        return {
+            show: false, editId: null,
+            form: { section: 'Umum', label: '', fieldKey: '', inputType: 'TEXT', options: '', minTier: '1', required: false, sortOrder: 0, active: true },
+            openCreate() {
+                this.editId = null;
+                this.form = { section: 'Umum', label: '', fieldKey: '', inputType: 'TEXT', options: '', minTier: '1', required: false, sortOrder: 0, active: true };
+                this.show = true;
+            },
+            openEditFromEl(el) {
+                const parts = el.dataset.q.split('|');
+                let opts = [];
+                try { opts = JSON.parse(el.dataset.options || '[]'); } catch (e) {}
+                this.editId = parts[0];
+                this.form = {
+                    section: parts[1], label: parts[2], fieldKey: parts[3], inputType: parts[4],
+                    minTier: parts[5], required: parts[6] === 'true', sortOrder: parseInt(parts[7]) || 0,
+                    active: parts[8] === 'true',
+                    options: Array.isArray(opts) ? opts.join('\n') : ''
+                };
+                this.show = true;
+            }
+        };
+    }
+</script>
+</body>
+</html>

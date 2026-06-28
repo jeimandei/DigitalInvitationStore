@@ -45,8 +45,63 @@ public class AdminController {
     private final InvitationAdminClient invitationClient;
     private final TemplateAdminClient templateClient;
     private final NotificationAdminClient notificationClient;
+    private final id.baundang.admin.client.IntakeAdminClient intakeClient;
     private final AdminNoteRepository noteRepository;
     private final CsvExportService csvExportService;
+
+    // ─── Intake questionnaire builder ───────────────────────────────────────────
+
+    @GetMapping("/intake/questions")
+    public String intakeQuestions(Model model) {
+        model.addAttribute("questions", intakeClient.listQuestions());
+        return "admin/intake/questions";
+    }
+
+    @PostMapping("/intake/questions")
+    public String createIntakeQuestion(
+            @RequestParam String section,
+            @RequestParam String label,
+            @RequestParam String fieldKey,
+            @RequestParam(defaultValue = "TEXT") String inputType,
+            @RequestParam(required = false) String options,
+            @RequestParam(defaultValue = "1") short minTier,
+            @RequestParam(defaultValue = "false") boolean required,
+            @RequestParam(defaultValue = "0") int sortOrder) {
+        intakeClient.createQuestion(new id.baundang.admin.dto.IntakeQuestionRequest(
+                section, label, fieldKey, inputType, parseOptions(options),
+                minTier, required, sortOrder, true));
+        return "redirect:/admin/intake/questions";
+    }
+
+    @PostMapping("/intake/questions/{id}")
+    public String updateIntakeQuestion(
+            @PathVariable UUID id,
+            @RequestParam String section,
+            @RequestParam String label,
+            @RequestParam String fieldKey,
+            @RequestParam(defaultValue = "TEXT") String inputType,
+            @RequestParam(required = false) String options,
+            @RequestParam(defaultValue = "1") short minTier,
+            @RequestParam(defaultValue = "false") boolean required,
+            @RequestParam(defaultValue = "0") int sortOrder,
+            @RequestParam(defaultValue = "true") boolean active) {
+        intakeClient.updateQuestion(id, new id.baundang.admin.dto.IntakeQuestionRequest(
+                section, label, fieldKey, inputType, parseOptions(options),
+                minTier, required, sortOrder, active));
+        return "redirect:/admin/intake/questions";
+    }
+
+    @PostMapping("/intake/questions/{id}/delete")
+    public String deleteIntakeQuestion(@PathVariable UUID id) {
+        intakeClient.deleteQuestion(id);
+        return "redirect:/admin/intake/questions";
+    }
+
+    private java.util.List<String> parseOptions(String options) {
+        if (options == null || options.isBlank()) return java.util.List.of();
+        return java.util.Arrays.stream(options.split("\\r?\\n|,"))
+                .map(String::trim).filter(s -> !s.isBlank()).toList();
+    }
 
     // ─── Dashboard ────────────────────────────────────────────────────────────
 
@@ -231,6 +286,46 @@ public class AdminController {
         return "redirect:/admin/invitations/" + id;
     }
 
+    // ─── Build invitation (intake answers + structured content editor) ──────────
+
+    @GetMapping("/invitations/{id}/build")
+    public String buildInvitation(@PathVariable UUID id, Model model) {
+        InvitationDTO inv = invitationClient.getInvitation(id);
+        if (inv == null) {
+            return "redirect:/admin/invitations";
+        }
+        model.addAttribute("invitation", inv);
+        model.addAttribute("content", inv.content());
+        if (inv.orderId() != null) {
+            model.addAttribute("intake", intakeClient.getOrderIntake(inv.orderId()));
+            model.addAttribute("intakeQuestions", intakeClient.questionsForOrder(inv.orderId()));
+        }
+        return "admin/invitations/build";
+    }
+
+    @PostMapping("/invitations/{id}/slug")
+    public String updateInvitationSlug(@PathVariable UUID id, @RequestParam String slug) {
+        invitationClient.updateSlug(id, slug);
+        return "redirect:/admin/invitations/" + id + "/build";
+    }
+
+    @PostMapping("/invitations/{id}/build")
+    public String saveInvitationContent(@PathVariable UUID id,
+                                        @RequestParam java.util.Map<String, String> params) {
+        com.fasterxml.jackson.databind.node.ObjectNode patch =
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+        params.forEach((k, v) -> {
+            if (k == null || k.isBlank() || "id".equals(k)) return;
+            if (v != null && !v.isBlank()) {
+                patch.put(k, v);
+            }
+        });
+        if (!patch.isEmpty()) {
+            invitationClient.updateContent(id, patch);
+        }
+        return "redirect:/admin/invitations/" + id + "/build";
+    }
+
     @GetMapping("/invitations/{id}/rsvp")
     public String rsvp(@PathVariable UUID id, Model model) {
         model.addAttribute("invitationId", id);
@@ -242,6 +337,8 @@ public class AdminController {
     public String guests(@PathVariable UUID id, Model model) {
         model.addAttribute("invitationId", id);
         model.addAttribute("guests", invitationClient.listGuests(id));
+        InvitationDTO inv = invitationClient.getInvitation(id);
+        model.addAttribute("coupleSlug", inv != null ? inv.coupleSlug() : "");
         return "admin/invitations/guests";
     }
 

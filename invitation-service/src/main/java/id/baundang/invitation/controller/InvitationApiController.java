@@ -92,6 +92,11 @@ public class InvitationApiController {
         return ApiResponse.ok(PagedResponse.from(invitationService.listInvitations(pageable)));
     }
 
+    @GetMapping("/api/v1/admin/invitations/{id}")
+    public ApiResponse<InvitationSummaryDTO> getInvitation(@PathVariable UUID id) {
+        return ApiResponse.ok(invitationService.getInvitation(id));
+    }
+
     @GetMapping("/api/v1/admin/invitations/{id}/guestbook")
     public ApiResponse<List<AdminGuestbookEntryDTO>> listAllGuestbook(@PathVariable UUID id) {
         return ApiResponse.ok(invitationService.listAllGuestbook(id));
@@ -116,9 +121,16 @@ public class InvitationApiController {
 
     @PutMapping("/api/v1/admin/invitations/{id}/status")
     public ApiResponse<Void> updateStatus(@PathVariable UUID id,
-                                          @RequestParam InvitationStatus status) {
-        invitationService.updateStatus(id, status);
+                                          @RequestBody java.util.Map<String, String> body) {
+        invitationService.updateStatus(id, InvitationStatus.valueOf(body.get("status")));
         return ApiResponse.ok(null, "Status undangan diperbarui");
+    }
+
+    @PutMapping("/api/v1/admin/invitations/{id}/slug")
+    public ApiResponse<Void> updateSlug(@PathVariable UUID id,
+                                        @RequestBody java.util.Map<String, String> body) {
+        invitationService.updateSlug(id, body.get("slug"));
+        return ApiResponse.ok(null, "URL undangan diperbarui");
     }
 
     // --- Gift Registry ---
@@ -168,11 +180,14 @@ public class InvitationApiController {
         return ApiResponse.ok(invitationService.getGuestByCode(code));
     }
 
+    // Accepts the check-in form posted as application/x-www-form-urlencoded by
+    // the htmx check-in page (field: actualCount). Defaults to 1 if omitted.
     @PostMapping("/api/v1/invitations/{slug}/checkin/{code}")
     public ApiResponse<GuestDTO> checkIn(@PathVariable String slug,
                                           @PathVariable String code,
-                                          @Valid @RequestBody CheckInRequest req) {
-        return ApiResponse.ok(invitationService.checkIn(code, req), "Check-in berhasil");
+                                          @RequestParam(name = "actualCount", defaultValue = "1") short actualCount) {
+        short count = actualCount > 0 ? actualCount : 1;
+        return ApiResponse.ok(invitationService.checkIn(code, new CheckInRequest(count)), "Check-in berhasil");
     }
 
     @GetMapping("/api/v1/admin/invitations/{id}/attendance")

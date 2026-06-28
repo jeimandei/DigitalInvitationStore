@@ -1,18 +1,15 @@
+FROM docker.io/eclipse-temurin:21-jdk-alpine AS builder
+WORKDIR /workspace
+COPY . .
+RUN --mount=type=cache,target=/root/.m2 ./mvnw package -pl notification-service -am -DskipTests -q
+
 FROM docker.io/eclipse-temurin:21-jre-alpine
-
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
 WORKDIR /app
-
 RUN mkdir -p /app/logs/notification-service && chown appuser:appgroup /app/logs/notification-service
-
-COPY --chown=appuser:appgroup target/*.jar app.jar
-
+COPY --from=builder --chown=appuser:appgroup /workspace/notification-service/target/*.jar app.jar
 USER appuser
-
 EXPOSE 1087
-
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD wget -qO- http://localhost:1087/actuator/health || exit 1
-
 ENTRYPOINT ["java", "-jar", "app.jar"]

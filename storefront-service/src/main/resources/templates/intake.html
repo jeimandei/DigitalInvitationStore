@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id"
+      th:replace="~{layout/base :: dir(~{::title}, ~{::main})}">
+<head>
+  <title>Detail Undangan — baundang.id</title>
+</head>
+<body>
+<main x-data="intakeApp($el.dataset.orderId)" x-init="load()"
+      th:attr="data-order-id=${orderId}" class="max-w-2xl mx-auto px-4 py-12">
+
+  <div class="mb-8">
+    <a href="/pesanan-saya" class="text-sm text-stone-400 hover:text-rose-600">← Pesanan Saya</a>
+    <h1 class="text-2xl font-semibold text-stone-800 mt-2">Detail Undangan</h1>
+    <p class="text-stone-500 mt-1 text-sm">Lengkapi informasi berikut agar tim kami bisa membangun undanganmu.</p>
+  </div>
+
+  <div x-show="loading" class="text-center py-20 text-stone-400 text-sm">Memuat…</div>
+  <div x-show="error" x-cloak class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm mb-4" x-text="error"></div>
+  <div x-show="saved" x-cloak class="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm mb-4">
+    Tersimpan! Tim kami akan memproses undanganmu. Kamu bisa kembali kapan saja untuk mengubahnya.
+  </div>
+
+  <form x-show="!loading" x-cloak @submit.prevent="save(true)" class="space-y-8">
+    <template x-for="section in sections" :key="section.name">
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-6">
+        <h2 class="text-sm font-semibold text-rose-600 uppercase tracking-wide mb-5" x-text="section.name"></h2>
+        <div class="space-y-4">
+          <template x-for="q in section.questions" :key="q.id">
+            <div>
+              <label class="block text-sm font-medium text-stone-700 mb-1">
+                <span x-text="q.label"></span>
+                <span x-show="q.required" class="text-rose-500">*</span>
+              </label>
+
+              <input x-show="['TEXT','NUMBER'].includes(q.inputType)"
+                     :type="q.inputType === 'NUMBER' ? 'number' : 'text'"
+                     x-model="answers[q.fieldKey]" :required="q.required"
+                     class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+
+              <textarea x-show="q.inputType === 'TEXTAREA'" x-model="answers[q.fieldKey]" :required="q.required" rows="3"
+                        class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"></textarea>
+
+              <input x-show="q.inputType === 'DATE'" type="date" x-model="answers[q.fieldKey]" :required="q.required"
+                     class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+
+              <input x-show="q.inputType === 'TIME'" type="time" x-model="answers[q.fieldKey]" :required="q.required"
+                     class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+
+              <input x-show="q.inputType === 'COLOR'" type="color" x-model="answers[q.fieldKey]"
+                     class="h-10 w-20 border border-stone-200 rounded-lg cursor-pointer"/>
+
+              <select x-show="q.inputType === 'SELECT'" x-model="answers[q.fieldKey]" :required="q.required"
+                      class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400">
+                <option value="">— Pilih —</option>
+                <template x-for="opt in (q.options || [])" :key="opt">
+                  <option :value="opt" x-text="opt"></option>
+                </template>
+              </select>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <div class="flex gap-3">
+      <button type="button" @click="save(false)" :disabled="saving"
+              class="flex-1 border border-stone-200 text-stone-600 py-3 rounded-full text-sm font-semibold hover:bg-stone-50 disabled:opacity-50">
+        Simpan Draft
+      </button>
+      <button type="submit" :disabled="saving"
+              class="flex-1 bg-rose-600 text-white py-3 rounded-full text-sm font-semibold hover:bg-rose-700 disabled:opacity-50"
+              x-text="saving ? 'Menyimpan…' : 'Simpan & Kirim'"></button>
+    </div>
+  </form>
+
+  <script>
+    function intakeApp(orderId) {
+      return {
+        orderId, loading: true, saving: false, error: '', saved: false,
+        questions: [], answers: {},
+        token() { return sessionStorage.getItem('buyer_token'); },
+        get sections() {
+          const map = {};
+          const order = [];
+          this.questions.forEach(q => {
+            if (!map[q.section]) { map[q.section] = { name: q.section, questions: [] }; order.push(map[q.section]); }
+            map[q.section].questions.push(q);
+          });
+          return order;
+        },
+        async load() {
+          if (!this.token()) { window.location.href = '/masuk?redirect=/pesanan/' + this.orderId + '/intake'; return; }
+          try {
+            const h = { 'Authorization': 'Bearer ' + this.token() };
+            const [qRes, aRes] = await Promise.all([
+              fetch('/api/v1/orders/' + this.orderId + '/intake/questions', { headers: h }),
+              fetch('/api/v1/orders/' + this.orderId + '/intake', { headers: h })
+            ]);
+            if (qRes.status === 401 || aRes.status === 401) { sessionStorage.removeItem('buyer_token'); window.location.href = '/masuk?redirect=/pesanan/' + this.orderId + '/intake'; return; }
+            if (!qRes.ok) throw new Error('Gagal memuat pertanyaan');
+            const qData = await qRes.json();
+            this.questions = (qData.data || []);
+            const aData = await aRes.json();
+            this.answers = (aData.data?.answers) || {};
+          } catch (e) { this.error = e.message; }
+          finally { this.loading = false; }
+        },
+        async save(submit) {
+          this.saving = true; this.error = ''; this.saved = false;
+          try {
+            const res = await fetch('/api/v1/orders/' + this.orderId + '/intake', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.token() },
+              body: JSON.stringify({ answers: this.answers, submitted: submit })
+            });
+            if (!res.ok) throw new Error('Gagal menyimpan');
+            this.saved = true;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } catch (e) { this.error = e.message; }
+          finally { this.saving = false; }
+        }
+      };
+    }
+  </script>
+</main>
+</body>
+</html>

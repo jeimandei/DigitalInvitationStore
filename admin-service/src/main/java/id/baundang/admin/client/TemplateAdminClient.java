@@ -30,7 +30,7 @@ public class TemplateAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/templates?page=" + page + "&size=" + size + "&includeInactive=true")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().body(JsonNode.class);
             JsonNode data = root.path("data");
             List<TemplateDTO> items = objectMapper.convertValue(
@@ -51,7 +51,7 @@ public class TemplateAdminClient {
             JsonNode root = restClient.get()
                     .uri("/api/v1/templates/" + slug)
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().body(JsonNode.class);
             return objectMapper.convertValue(root.path("data"), TemplateDTO.class);
         } catch (RestClientException e) {
@@ -65,7 +65,7 @@ public class TemplateAdminClient {
             restClient.put()
                     .uri("/api/v1/templates/" + id + "/active?active=" + active)
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().toBodilessEntity();
             return true;
         } catch (RestClientException e) {
@@ -79,7 +79,7 @@ public class TemplateAdminClient {
             restClient.post()
                     .uri("/api/v1/templates")
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .body(req)
                     .retrieve().toBodilessEntity();
             return true;
@@ -94,7 +94,7 @@ public class TemplateAdminClient {
             restClient.put()
                     .uri("/api/v1/templates/" + id)
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .body(req)
                     .retrieve().toBodilessEntity();
             return true;
@@ -109,7 +109,7 @@ public class TemplateAdminClient {
             restClient.delete()
                     .uri("/api/v1/templates/" + id)
                     .header("X-User-Role", "ADMIN")
-                    .header("X-User-Id", "admin")
+                    .header("X-User-Id", "00000000-0000-0000-0000-000000000001")
                     .retrieve().toBodilessEntity();
             return true;
         } catch (RestClientException e) {

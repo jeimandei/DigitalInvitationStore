@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+    <title th:text="'Scanner Check-in — ' + ${coupleName}">Scanner Check-in</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root { --rose:#e11d48; --rose-d:#be123c; --bg:#1c1917; --panel:#292524; --line:#44403c; --txt:#fafaf9; --muted:#a8a29e; }
+        html, body { height:100%; background:var(--bg); color:var(--txt); font-family:system-ui,-apple-system,sans-serif; }
+        body { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:2rem 1rem; min-height:100%; }
+        .wrap { width:100%; max-width:420px; }
+        .head { text-align:center; margin-bottom:1.5rem; }
+        .head .label { font-size:.8rem; color:var(--muted); margin-bottom:.25rem; }
+        .head h1 { font-size:1.5rem; font-weight:700; }
+        /* Let html5-qrcode control the video — do NOT override its size/object-fit
+           or the canvas coordinate space diverges from the preview. */
+        #reader { width:100%; border-radius:14px; overflow:hidden; background:#000; min-height:120px; }
+        #reader img { display:none !important; }
+        #reader div[style*="border"] { border:none !important; box-shadow:none !important; }
+        #status { text-align:center; font-size:.85rem; color:var(--muted); margin-top:1rem; }
+        #error-box { display:none; margin-top:1rem; background:rgba(190,18,60,.18); color:#fda4af; font-size:.85rem; border-radius:12px; padding:.75rem 1rem; text-align:center; }
+        #error-box.show { display:block; }
+        button { width:100%; border:none; border-radius:999px; padding:.85rem; font-size:.85rem; font-weight:600; cursor:pointer; font-family:inherit; }
+        #retry-btn { background:var(--rose); color:#fff; margin-top:1.25rem; display:none; }
+        #retry-btn:hover { background:var(--rose-d); }
+        #retry-btn.show { display:block; }
+        .manual { margin-top:2rem; border-top:1px solid var(--line); padding-top:1.5rem; }
+        .manual p { text-align:center; font-size:.72rem; color:var(--muted); margin-bottom:.75rem; }
+        .manual .row { display:flex; gap:.5rem; }
+        .manual input { flex:1; background:var(--panel); border:1px solid var(--line); color:#fff; border-radius:10px; padding:.6rem .9rem; font-size:.85rem; outline:none; }
+        .manual input:focus { border-color:var(--rose); }
+        .manual button { width:auto; background:var(--panel); padding:.6rem 1rem; border-radius:10px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="head">
+        <p class="label">Scanner Check-in</p>
+        <h1 th:text="${coupleName}">Nama Pasangan</h1>
+    </div>
+
+    <div id="reader"></div>
+
+    <div id="status">Memulai kamera...</div>
+    <div id="error-box"></div>
+
+    <button id="retry-btn">Aktifkan Kamera</button>
+
+    <div class="manual">
+        <p>Atau masukkan kode undangan manual:</p>
+        <div class="row">
+            <input id="manual-code" type="text" placeholder="Kode undangan"/>
+            <button id="manual-go">Buka</button>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var slug = /*[[${slug}]]*/ '';
+    var origin = window.location.origin;
+    var lastScanned = '';
+    var scanning = true;
+    var scanner = null;
+    var running = false;
+
+    var statusEl = document.getElementById('status');
+    var errorEl = document.getElementById('error-box');
+    var retryBtn = document.getElementById('retry-btn');
+
+    function showError(msg) { errorEl.textContent = msg; errorEl.classList.add('show'); }
+    function clearError() { errorEl.classList.remove('show'); }
+    function setStatus(msg) { statusEl.textContent = msg; }
+    function checkinUrlFor(code) { return origin + '/i/' + slug + '/checkin/' + encodeURIComponent(code); }
+
+    // No qrbox: scan the full video frame.
+    var SCAN_CONFIG = { fps: 10 };
+
+    function onScanSuccess(text) {
+        if (!scanning) return;
+        var decoded = ('' + text).trim();
+        if (decoded === lastScanned) return;
+        lastScanned = decoded;
+        scanning = false;
+
+        var target = decoded;
+        var prefix = origin + '/i/' + slug + '/checkin/';
+        if (target.indexOf(prefix) === 0) {
+            // full URL — use as-is
+        } else if (/^[A-Za-z0-9_-]+$/.test(target)) {
+            target = checkinUrlFor(target);
+        } else {
+            try {
+                var u = new URL(decoded);
+                var q = u.searchParams.get('code') || u.searchParams.get('id');
+                if (q) { target = checkinUrlFor(q); } else { throw new Error('no code'); }
+            } catch (_) {
+                showError('QR Code tidak dikenali.');
+                setTimeout(function () { scanning = true; lastScanned = ''; clearError(); }, 2000);
+                return;
+            }
+        }
+
+        clearError();
+        setStatus('QR ditemukan, membuka halaman check-in...');
+        stopScanner().then(function () { window.location.href = target; });
+    }
+
+    function startScanner() {
+        clearError();
+        retryBtn.classList.remove('show');
+        if (typeof Html5Qrcode === 'undefined') { showError('Gagal memuat pustaka pemindai.'); return; }
+        if (!window.isSecureContext) { showError('Kamera hanya bisa diakses lewat HTTPS.'); return; }
+        if (running) return;
+
+        scanner = new Html5Qrcode('reader');
+        setStatus('Memulai kamera...');
+
+        scanner.start({ facingMode: 'environment' }, SCAN_CONFIG, onScanSuccess, function () {})
+            .then(onStarted)
+            .catch(function () {
+                // Fallback to front camera
+                scanner = new Html5Qrcode('reader');
+                scanner.start({ facingMode: 'user' }, SCAN_CONFIG, onScanSuccess, function () {})
+                    .then(onStarted)
+                    .catch(function (err2) {
+                        setStatus('');
+                        var m = '' + err2;
+                        if (m.indexOf('NotAllowedError') !== -1 || m.indexOf('Permission') !== -1) {
+                            showError('Izin kamera ditolak. Aktifkan izin kamera lalu coba lagi.');
+                        } else if (m.indexOf('NotFoundError') !== -1) {
+                            showError('Kamera tidak ditemukan di perangkat ini.');
+                        } else {
+                            showError('Tidak dapat mengakses kamera.');
+                        }
+                        retryBtn.classList.add('show');
+                    });
+            });
+    }
+
+    function onStarted() {
+        running = true;
+        scanning = true;
+        clearError();
+        retryBtn.classList.remove('show');
+        setStatus('Arahkan kamera ke QR Code tamu');
+    }
+
+    function stopScanner() {
+        if (scanner && running) {
+            running = false;
+            return scanner.stop().then(function () {}).catch(function () {});
+        }
+        return Promise.resolve();
+    }
+
+    retryBtn.addEventListener('click', startScanner);
+
+    document.getElementById('manual-go').addEventListener('click', function () {
+        var code = document.getElementById('manual-code').value.trim();
+        if (!code) return;
+        window.location.href = checkinUrlFor(code);
+    });
+    document.getElementById('manual-code').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') document.getElementById('manual-go').click();
+    });
+
+    // Camera always on: auto-start as soon as the page loads. If the browser
+    // blocks it (needs a tap), the "Aktifkan Kamera" button appears.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startScanner);
+    } else {
+        startScanner();
+    }
+    /*]]>*/
+</script>
+</body>
+</html>

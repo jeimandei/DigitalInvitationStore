@@ -74,6 +74,11 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public Page<OrderDTO> listMyOrders(UUID buyerId, Pageable pageable) {
+        return orderRepository.findAllByBuyerId(buyerId, pageable).map(OrderDTO::from);
+    }
+
+    @Transactional(readOnly = true)
     public Page<OrderDTO> listAllOrders(String status, String search, Pageable pageable) {
         OrderStatusPg statusFilter = null;
         if (status != null && !status.isBlank()) {
@@ -84,10 +89,30 @@ public class OrderService {
             }
         }
         String searchFilter = (search != null && !search.isBlank()) ? search.trim() : null;
-        Page<Order> page = statusFilter != null
-                ? orderRepository.searchByStatus(statusFilter, searchFilter, pageable)
-                : orderRepository.searchAll(searchFilter, pageable);
+        Page<Order> page;
+        if (statusFilter != null && searchFilter != null) {
+            page = orderRepository.searchByStatus(statusFilter, searchFilter, pageable);
+        } else if (statusFilter != null) {
+            page = orderRepository.findAllByStatus(statusFilter, pageable);
+        } else if (searchFilter != null) {
+            page = orderRepository.searchAll(searchFilter, pageable);
+        } else {
+            page = orderRepository.findAll(pageable);
+        }
         return page.map(OrderDTO::from);
+    }
+
+    @Transactional
+    public void markPaid(UUID orderId, String midtransTransactionId, Instant paidAt) {
+        Order order = findOrThrow(orderId);
+        if (order.getStatus() == OrderStatusPg.PAID) return; // idempotent
+        order.setStatus(OrderStatusPg.PAID);
+        order.setPaidAt(paidAt != null ? paidAt : Instant.now());
+        if (midtransTransactionId != null && !midtransTransactionId.isBlank()) {
+            order.setMidtransTransactionId(midtransTransactionId);
+        }
+        orderRepository.save(order);
+        eventPublisher.publishOrderPaid(order);
     }
 
     @Transactional
@@ -101,7 +126,11 @@ public class OrderService {
             }
             eventPublisher.publishOrderPaid(order);
         }
-        return OrderDTO.from(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+        if (req.status() == OrderStatusPg.COMPLETED) {
+            eventPublisher.publishOrderCompleted(saved);
+        }
+        return OrderDTO.from(saved);
     }
 
     @Transactional(readOnly = true)
@@ -117,6 +146,30 @@ public class OrderService {
     @Transactional(readOnly = true)
     public PublicOrderDTO getPublicOrder(UUID id) {
         return PublicOrderDTO.from(findOrThrow(id));
+    }
+
+    /** Public order tracking — by order number + the email or WhatsApp used on the order. */
+    @Transactional(readOnly = true)
+    public PublicOrderDTO lookupPublic(String orderNumber, String contact) {
+        if (orderNumber == null || orderNumber.isBlank()) {
+            throw new NotFoundException("Pesanan tidak ditemukan");
+        }
+        Order o = orderRepository.findByOrderNumberIgnoreCase(orderNumber.trim())
+                .orElseThrow(() -> new NotFoundException("Pesanan tidak ditemukan"));
+        String c = contact != null ? contact.trim() : "";
+        boolean emailMatch = o.getContactEmail() != null && o.getContactEmail().equalsIgnoreCase(c);
+        String waDigits = digitsOnly(o.getContactWhatsapp());
+        String cDigits = digitsOnly(c);
+        boolean waMatch = !waDigits.isEmpty() && !cDigits.isEmpty()
+                && (waDigits.equals(cDigits) || waDigits.endsWith(cDigits) || cDigits.endsWith(waDigits));
+        if (!emailMatch && !waMatch) {
+            throw new NotFoundException("Pesanan tidak ditemukan");
+        }
+        return PublicOrderDTO.from(o);
+    }
+
+    private String digitsOnly(String s) {
+        return s == null ? "" : s.replaceAll("\\D", "");
     }
 
     private Order findOrThrow(UUID id) {

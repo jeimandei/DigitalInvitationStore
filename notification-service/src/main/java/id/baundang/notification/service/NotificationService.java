@@ -7,6 +7,9 @@ import id.baundang.notification.domain.Notification;
 import id.baundang.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -19,6 +22,10 @@ public class NotificationService {
     private final FonnteClient fonnteClient;
     private final NotificationRepository notificationRepository;
     private final ObjectMapper objectMapper;
+    private final JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
     public void sendWhatsApp(String templateKey, String recipient, String message, Object payloadSource) {
         Notification notification = new Notification();
@@ -35,6 +42,31 @@ public class NotificationService {
         } catch (Exception e) {
             notification.setStatus("FAILED");
             log.error("WA notification failed [{}] to {}: {}", templateKey, recipient, e.getMessage());
+        } finally {
+            notificationRepository.save(notification);
+        }
+    }
+
+    public void sendEmail(String templateKey, String recipient, String subject, String body, Object payloadSource) {
+        Notification notification = new Notification();
+        notification.setType(templateKey);
+        notification.setRecipient(recipient);
+        notification.setChannel("EMAIL");
+        notification.setTemplateKey(templateKey);
+        notification.setPayload(objectMapper.valueToTree(payloadSource));
+
+        try {
+            SimpleMailMessage msg = new SimpleMailMessage();
+            msg.setFrom(fromEmail);
+            msg.setTo(recipient);
+            msg.setSubject(subject);
+            msg.setText(body);
+            mailSender.send(msg);
+            notification.setStatus("SENT");
+            notification.setSentAt(Instant.now());
+        } catch (Exception e) {
+            notification.setStatus("FAILED");
+            log.error("Email notification failed [{}] to {}: {}", templateKey, recipient, e.getMessage());
         } finally {
             notificationRepository.save(notification);
         }

@@ -15,11 +15,14 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     boolean existsByOrderNumber(String orderNumber);
 
+    java.util.Optional<Order> findByOrderNumberIgnoreCase(String orderNumber);
+
+    Page<Order> findAllByStatus(OrderStatusPg status, Pageable pageable);
+
     @Query("""
             SELECT o FROM Order o
             WHERE o.status = :status
-              AND (:search IS NULL
-                   OR LOWER(o.coupleName) LIKE LOWER(CONCAT('%', :search, '%'))
+              AND (LOWER(o.coupleName) LIKE LOWER(CONCAT('%', :search, '%'))
                    OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
                    OR LOWER(o.contactEmail) LIKE LOWER(CONCAT('%', :search, '%')))
             """)
@@ -29,10 +32,9 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     @Query("""
             SELECT o FROM Order o
-            WHERE (:search IS NULL
-                   OR LOWER(o.coupleName) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(o.contactEmail) LIKE LOWER(CONCAT('%', :search, '%')))
+            WHERE LOWER(o.coupleName) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(o.contactEmail) LIKE LOWER(CONCAT('%', :search, '%'))
             """)
     Page<Order> searchAll(@Param("search") String search,
                           Pageable pageable);

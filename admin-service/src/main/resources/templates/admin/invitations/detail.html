@@ -64,6 +64,11 @@
             <div class="bg-white rounded-xl shadow p-6">
                 <h2 class="text-sm font-semibold text-gray-500 uppercase mb-4">Aksi Cepat</h2>
                 <div class="grid grid-cols-2 gap-3">
+                    <a th:href="@{/admin/invitations/{id}/build(id=${invitation.id()})}"
+                       class="flex flex-col items-center p-4 border-2 border-rose-200 bg-rose-50 rounded-lg hover:bg-rose-100 text-center col-span-2">
+                        <span class="text-2xl mb-1">🛠️</span>
+                        <span class="text-sm font-semibold text-rose-700">Bangun Undangan</span>
+                    </a>
                     <a th:href="@{/admin/invitations/{id}/rsvp(id=${invitation.id()})}"
                        class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 text-center">
                         <span class="text-2xl mb-1">📋</span>

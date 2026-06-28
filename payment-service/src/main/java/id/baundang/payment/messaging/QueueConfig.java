@@ -26,4 +26,31 @@ public class QueueConfig {
                 .to(ordersExchange)
                 .with("order.created");
     }
+
+    // Declared here so queues exist even when consumers are restarting during deploys.
+    @Bean
+    Queue orderPaymentProcessingQueue() {
+        return QueueBuilder.durable("order.payment.processing").build();
+    }
+
+    @Bean
+    Binding orderPaymentProcessingBinding(Queue orderPaymentProcessingQueue,
+                                          TopicExchange ordersExchange) {
+        return BindingBuilder.bind(orderPaymentProcessingQueue)
+                .to(ordersExchange)
+                .with("order.paid");
+    }
+
+    @Bean
+    Queue invitationOrderPaidQueue() {
+        return QueueBuilder.durable("invitation.order.paid").build();
+    }
+
+    @Bean
+    Binding invitationOrderPaidBinding(Queue invitationOrderPaidQueue,
+                                       TopicExchange ordersExchange) {
+        return BindingBuilder.bind(invitationOrderPaidQueue)
+                .to(ordersExchange)
+                .with("order.paid");
+    }
 }

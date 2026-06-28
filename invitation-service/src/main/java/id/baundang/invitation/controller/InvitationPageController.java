@@ -30,9 +30,15 @@ public class InvitationPageController {
     private String midtransClientKey;
 
     @GetMapping("/{slug}")
-    public String viewInvitation(@PathVariable String slug, Model model) {
+    public String viewInvitation(@PathVariable String slug,
+                                 @org.springframework.web.bind.annotation.RequestParam(name = "to", required = false) String to,
+                                 Model model) {
         Invitation inv = invitationService.getBySlugAndIncrementView(slug);
         JsonNode content = inv.getContent();
+
+        // Per-guest greeting + optional PIN gate (stored in content)
+        model.addAttribute("guestGreeting", to != null ? to.trim() : "");
+        model.addAttribute("accessPin", textOf(content, "accessPin", ""));
 
         model.addAttribute("slug", slug);
         model.addAttribute("invitationId", inv.getId());
@@ -46,9 +52,9 @@ public class InvitationPageController {
         model.addAttribute("coupleName", textOf(content, "coupleName", slug));
         model.addAttribute("brideFullName", textOf(content, "brideFullName", ""));
         model.addAttribute("groomFullName", textOf(content, "groomFullName", ""));
-        model.addAttribute("akadDate", textOf(content, "akadDate", ""));
-        model.addAttribute("akadTime", textOf(content, "akadTime", ""));
-        model.addAttribute("akadVenue", textOf(content, "akadVenue", ""));
+        model.addAttribute("akadDate", textOf(content, "matrimonyDate", textOf(content, "akadDate", "")));
+        model.addAttribute("akadTime", textOf(content, "matrimonyTime", textOf(content, "akadTime", "")));
+        model.addAttribute("akadVenue", textOf(content, "matrimonyVenue", textOf(content, "akadVenue", "")));
         model.addAttribute("receptionDate", textOf(content, "receptionDate", ""));
         model.addAttribute("receptionTime", textOf(content, "receptionTime", ""));
         model.addAttribute("receptionVenue", textOf(content, "receptionVenue", ""));
@@ -74,6 +80,15 @@ public class InvitationPageController {
         model.addAttribute("snapJsUrl", snapJsUrl);
         model.addAttribute("midtransClientKey", midtransClientKey);
         return "invitation/gift";
+    }
+
+    @GetMapping("/{slug}/scan")
+    public String scanPage(@PathVariable String slug, Model model) {
+        Invitation inv = invitationService.getBySlugAndIncrementView(slug);
+        JsonNode content = inv.getContent();
+        model.addAttribute("slug", slug);
+        model.addAttribute("coupleName", textOf(content, "coupleName", slug));
+        return "invitation/scanner";
     }
 
     @GetMapping("/{slug}/checkin/{code}")

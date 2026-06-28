@@ -56,11 +56,27 @@ public class OrderController {
         return ApiResponse.ok(orderService.getPublicOrder(id));
     }
 
+    @GetMapping("/public/lookup")
+    public ApiResponse<PublicOrderDTO> lookupPublic(@RequestParam String orderNumber,
+                                                    @RequestParam String contact) {
+        return ApiResponse.ok(orderService.lookupPublic(orderNumber, contact));
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<OrderDTO> getOrder(@PathVariable UUID id, Authentication auth) {
         UUID callerId = UUID.fromString(auth.getName());
         boolean isAdmin = hasRole(auth, "ROLE_ADMIN");
         return ApiResponse.ok(orderService.getOrder(id, callerId, isAdmin));
+    }
+
+    @GetMapping("/mine")
+    public ApiResponse<PagedResponse<OrderDTO>> listMine(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Authentication auth) {
+        UUID buyerId = UUID.fromString(auth.getName());
+        var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return ApiResponse.ok(PagedResponse.from(orderService.listMyOrders(buyerId, pageable)));
     }
 
     @GetMapping

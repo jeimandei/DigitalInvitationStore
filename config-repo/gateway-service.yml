@@ -28,12 +28,14 @@ spring:
         - id: storefront
           uri: http://storefront-service:1082
           predicates:
-            - Path=/, /templates, /templates/**, /pesan, /pesan/**, /bayar, /bayar/**, /tentang, /tentang/**, /masuk, /masuk/**, /daftar, /daftar/**, /sitemap.xml, /robots.txt
+            - Path=/, /templates, /templates/**, /pesan, /pesan/**, /pesanan-saya, /pesanan/**, /lacak, /lacak/**, /bayar, /bayar/**, /tentang, /tentang/**, /masuk, /masuk/**, /daftar, /daftar/**, /sitemap.xml, /robots.txt
 
         - id: admin-login
           uri: http://admin-service:1088
           predicates:
             - Path=/admin/login
+          filters:
+            - PreserveHostHeader
 
         - id: admin-ui
           uri: http://admin-service:1088
@@ -41,6 +43,7 @@ spring:
             - Path=/admin, /admin/**
           filters:
             - "JwtAuth=ADMIN"
+            - PreserveHostHeader
 
         - id: template-service
           uri: http://template-service:1083
@@ -108,6 +111,7 @@ spring:
             - Path=/api/v1/admin/**
           filters:
             - "JwtAuth=ADMIN"
+            - PreserveHostHeader
 
         - id: notification-service
           uri: http://notification-service:1087

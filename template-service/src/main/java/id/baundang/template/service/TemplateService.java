@@ -99,7 +99,7 @@ public class TemplateService {
         t.setSlug(req.slug());
         t.setDescription(req.description());
         t.setCategory(parseEnum(Template.Category.class, req.category(), "category"));
-        t.setStylePreset(req.stylePreset() != null
+        t.setStylePreset(req.stylePreset() != null && !req.stylePreset().isBlank()
                 ? parseEnum(Template.StylePreset.class, req.stylePreset(), "stylePreset")
                 : null);
         t.setPriceLevel(req.priceLevel());
@@ -124,9 +124,7 @@ public class TemplateService {
     }
 
     private void validateStylePreset(Template t) {
-        if (t.getStylePreset() != null && t.getCategory() != Template.Category.CHRISTIAN) {
-            throw new ValidationException("stylePreset is only allowed for CHRISTIAN category");
-        }
+        // stylePreset is optional for any category
     }
 
     private <E extends Enum<E>> E parseEnum(Class<E> cls, String value, String field) {

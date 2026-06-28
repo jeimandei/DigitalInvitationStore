@@ -32,6 +32,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,  "/api/v1/invitations/*/guestbook").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/invitations/*/rsvp").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/invitations/*/guestbook").permitAll()
+                        // Public guest check-in (door staff scan QR, no login)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/invitations/*/checkin/*").permitAll()
                         // Expiring list consumed internally by notification-service scheduler
                         .requestMatchers(HttpMethod.GET, "/api/v1/invitations/expiring").permitAll()
                         // Admin endpoints

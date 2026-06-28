@@ -6,7 +6,7 @@
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
     <div th:each="t : ${templates}"
          class="group rounded-2xl overflow-hidden border border-stone-100 bg-white shadow-sm hover:shadow-md transition-shadow">
-      <a th:href="'/i/' + ${t.slug}">
+      <a th:href="'/templates/' + ${t.slug}">
         <div class="aspect-[3/4] overflow-hidden bg-stone-100">
           <img th:src="${t.thumbnailUrl}" th:alt="${t.name}"
                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
