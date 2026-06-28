@@ -162,7 +162,9 @@ public class StorefrontController {
     }
 
     private void enrichWithOrderDetail(String midtransOrderId, Model model) {
-        if (midtransOrderId == null || midtransOrderId.isBlank()) return;
+        if (midtransOrderId == null || midtransOrderId.isBlank()) {
+            return;
+        }
         try {
             String uuidStr = midtransOrderId.startsWith("BND-")
                     ? midtransOrderId.substring(4)

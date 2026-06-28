@@ -1,6 +1,8 @@
 package id.baundang.storefront.controller;
 
+import id.baundang.storefront.client.OrderApiClient;
 import id.baundang.storefront.client.TemplateApiClient;
+import id.baundang.storefront.config.MidtransProperties;
 import id.baundang.storefront.config.PricingProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,12 @@ class StorefrontControllerTest {
 
     @MockBean
     PricingProperties pricingProperties;
+
+    @MockBean
+    MidtransProperties midtransProperties;
+
+    @MockBean
+    OrderApiClient orderClient;
 
     private TemplateApiClient.TemplatePage emptyPage() {
         return new TemplateApiClient.TemplatePage(Collections.emptyList(), 0, 12, 0, 0, true);

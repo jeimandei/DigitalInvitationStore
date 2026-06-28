@@ -27,7 +27,9 @@ public class OrderApiClient {
                     .retrieve()
                     .body(JsonNode.class);
 
-            if (body == null) return null;
+            if (body == null) {
+                return null;
+            }
 
             JsonNode data = body.has("data") ? body.get("data") : body;
             return new PublicOrderDTO(

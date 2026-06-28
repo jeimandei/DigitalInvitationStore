@@ -189,9 +189,9 @@ public class InvitationService {
 
     @Transactional
     public Invitation updateSlug(UUID id, String rawSlug) {
-        Invitation inv = invitationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
-        if (rawSlug == null) throw new IllegalArgumentException("Slug kosong");
+        if (rawSlug == null) {
+            throw new IllegalArgumentException("Slug kosong");
+        }
         String slug = rawSlug.trim().toLowerCase();
         if (!slug.matches("[a-z0-9-]+")) {
             throw new IllegalArgumentException("Slug hanya boleh huruf kecil, angka, dan tanda hubung");
@@ -201,6 +201,8 @@ public class InvitationService {
                 throw new IllegalArgumentException("Slug sudah dipakai undangan lain");
             }
         });
+        Invitation inv = invitationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
         inv.setCoupleSlug(slug);
         return invitationRepository.save(inv);
     }
