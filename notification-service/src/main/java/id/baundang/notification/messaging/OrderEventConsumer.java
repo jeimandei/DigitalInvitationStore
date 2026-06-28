@@ -20,6 +20,40 @@ public class OrderEventConsumer {
     @Value("${app.admin.whatsapp}")
     private String adminWhatsapp;
 
+    @RabbitListener(queues = "notification.order.created")
+    public void onOrderCreated(Map<String, Object> event) {
+        try {
+            if (event.get("orderNumber") == null) return;
+            String orderNumber  = event.get("orderNumber").toString();
+            String orderId      = event.getOrDefault("orderId", "").toString();
+            String coupleName   = event.getOrDefault("coupleName", "").toString();
+            String contactWa    = event.getOrDefault("contactWhatsapp", "").toString();
+            String contactEmail = event.getOrDefault("contactEmail", "").toString();
+            long   amount       = event.get("amount") instanceof Number n ? n.longValue() : 0L;
+            String paymentUrl   = orderId.isBlank()
+                    ? "https://baundang.id/lacak"
+                    : "https://baundang.id/bayar/" + orderId;
+
+            if (!contactEmail.isBlank()) {
+                notificationService.sendEmail(
+                        "order.created.buyer.email", contactEmail,
+                        "Pesanan Diterima — " + orderNumber,
+                        MessageTemplates.orderCreatedEmailBuyer(orderNumber, coupleName, amount, paymentUrl),
+                        event
+                );
+            }
+            if (!contactWa.isBlank()) {
+                notificationService.sendWhatsApp(
+                        "order.created.buyer", contactWa,
+                        MessageTemplates.orderCreatedBuyer(orderNumber, coupleName, paymentUrl),
+                        event
+                );
+            }
+        } catch (Exception e) {
+            log.error("Failed to handle order.created event: {}", e.getMessage(), e);
+        }
+    }
+
     @RabbitListener(queues = "notification.order.paid")
     public void onOrderPaid(Map<String, Object> event) {
         try {

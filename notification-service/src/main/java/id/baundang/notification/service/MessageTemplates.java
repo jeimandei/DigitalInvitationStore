@@ -61,6 +61,41 @@ public final class MessageTemplates {
         ));
     }
 
+    public static String orderCreatedEmailBuyer(String orderNumber, String coupleName,
+                                                long amount, String paymentUrl) {
+        return """
+                Halo %s,
+
+                Terima kasih telah memesan undangan digital di baundang.id! Pesanan Anda telah kami terima:
+
+                  No. Pesanan : %s
+                  Total       : Rp %,d
+                  Status      : Menunggu Pembayaran
+
+                Silakan selesaikan pembayaran melalui tautan berikut:
+                %s
+
+                Simpan No. Pesanan ini untuk melacak status pesanan kapan saja di
+                https://baundang.id/lacak
+
+                —
+                Tim baundang.id
+                """.formatted(coupleName, orderNumber, amount, paymentUrl);
+    }
+
+    public static String orderCreatedBuyer(String orderNumber, String coupleName, String paymentUrl) {
+        return """
+                Halo %s 👋
+
+                Pesanan undangan digital Anda (*%s*) telah kami terima dan menunggu pembayaran.
+
+                Selesaikan pembayaran di sini:
+                %s
+
+                Lacak status pesanan kapan saja di https://baundang.id/lacak
+                """.formatted(coupleName, orderNumber, paymentUrl);
+    }
+
     public static String orderPaidEmailBuyer(String orderNumber, String coupleName,
                                               long amount, String dashboardUrl) {
         return """
