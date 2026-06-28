@@ -36,6 +36,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/invitations/*/checkin/*").permitAll()
                         // Expiring list consumed internally by notification-service scheduler
                         .requestMatchers(HttpMethod.GET, "/api/v1/invitations/expiring").permitAll()
+                        // Client self-service portal — any authenticated buyer (ownership checked in controller)
+                        .requestMatchers("/api/v1/invitations/my/**").authenticated()
                         // Admin endpoints
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

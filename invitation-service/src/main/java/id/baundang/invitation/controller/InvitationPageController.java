@@ -67,6 +67,10 @@ public class InvitationPageController {
         String stylePreset = textOf(content, "stylePreset", "GRACE");
         model.addAttribute("stylePreset", stylePreset);
 
+        // Midtrans Snap for the floating gift (amplop) button
+        model.addAttribute("snapJsUrl", snapJsUrl);
+        model.addAttribute("midtransClientKey", midtransClientKey);
+
         return "invitation/view";
     }
 

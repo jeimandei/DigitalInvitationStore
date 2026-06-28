@@ -15,6 +15,8 @@ public interface InvitationRepository extends JpaRepository<Invitation, UUID> {
 
     Optional<Invitation> findByCoupleSlug(String coupleSlug);
 
+    Optional<Invitation> findByOrderId(UUID orderId);
+
     @Modifying
     @Query("UPDATE Invitation i SET i.viewCount = i.viewCount + 1 WHERE i.id = :id")
     void incrementViewCount(UUID id);

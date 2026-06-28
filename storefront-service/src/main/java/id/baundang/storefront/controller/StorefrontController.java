@@ -109,6 +109,12 @@ public class StorefrontController {
         return "intake";
     }
 
+    @GetMapping("/pesanan/{orderId}/kelola")
+    public String manageInvitation(@PathVariable String orderId, Model model) {
+        model.addAttribute("orderId", orderId);
+        return "kelola";
+    }
+
     @GetMapping("/daftar")
     public String register() {
         return "daftar";

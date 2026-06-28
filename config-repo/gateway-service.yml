@@ -91,6 +91,12 @@ spring:
             - Path=/api/v1/payments/snap-token/**
             - Method=GET
 
+        # Digital gift (amplop) charge — sent by wedding guests, no login required
+        - id: payment-gift
+          uri: http://payment-service:1086
+          predicates:
+            - Path=/api/v1/payments/gifts/**
+
         - id: payment-service
           uri: http://payment-service:1086
           predicates:
@@ -119,6 +125,14 @@ spring:
             - Path=/api/v1/notifications/**
           filters:
             - "JwtAuth=ADMIN"
+
+        # Client self-service portal — requires a logged-in buyer (injects X-User-Id)
+        - id: invitation-my
+          uri: http://invitation-service:1084
+          predicates:
+            - Path=/api/v1/invitations/my/**
+          filters:
+            - JwtAuth
 
         - id: invitation-api
           uri: http://invitation-service:1084

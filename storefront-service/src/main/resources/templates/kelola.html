@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id"
+      th:replace="~{layout/base :: dir(~{::title}, ~{::main})}">
+<head>
+  <title>Kelola Undangan — baundang.id</title>
+</head>
+<body>
+<main x-data="kelolaApp($el.dataset.orderId)" x-init="init()"
+      th:attr="data-order-id=${orderId}" class="max-w-4xl mx-auto px-4 py-10">
+
+  <!-- Header -->
+  <div class="mb-6">
+    <a href="/pesanan-saya" class="text-sm text-stone-400 hover:text-rose-600">← Pesanan Saya</a>
+    <div class="flex items-start justify-between gap-4 mt-2">
+      <div>
+        <h1 class="text-2xl font-semibold text-stone-800">Kelola Undangan</h1>
+        <p class="text-stone-500 mt-1 text-sm" x-text="coupleName || 'Undanganmu'"></p>
+      </div>
+      <a x-show="coupleSlug" :href="'/i/' + coupleSlug" target="_blank" x-cloak
+         class="shrink-0 border border-stone-200 text-stone-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-stone-50">Lihat Undangan ↗</a>
+    </div>
+  </div>
+
+  <div x-show="fatal" x-cloak class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm" x-text="fatal"></div>
+
+  <div x-show="!fatal">
+    <!-- Tabs -->
+    <div class="flex gap-1 border-b border-stone-200 mb-6 overflow-x-auto">
+      <template x-for="t in tabs" :key="t.id">
+        <button @click="tab = t.id"
+                class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition"
+                :class="tab === t.id ? 'border-rose-600 text-rose-600' : 'border-transparent text-stone-400 hover:text-stone-600'"
+                x-text="t.label"></button>
+      </template>
+    </div>
+
+    <!-- ─────────── TAMU ─────────── -->
+    <section x-show="tab === 'guests'" x-cloak class="space-y-6">
+      <form @submit.prevent="addGuest()" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+        <h2 class="text-sm font-semibold text-stone-700 mb-4">Tambah Tamu</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="col-span-2 md:col-span-1">
+            <label class="block text-xs text-stone-500 mb-1">Nama *</label>
+            <input x-model="newGuest.name" required class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+          </div>
+          <div>
+            <label class="block text-xs text-stone-500 mb-1">Kelompok</label>
+            <input x-model="newGuest.groupLabel" placeholder="Keluarga / Teman" class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+          </div>
+          <div>
+            <label class="block text-xs text-stone-500 mb-1">Meja</label>
+            <input x-model="newGuest.tableNo" placeholder="A1" class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+          </div>
+          <div>
+            <label class="block text-xs text-stone-500 mb-1">Jml Undangan</label>
+            <input type="number" min="1" max="20" x-model.number="newGuest.allottedCount" class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 mt-4">
+          <button type="submit" :disabled="savingGuest"
+                  class="bg-rose-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-rose-700 disabled:opacity-50"
+                  x-text="savingGuest ? 'Menyimpan…' : 'Tambah Tamu'"></button>
+          <span x-show="guestError" x-cloak class="text-sm text-red-600" x-text="guestError"></span>
+        </div>
+      </form>
+
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+          <h2 class="text-sm font-semibold text-stone-700">Daftar Tamu (<span x-text="guests.length"></span>)</h2>
+        </div>
+        <div x-show="guests.length === 0" x-cloak class="px-5 py-10 text-center text-stone-400 text-sm">Belum ada tamu.</div>
+        <div x-show="guests.length > 0" class="divide-y divide-stone-100">
+          <template x-for="g in guests" :key="g.id">
+            <div class="px-5 py-4 flex items-center justify-between gap-4">
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-stone-800 truncate" x-text="g.name"></p>
+                <p class="text-xs text-stone-400 mt-0.5">
+                  <span x-show="g.groupLabel" x-text="g.groupLabel"></span>
+                  <span x-show="g.tableNo"> · Meja <span x-text="g.tableNo"></span></span>
+                  <span> · <span x-text="g.allottedCount"></span> undangan</span>
+                  <span x-show="g.checkedIn" class="text-green-600"> · ✓ Hadir (<span x-text="g.checkedInCount"></span>)</span>
+                </p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button @click="copyLink(g)" class="text-xs border border-stone-200 px-3 py-1.5 rounded-full hover:bg-stone-50" x-text="copiedId === g.id ? 'Tersalin!' : 'Salin Link'"></button>
+                <button @click="showQr(g)" class="text-xs border border-stone-200 px-3 py-1.5 rounded-full hover:bg-stone-50">QR</button>
+                <button @click="removeGuest(g)" class="text-xs text-red-500 hover:text-red-700 px-2">Hapus</button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── RSVP ─────────── -->
+    <section x-show="tab === 'rsvp'" x-cloak class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-stone-100">
+        <h2 class="text-sm font-semibold text-stone-700">Konfirmasi Kehadiran (RSVP)</h2>
+      </div>
+      <div x-show="rsvps.length === 0" x-cloak class="px-5 py-10 text-center text-stone-400 text-sm">Belum ada konfirmasi.</div>
+      <div x-show="rsvps.length > 0" class="divide-y divide-stone-100">
+        <template x-for="r in rsvps" :key="r.id">
+          <div class="px-5 py-4">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm font-medium text-stone-800" x-text="r.guestName"></p>
+              <span class="text-xs px-2.5 py-1 rounded-full font-medium"
+                    :class="r.attendance === 'hadir' ? 'bg-green-100 text-green-700' : 'bg-stone-100 text-stone-500'"
+                    x-text="r.attendance === 'hadir' ? 'Hadir (' + r.guestCount + ')' : 'Tidak Hadir'"></span>
+            </div>
+            <p x-show="r.phone" class="text-xs text-stone-400 mt-1" x-text="r.phone"></p>
+            <p x-show="r.message" class="text-sm text-stone-600 mt-1 italic" x-text="'“' + r.message + '”'"></p>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- ─────────── KEHADIRAN ─────────── -->
+    <section x-show="tab === 'attendance'" x-cloak class="space-y-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+          <p class="text-xs text-stone-400">Tamu Diundang</p>
+          <p class="text-2xl font-semibold text-stone-800 mt-1" x-text="attendance.totalInvited ?? 0"></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+          <p class="text-xs text-stone-400">Total Kursi</p>
+          <p class="text-2xl font-semibold text-stone-800 mt-1" x-text="attendance.totalAllotted ?? 0"></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+          <p class="text-xs text-stone-400">Tamu Hadir</p>
+          <p class="text-2xl font-semibold text-green-600 mt-1" x-text="attendance.checkedInGuests ?? 0"></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+          <p class="text-xs text-stone-400">Orang Hadir</p>
+          <p class="text-2xl font-semibold text-green-600 mt-1" x-text="attendance.checkedInCount ?? 0"></p>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-sm text-stone-600">Tingkat Kehadiran</p>
+          <p class="text-sm font-semibold text-stone-800" x-text="(attendance.percentage ?? 0) + '%'"></p>
+        </div>
+        <div class="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden">
+          <div class="h-full bg-rose-500 rounded-full transition-all" :style="'width:' + (attendance.percentage ?? 0) + '%'"></div>
+        </div>
+      </div>
+      <p class="text-xs text-stone-400">Tamu melakukan check-in dengan memindai QR di pintu masuk melalui halaman <span class="font-mono" x-text="'/i/' + coupleSlug + '/scan'"></span>.</p>
+    </section>
+
+    <!-- ─────────── AMPLOP ─────────── -->
+    <section x-show="tab === 'gifts'" x-cloak class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+          <p class="text-xs text-stone-400">Jumlah Amplop</p>
+          <p class="text-2xl font-semibold text-stone-800 mt-1" x-text="gifts.totalGifts ?? 0"></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
+          <p class="text-xs text-stone-400">Total Diterima</p>
+          <p class="text-2xl font-semibold text-rose-600 mt-1" x-text="formatRupiah(gifts.totalAmount ?? 0)"></p>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-stone-100"><h2 class="text-sm font-semibold text-stone-700">Daftar Amplop</h2></div>
+        <div x-show="(gifts.entries || []).length === 0" x-cloak class="px-5 py-10 text-center text-stone-400 text-sm">Belum ada amplop digital.</div>
+        <div x-show="(gifts.entries || []).length > 0" class="divide-y divide-stone-100">
+          <template x-for="e in (gifts.entries || [])" :key="e.id">
+            <div class="px-5 py-4 flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-stone-800" x-text="e.senderName"></p>
+                <p x-show="e.message" class="text-sm text-stone-600 mt-0.5 italic" x-text="'“' + e.message + '”'"></p>
+              </div>
+              <p class="text-sm font-semibold text-rose-600 shrink-0" x-text="formatRupiah(e.amount)"></p>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── BUKU TAMU ─────────── -->
+    <section x-show="tab === 'guestbook'" x-cloak class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-stone-100">
+        <h2 class="text-sm font-semibold text-stone-700">Buku Tamu</h2>
+        <p class="text-xs text-stone-400 mt-0.5">Ucapan disetujui akan tampil di undanganmu.</p>
+      </div>
+      <div x-show="guestbook.length === 0" x-cloak class="px-5 py-10 text-center text-stone-400 text-sm">Belum ada ucapan.</div>
+      <div x-show="guestbook.length > 0" class="divide-y divide-stone-100">
+        <template x-for="e in guestbook" :key="e.id">
+          <div class="px-5 py-4">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm font-medium text-stone-800" x-text="e.guestName"></p>
+              <div class="shrink-0">
+                <span x-show="e.approved" x-cloak class="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-medium">Tampil</span>
+                <button x-show="!e.approved" @click="approve(e)" class="text-xs bg-stone-800 text-white px-3 py-1.5 rounded-full hover:bg-stone-900">Setujui</button>
+              </div>
+            </div>
+            <p class="text-sm text-stone-600 mt-1" x-text="e.message"></p>
+          </div>
+        </template>
+      </div>
+    </section>
+  </div>
+
+  <!-- QR modal -->
+  <div x-show="qrOpen" x-cloak @click.self="qrOpen = false"
+       class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-xs w-full text-center">
+      <h3 class="text-sm font-semibold text-stone-800 mb-1" x-text="qrName"></h3>
+      <p class="text-xs font-mono text-stone-400 mb-4" x-text="qrCode"></p>
+      <div id="kelola-qr" class="flex justify-center mb-4"></div>
+      <div class="flex gap-2">
+        <button @click="downloadQr()" class="flex-1 bg-rose-600 text-white py-2 rounded-full text-sm font-medium hover:bg-rose-700">Unduh</button>
+        <button @click="qrOpen = false" class="flex-1 border border-stone-200 text-stone-600 py-2 rounded-full text-sm font-medium hover:bg-stone-50">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script>
+    function kelolaApp(orderId) {
+      return {
+        orderId, tab: 'guests', fatal: '',
+        coupleSlug: '', coupleName: '',
+        tabs: [
+          { id: 'guests', label: 'Tamu' },
+          { id: 'rsvp', label: 'RSVP' },
+          { id: 'attendance', label: 'Kehadiran' },
+          { id: 'gifts', label: 'Amplop' },
+          { id: 'guestbook', label: 'Buku Tamu' }
+        ],
+        guests: [], rsvps: [], attendance: {}, gifts: {}, guestbook: [],
+        newGuest: { name: '', groupLabel: '', tableNo: '', allottedCount: 1 },
+        savingGuest: false, guestError: '', copiedId: null,
+        qrOpen: false, qrName: '', qrCode: '', qrInstance: null,
+
+        token() { return sessionStorage.getItem('buyer_token'); },
+        redirect() {
+          sessionStorage.removeItem('buyer_token');
+          window.location.href = '/masuk?redirect=/pesanan/' + this.orderId + '/kelola';
+        },
+        base(path) { return '/api/v1/invitations/my/' + this.orderId + path; },
+        async api(path, opts = {}) {
+          const headers = Object.assign({ 'Authorization': 'Bearer ' + this.token() }, opts.headers || {});
+          const res = await fetch(this.base(path), Object.assign({}, opts, { headers }));
+          if (res.status === 401) { this.redirect(); throw new Error('unauthorized'); }
+          return res;
+        },
+
+        async init() {
+          if (!this.token()) { this.redirect(); return; }
+          try {
+            const res = await this.api('');
+            if (res.status === 403 || res.status === 404) { this.fatal = 'Undangan tidak ditemukan atau bukan milikmu.'; return; }
+            if (!res.ok) throw new Error('Gagal memuat undangan');
+            const data = (await res.json()).data || {};
+            this.coupleSlug = data.coupleSlug || '';
+            this.coupleName = data.coupleName || '';
+            await Promise.all([this.loadGuests(), this.loadRsvp(), this.loadAttendance(), this.loadGifts(), this.loadGuestbook()]);
+          } catch (e) { if (e.message !== 'unauthorized') this.fatal = e.message; }
+        },
+
+        async loadGuests()    { try { const r = await this.api('/guests');     if (r.ok) this.guests    = (await r.json()).data || []; } catch (e) {} },
+        async loadRsvp()      { try { const r = await this.api('/rsvp');       if (r.ok) this.rsvps     = (await r.json()).data || []; } catch (e) {} },
+        async loadAttendance(){ try { const r = await this.api('/attendance'); if (r.ok) this.attendance = (await r.json()).data || {}; } catch (e) {} },
+        async loadGifts()     { try { const r = await this.api('/gifts');      if (r.ok) this.gifts     = (await r.json()).data || {}; } catch (e) {} },
+        async loadGuestbook() { try { const r = await this.api('/guestbook');  if (r.ok) this.guestbook = (await r.json()).data || []; } catch (e) {} },
+
+        async addGuest() {
+          this.guestError = '';
+          if (!this.newGuest.name.trim()) { this.guestError = 'Nama wajib diisi.'; return; }
+          const count = parseInt(this.newGuest.allottedCount) || 1;
+          this.savingGuest = true;
+          try {
+            const r = await this.api('/guests', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: this.newGuest.name.trim(),
+                groupLabel: this.newGuest.groupLabel.trim() || null,
+                tableNo: this.newGuest.tableNo.trim() || null,
+                allottedCount: count < 1 ? 1 : count
+              })
+            });
+            if (!r.ok) { this.guestError = ((await r.json()).message) || 'Gagal menambahkan tamu.'; return; }
+            this.newGuest = { name: '', groupLabel: '', tableNo: '', allottedCount: 1 };
+            await Promise.all([this.loadGuests(), this.loadAttendance()]);
+          } catch (e) { if (e.message !== 'unauthorized') this.guestError = e.message; }
+          finally { this.savingGuest = false; }
+        },
+
+        async removeGuest(g) {
+          if (!confirm('Hapus tamu "' + g.name + '"?')) return;
+          try {
+            const r = await this.api('/guests/' + g.id, { method: 'DELETE' });
+            if (r.ok) await Promise.all([this.loadGuests(), this.loadAttendance()]);
+          } catch (e) {}
+        },
+
+        async approve(e) {
+          try {
+            const r = await this.api('/guestbook/' + e.id + '/approve', { method: 'PUT' });
+            if (r.ok) await this.loadGuestbook();
+          } catch (err) {}
+        },
+
+        guestLink(g) {
+          return window.location.origin + '/i/' + this.coupleSlug + '?to=' + encodeURIComponent(g.name);
+        },
+        async copyLink(g) {
+          try { await navigator.clipboard.writeText(this.guestLink(g)); this.copiedId = g.id; setTimeout(() => { if (this.copiedId === g.id) this.copiedId = null; }, 1500); }
+          catch (e) { prompt('Salin tautan:', this.guestLink(g)); }
+        },
+
+        checkinUrl(g) { return window.location.origin + '/i/' + this.coupleSlug + '/checkin/' + g.inviteCode; },
+        showQr(g) {
+          this.qrName = g.name; this.qrCode = g.inviteCode; this.qrOpen = true;
+          this.$nextTick(() => {
+            const holder = document.getElementById('kelola-qr');
+            holder.innerHTML = '';
+            this.qrInstance = new QRCode(holder, {
+              text: this.checkinUrl(g), width: 220, height: 220,
+              correctLevel: QRCode.CorrectLevel.M
+            });
+          });
+        },
+        downloadQr() {
+          const holder = document.getElementById('kelola-qr');
+          const canvas = holder.querySelector('canvas');
+          const img = holder.querySelector('img');
+          const url = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
+          if (!url) return;
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'qr-' + (this.qrName || this.qrCode || 'tamu').replace(/\s+/g, '-') + '.png';
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        },
+
+        formatRupiah(n) { return 'Rp ' + (n || 0).toLocaleString('id-ID'); }
+      };
+    }
+  </script>
+</main>
+</body>
+</html>
