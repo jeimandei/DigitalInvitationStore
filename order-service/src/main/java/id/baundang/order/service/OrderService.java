@@ -144,6 +144,30 @@ public class OrderService {
         return PublicOrderDTO.from(findOrThrow(id));
     }
 
+    /** Public order tracking — by order number + the email or WhatsApp used on the order. */
+    @Transactional(readOnly = true)
+    public PublicOrderDTO lookupPublic(String orderNumber, String contact) {
+        if (orderNumber == null || orderNumber.isBlank()) {
+            throw new NotFoundException("Pesanan tidak ditemukan");
+        }
+        Order o = orderRepository.findByOrderNumberIgnoreCase(orderNumber.trim())
+                .orElseThrow(() -> new NotFoundException("Pesanan tidak ditemukan"));
+        String c = contact != null ? contact.trim() : "";
+        boolean emailMatch = o.getContactEmail() != null && o.getContactEmail().equalsIgnoreCase(c);
+        String waDigits = digitsOnly(o.getContactWhatsapp());
+        String cDigits = digitsOnly(c);
+        boolean waMatch = !waDigits.isEmpty() && !cDigits.isEmpty()
+                && (waDigits.equals(cDigits) || waDigits.endsWith(cDigits) || cDigits.endsWith(waDigits));
+        if (!emailMatch && !waMatch) {
+            throw new NotFoundException("Pesanan tidak ditemukan");
+        }
+        return PublicOrderDTO.from(o);
+    }
+
+    private String digitsOnly(String s) {
+        return s == null ? "" : s.replaceAll("\\D", "");
+    }
+
     private Order findOrThrow(UUID id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Order not found: " + id));

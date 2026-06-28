@@ -61,8 +61,11 @@
 
       <p class="mt-6 text-center text-sm text-stone-500">
         Belum punya akun?
-        <a th:href="@{/daftar(redirect=${#request.getParameter('redirect')})}"
-           class="text-rose-600 font-medium hover:underline">Daftar sekarang</a>
+        <a href="/daftar" class="text-rose-600 font-medium hover:underline">Daftar sekarang</a>
+      </p>
+      <p class="mt-2 text-center text-sm text-stone-500">
+        Cuma mau cek pesanan?
+        <a href="/lacak" class="text-rose-600 font-medium hover:underline">Lacak tanpa login</a>
       </p>
     </div>
   </div>

@@ -56,6 +56,12 @@ public class OrderController {
         return ApiResponse.ok(orderService.getPublicOrder(id));
     }
 
+    @GetMapping("/public/lookup")
+    public ApiResponse<PublicOrderDTO> lookupPublic(@RequestParam String orderNumber,
+                                                    @RequestParam String contact) {
+        return ApiResponse.ok(orderService.lookupPublic(orderNumber, contact));
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<OrderDTO> getOrder(@PathVariable UUID id, Authentication auth) {
         UUID callerId = UUID.fromString(auth.getName());

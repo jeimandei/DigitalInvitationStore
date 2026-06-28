@@ -98,6 +98,11 @@ public class StorefrontController {
         return "pesanan-saya";
     }
 
+    @GetMapping("/lacak")
+    public String trackOrder() {
+        return "lacak";
+    }
+
     @GetMapping("/pesanan/{orderId}/intake")
     public String intake(@org.springframework.web.bind.annotation.PathVariable String orderId, Model model) {
         model.addAttribute("orderId", orderId);

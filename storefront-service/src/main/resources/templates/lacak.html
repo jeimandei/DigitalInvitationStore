@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="id"
+      th:replace="~{layout/base :: dir(~{::title}, ~{::main})}">
+<head>
+  <title>Lacak Pesanan — baundang.id</title>
+</head>
+<body>
+<main x-data="trackApp()" class="max-w-xl mx-auto px-4 py-12">
+
+  <div class="mb-8 text-center">
+    <h1 class="text-2xl font-semibold text-stone-800">Lacak Pesanan</h1>
+    <p class="text-stone-500 mt-1 text-sm">Cek status pesananmu tanpa perlu login. Masukkan nomor pesanan dan email/WhatsApp yang kamu pakai saat memesan.</p>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-6">
+    <form @submit.prevent="track()" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-stone-700 mb-1">Nomor Pesanan</label>
+        <input x-model="orderNumber" required placeholder="Contoh: BND-20260627-XXXX"
+               class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-stone-700 mb-1">Email atau Nomor WhatsApp</label>
+        <input x-model="contact" required placeholder="kamu@email.com atau 6281234567890"
+               class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+      </div>
+      <button type="submit" :disabled="loading"
+              class="w-full bg-rose-600 text-white py-2.5 rounded-full font-medium hover:bg-rose-700 disabled:opacity-50">
+        <span x-show="!loading">Lacak Pesanan</span>
+        <span x-show="loading" x-cloak>Mencari…</span>
+      </button>
+      <p x-show="error" x-cloak class="text-sm text-red-600 text-center" x-text="error"></p>
+    </form>
+  </div>
+
+  <!-- Result -->
+  <div x-show="order" x-cloak class="bg-white rounded-2xl border border-stone-100 shadow-sm p-6 mt-6">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="font-semibold text-stone-800" x-text="order.coupleName || '—'"></p>
+        <p class="text-xs text-stone-400 font-mono mt-0.5" x-text="order.orderNumber"></p>
+      </div>
+      <span class="text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap"
+            :class="badgeClass(order.status)" x-text="statusLabel(order.status)"></span>
+    </div>
+
+    <div class="mt-6" x-show="order.status !== 'CANCELLED'">
+      <div class="flex items-center">
+        <template x-for="(step, i) in steps" :key="i">
+          <div class="flex items-center" :class="i < steps.length - 1 ? 'flex-1' : ''">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold"
+                 :class="stepIndex(order.status) >= i ? 'bg-rose-600 text-white' : 'bg-stone-100 text-stone-400'">
+              <span x-show="stepIndex(order.status) > i">✓</span>
+              <span x-show="stepIndex(order.status) <= i" x-text="i + 1"></span>
+            </div>
+            <div x-show="i < steps.length - 1" class="flex-1 h-0.5 mx-1"
+                 :class="stepIndex(order.status) > i ? 'bg-rose-400' : 'bg-stone-200'"></div>
+          </div>
+        </template>
+      </div>
+      <div class="flex justify-between mt-2">
+        <template x-for="(step, i) in steps" :key="i">
+          <span class="text-[10px] text-center flex-1"
+                :class="stepIndex(order.status) >= i ? 'text-rose-600 font-medium' : 'text-stone-400'"
+                x-text="step"></span>
+        </template>
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap gap-2">
+      <a x-show="order.status === 'PENDING'" :href="'/bayar/' + order.id"
+         class="bg-rose-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-rose-700">Bayar Sekarang</a>
+      <a x-show="order.coupleSlug" :href="'/i/' + order.coupleSlug" target="_blank"
+         class="border border-stone-200 text-stone-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-stone-50">Lihat Undangan ↗</a>
+    </div>
+  </div>
+
+  <script>
+    function trackApp() {
+      return {
+        orderNumber: new URLSearchParams(location.search).get('no') || '',
+        contact: '', loading: false, error: '', order: null,
+        steps: ['Dipesan', 'Dibayar', 'Dikerjakan', 'Selesai'],
+        async track() {
+          this.loading = true; this.error = ''; this.order = null;
+          try {
+            const res = await fetch('/api/v1/orders/public/lookup?orderNumber='
+              + encodeURIComponent(this.orderNumber.trim()) + '&contact=' + encodeURIComponent(this.contact.trim()));
+            if (res.status === 404) { this.error = 'Pesanan tidak ditemukan. Periksa nomor pesanan dan email/WhatsApp.'; return; }
+            if (!res.ok) throw new Error('Terjadi kesalahan, coba lagi.');
+            const data = await res.json();
+            this.order = data.data || data;
+          } catch (e) { this.error = e.message; }
+          finally { this.loading = false; }
+        },
+        stepIndex(s) { return ({ PENDING: 0, PAID: 1, IN_REVISION: 2, COMPLETED: 3 })[s] ?? 0; },
+        statusLabel(s) { return ({ PENDING: 'Menunggu Pembayaran', PAID: 'Dibayar', IN_REVISION: 'Dalam Pengerjaan', COMPLETED: 'Selesai', CANCELLED: 'Dibatalkan' })[s] || s; },
+        badgeClass(s) { return ({ PENDING: 'bg-amber-100 text-amber-700', PAID: 'bg-blue-100 text-blue-700', IN_REVISION: 'bg-indigo-100 text-indigo-700', COMPLETED: 'bg-green-100 text-green-700', CANCELLED: 'bg-stone-100 text-stone-500' })[s] || 'bg-stone-100 text-stone-600'; }
+      };
+    }
+  </script>
+</main>
+</body>
+</html>

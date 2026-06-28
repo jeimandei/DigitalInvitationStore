@@ -15,6 +15,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     boolean existsByOrderNumber(String orderNumber);
 
+    java.util.Optional<Order> findByOrderNumberIgnoreCase(String orderNumber);
+
     Page<Order> findAllByStatus(OrderStatusPg status, Pageable pageable);
 
     @Query("""
