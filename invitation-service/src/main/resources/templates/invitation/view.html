@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" xmlns:th="http://www.thymeleaf.org">
+<html lang="id" xmlns:th="http://www.thymeleaf.org" th:attr="data-theme=${stylePreset}">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -19,104 +19,295 @@
     <meta name="twitter:title"       th:content="|${groomFullName} &amp; ${brideFullName} — Undangan Pernikahan|"/>
     <meta name="twitter:description" content="Kami mengundang Anda untuk hadir di pernikahan kami"/>
     <meta name="twitter:image"       th:content="${coverPhotoUrl}"/>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>
+
+    <!-- GRACE: Cormorant Garamond + Nunito -->
+    <link th:if="${stylePreset == 'GRACE'}"
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Nunito:wght@300;400;600&display=swap"
+          rel="stylesheet"/>
+    <!-- COVENANT: Crimson Text + Raleway -->
+    <link th:if="${stylePreset == 'COVENANT'}"
+          href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Raleway:wght@300;400;500&display=swap"
+          rel="stylesheet"/>
+    <!-- EDEN: DM Serif Display + DM Sans -->
+    <link th:if="${stylePreset == 'EDEN'}"
+          href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap"
+          rel="stylesheet"/>
+    <!-- GLORIA: Cinzel + Raleway -->
+    <link th:if="${stylePreset == 'GLORIA'}"
+          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Raleway:wght@300;400;500&display=swap"
+          rel="stylesheet"/>
+    <!-- Fallback for unknown presets -->
+    <link th:if="${stylePreset != 'GRACE' and stylePreset != 'COVENANT' and stylePreset != 'EDEN' and stylePreset != 'GLORIA'}"
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400&display=swap"
+          rel="stylesheet"/>
+
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Lato', sans-serif; background: #fdfaf6; color: #3d2b1f; }
-        h1, h2, h3 { font-family: 'Playfair Display', serif; }
+
+        /* ═══════════════════════════════════════════════════════════
+           GRACE — Romantic · Blush · Rose Gold
+           ═══════════════════════════════════════════════════════════ */
+        [data-theme="GRACE"] {
+            --bg:          #fdf6f0;
+            --bg-card:     #fff;
+            --text:        #4a2c2a;
+            --text-muted:  #8b5e57;
+            --accent:      #c9748a;
+            --gold:        #d4a0aa;
+            --border:      #f0d8d8;
+            --cover-bg:    linear-gradient(160deg, #9b3a5a 0%, #6b1f3a 100%);
+            --cover-text:  #fdf0f0;
+            --heading-font:'Cormorant Garamond', Georgia, serif;
+            --body-font:   'Nunito', sans-serif;
+            --btn-bg:      #9b3a5a;
+            --btn-hover:   #7a2d46;
+            --section-h2:  #9b3a5a;
+            --ornament:    #c9748a;
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           COVENANT — Formal · Navy · Gold
+           ═══════════════════════════════════════════════════════════ */
+        [data-theme="COVENANT"] {
+            --bg:          #f5f3ee;
+            --bg-card:     #fff;
+            --text:        #1e2a3a;
+            --text-muted:  #4a5568;
+            --accent:      #b8860b;
+            --gold:        #b8860b;
+            --border:      #d8cdb4;
+            --cover-bg:    linear-gradient(160deg, #0f2044 0%, #071429 100%);
+            --cover-text:  #f5f0e8;
+            --heading-font:'Crimson Text', Georgia, serif;
+            --body-font:   'Raleway', sans-serif;
+            --btn-bg:      #0f2044;
+            --btn-hover:   #071429;
+            --section-h2:  #0f2044;
+            --ornament:    #b8860b;
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           EDEN — Nature · Sage · Warm Earth
+           ═══════════════════════════════════════════════════════════ */
+        [data-theme="EDEN"] {
+            --bg:          #f4f1eb;
+            --bg-card:     #faf8f4;
+            --text:        #2d3a2e;
+            --text-muted:  #5a6b55;
+            --accent:      #6b8f71;
+            --gold:        #a0845c;
+            --border:      #cdd9c0;
+            --cover-bg:    linear-gradient(160deg, #3d5c42 0%, #263b2b 100%);
+            --cover-text:  #f0ede4;
+            --heading-font:'DM Serif Display', Georgia, serif;
+            --body-font:   'DM Sans', sans-serif;
+            --btn-bg:      #4a7050;
+            --btn-hover:   #3a5840;
+            --section-h2:  #3d5c42;
+            --ornament:    #a0845c;
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           GLORIA — Bold · Dark Charcoal · Gold
+           ═══════════════════════════════════════════════════════════ */
+        [data-theme="GLORIA"] {
+            --bg:          #1a1a24;
+            --bg-card:     #22222e;
+            --text:        #e8e0cc;
+            --text-muted:  #b0a880;
+            --accent:      #c9a840;
+            --gold:        #c9a840;
+            --border:      #3a3848;
+            --cover-bg:    linear-gradient(160deg, #0e0e18 0%, #1a1624 100%);
+            --cover-text:  #f0e8cc;
+            --heading-font:'Cinzel', Georgia, serif;
+            --body-font:   'Raleway', sans-serif;
+            --btn-bg:      #c9a840;
+            --btn-hover:   #a88c30;
+            --section-h2:  #c9a840;
+            --ornament:    #c9a840;
+        }
+
+        /* ───── Base styles (use variables) ───── */
+        body {
+            font-family: var(--body-font);
+            background: var(--bg);
+            color: var(--text);
+        }
+        h1, h2, h3 { font-family: var(--heading-font); }
 
         /* Cover */
         .cover {
             min-height: 100svh;
-            background: linear-gradient(160deg, #2d4a3e 0%, #1a2e26 100%);
+            background: var(--cover-bg);
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            text-align: center; color: #f5ede0; padding: 2rem;
+            text-align: center; color: var(--cover-text); padding: 2rem;
             position: relative; overflow: hidden;
         }
         .cover-bg {
             position: absolute; inset: 0; object-fit: cover;
-            opacity: .25; width: 100%; height: 100%;
+            opacity: .22; width: 100%; height: 100%;
         }
         .cover-content { position: relative; z-index: 1; }
-        .cover .label { letter-spacing: .3em; font-size: .75rem; text-transform: uppercase; opacity: .7; margin-bottom: 1rem; }
+        .cover .label {
+            letter-spacing: .3em; font-size: .7rem; text-transform: uppercase;
+            opacity: .7; margin-bottom: 1rem;
+        }
         .cover h1 { font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.2; margin-bottom: .5rem; }
-        .cover .divider { width: 3rem; height: 1px; background: #c9a96e; margin: 1.5rem auto; }
-        .cover .date { font-size: 1rem; letter-spacing: .15em; opacity: .85; }
+        [data-theme="GRACE"] .cover h1 { font-style: italic; }
+        [data-theme="EDEN"] .cover h1 { font-style: italic; }
+
+        .cover .divider { width: 3rem; height: 1px; background: var(--gold); margin: 1.5rem auto; }
+        .cover .date { font-size: .95rem; letter-spacing: .15em; opacity: .85; }
         .cover .open-btn {
             margin-top: 2.5rem; padding: .85rem 2.5rem;
-            border: 1px solid #c9a96e; color: #c9a96e; background: transparent;
-            font-family: 'Lato', sans-serif; letter-spacing: .15em;
+            border: 1px solid var(--gold); color: var(--gold); background: transparent;
+            font-family: var(--body-font); letter-spacing: .15em;
             font-size: .85rem; cursor: pointer; transition: all .3s;
         }
-        .cover .open-btn:hover { background: #c9a96e; color: #1a2e26; }
+        .cover .open-btn:hover { background: var(--gold); color: var(--btn-bg); }
+        [data-theme="GLORIA"] .cover .open-btn:hover { color: #0e0e18; }
+
+        /* GRACE: decorative ring around cover h1 */
+        [data-theme="GRACE"] .cover-content::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px; height: 280px;
+            border-radius: 50%;
+            border: 1px solid rgba(212,160,170,.3);
+            pointer-events: none;
+        }
+        /* COVENANT: horizontal rule accents */
+        [data-theme="COVENANT"] .cover .divider {
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            height: 1px; width: 60%;
+        }
+        /* GLORIA: glowing gold divider */
+        [data-theme="GLORIA"] .cover .divider {
+            background: var(--gold);
+            box-shadow: 0 0 8px var(--gold);
+            width: 5rem;
+        }
 
         /* Sections */
         section { padding: 5rem 1.5rem; max-width: 720px; margin: 0 auto; text-align: center; }
-        section h2 { font-size: 1.75rem; margin-bottom: 1rem; color: #2d4a3e; }
-        .ornament { color: #c9a96e; font-size: 1.5rem; margin: .75rem 0; }
-        p { line-height: 1.8; color: #5a3e30; }
+        section h2 { font-size: 1.75rem; margin-bottom: 1rem; color: var(--section-h2); }
+        [data-theme="GRACE"] section h2 { font-size: 2rem; font-style: italic; }
+        [data-theme="GLORIA"] section h2 { letter-spacing: .1em; font-size: 1.4rem; }
+
+        .ornament { color: var(--ornament); font-size: 1.4rem; margin: .75rem 0; }
+        p { line-height: 1.8; color: var(--text-muted); }
+
+        /* GLORIA inverts section backgrounds */
+        [data-theme="GLORIA"] section { color: var(--text); }
+        [data-theme="GLORIA"] p { color: var(--text-muted); }
 
         /* Couple */
-        .couple-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1.5rem; margin: 2rem 0; }
-        .couple-name { font-family: 'Playfair Display', serif; font-size: 1.4rem; }
-        .couple-and  { font-family: 'Playfair Display', serif; font-size: 2.5rem; color: #c9a96e; font-style: italic; }
+        .couple-grid {
+            display: grid; grid-template-columns: 1fr auto 1fr;
+            align-items: center; gap: 1.5rem; margin: 2rem 0;
+        }
+        .couple-name { font-family: var(--heading-font); font-size: 1.4rem; color: var(--text); }
+        [data-theme="GRACE"]    .couple-name { font-style: italic; font-size: 1.6rem; }
+        [data-theme="EDEN"]     .couple-name { font-style: italic; }
+        .couple-and  { font-family: var(--heading-font); font-size: 2.5rem; color: var(--accent); font-style: italic; }
+        [data-theme="COVENANT"] .couple-and { font-style: normal; font-size: 2rem; }
+        [data-theme="GLORIA"]   .couple-and { font-size: 2rem; font-style: normal; }
 
-        /* Event card */
+        /* Event cards */
         .event-cards { display: grid; gap: 1.5rem; margin-top: 2rem; }
         @media (min-width: 600px) { .event-cards { grid-template-columns: 1fr 1fr; } }
         .event-card {
-            border: 1px solid #d6c4a8; padding: 2rem 1.5rem; background: #fff;
+            border: 1px solid var(--border);
+            padding: 2rem 1.5rem;
+            background: var(--bg-card);
             text-align: center;
         }
-        .event-card h3 { font-size: 1.1rem; color: #2d4a3e; margin-bottom: .75rem; }
-        .event-card .detail { font-size: .9rem; color: #5a3e30; line-height: 1.7; }
+        [data-theme="GRACE"]    .event-card { border-radius: 8px; }
+        [data-theme="EDEN"]     .event-card { border-radius: 4px; }
+        [data-theme="GLORIA"]   .event-card { border-radius: 0; }
 
-        /* RSVP */
+        .event-card h3 { font-size: 1.1rem; color: var(--section-h2); margin-bottom: .75rem; }
+        .event-card .detail { font-size: .9rem; color: var(--text-muted); line-height: 1.7; }
+
+        /* RSVP & forms */
         .rsvp-form { text-align: left; margin-top: 2rem; }
-        .rsvp-form label { display: block; font-size: .85rem; letter-spacing: .05em; margin-bottom: .35rem; color: #5a3e30; }
+        .rsvp-form label { display: block; font-size: .85rem; letter-spacing: .05em; margin-bottom: .35rem; color: var(--text-muted); }
         .rsvp-form input, .rsvp-form select, .rsvp-form textarea {
-            width: 100%; padding: .7rem 1rem; border: 1px solid #d6c4a8;
-            background: #fff; font-size: 1rem; margin-bottom: 1.25rem; color: #3d2b1f;
-            font-family: inherit;
+            width: 100%; padding: .7rem 1rem; border: 1px solid var(--border);
+            background: var(--bg-card); font-size: 1rem; margin-bottom: 1.25rem;
+            color: var(--text); font-family: inherit;
         }
         .rsvp-form textarea { resize: vertical; min-height: 80px; }
-        .btn-gold {
+
+        .btn-primary {
             display: inline-block; padding: .85rem 2.5rem;
-            background: #2d4a3e; color: #f5ede0;
+            background: var(--btn-bg); color: var(--cover-text);
             border: none; cursor: pointer; font-family: inherit;
             letter-spacing: .1em; font-size: .9rem; transition: background .3s;
         }
-        .btn-gold:hover { background: #1a2e26; }
+        .btn-primary:hover { background: var(--btn-hover); }
+        [data-theme="GLORIA"] .btn-primary { color: #0e0e18; }
+
         .alert { padding: 1rem; margin-top: 1rem; }
         .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .alert-error   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
         /* Guestbook */
         .guestbook-entries { margin-top: 2rem; text-align: left; }
-        .gb-entry { border-left: 3px solid #c9a96e; padding: .75rem 1rem .75rem 1.25rem; margin-bottom: 1rem; background: #fff; }
-        .gb-entry .gb-name { font-weight: 700; margin-bottom: .25rem; }
-        .gb-entry .gb-msg  { font-size: .9rem; color: #5a3e30; line-height: 1.6; }
+        .gb-entry {
+            border-left: 3px solid var(--accent);
+            padding: .75rem 1rem .75rem 1.25rem;
+            margin-bottom: 1rem;
+            background: var(--bg-card);
+        }
+        .gb-entry .gb-name { font-weight: 700; margin-bottom: .25rem; color: var(--text); }
+        .gb-entry .gb-msg  { font-size: .9rem; color: var(--text-muted); line-height: 1.6; }
+
+        /* GRACE specific: subtle pattern background on alternating sections */
+        [data-theme="GRACE"] .section-alt {
+            background: linear-gradient(180deg, #fdf0f3 0%, #fdf6f0 100%);
+        }
+        /* EDEN specific */
+        [data-theme="EDEN"] .section-alt { background: #edeae2; }
+        /* GLORIA specific */
+        [data-theme="GLORIA"] .section-alt { background: #1e1e2c; }
+        /* COVENANT specific */
+        [data-theme="COVENANT"] .section-alt { background: #eeebe2; }
 
         /* Footer */
-        footer { text-align: center; padding: 3rem 1.5rem; font-size: .8rem; color: #9e8678; border-top: 1px solid #e8ddd0; }
-        footer a { color: #2d4a3e; text-decoration: none; }
+        footer {
+            text-align: center; padding: 3rem 1.5rem;
+            font-size: .8rem; color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            background: var(--bg);
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+
+        /* GLORIA: dark body needs explicit bg on sections */
+        [data-theme="GLORIA"] section { background: var(--bg); }
+        [data-theme="GLORIA"] .main-content { background: var(--bg); }
+
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body x-data="invitationApp()" x-init="init()">
 
-<!-- PIN gate (only when an access PIN is set) -->
+<!-- PIN gate -->
 <div th:if="${accessPin != ''}" x-show="!pinOk" x-cloak
-     style="position:fixed;inset:0;z-index:200;background:#2d1b12;display:flex;align-items:center;justify-content:center;padding:1.5rem">
-    <div style="text-align:center;max-width:320px;width:100%;padding:2rem;border:1px solid rgba(201,169,110,.35);border-radius:14px;background:rgba(255,255,255,.04)">
-        <p style="font-family:'Great Vibes',cursive;font-size:1.8rem;color:#c9a96e;margin-bottom:.5rem" th:text="${coupleName}">Pasangan</p>
+     style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:1.5rem">
+    <div style="text-align:center;max-width:320px;width:100%;padding:2rem;border:1px solid rgba(201,169,110,.35);border-radius:14px;background:rgba(255,255,255,.06)">
+        <p style="font-family:var(--heading-font);font-size:1.8rem;color:var(--gold);margin-bottom:.5rem" th:text="${coupleName}">Pasangan</p>
         <p style="font-size:.75rem;letter-spacing:.08em;color:#e8d5b0;opacity:.7;margin-bottom:1.25rem">Masukkan PIN untuk membuka undangan</p>
         <input type="password" x-model="pinInput" @keydown.enter="checkPin()"
                style="width:100%;padding:.7rem;text-align:center;letter-spacing:.3em;font-size:1.2rem;border:1px solid rgba(201,169,110,.4);border-radius:8px;background:rgba(255,255,255,.06);color:#fdf6ee;outline:none;margin-bottom:.9rem"/>
-        <button @click="checkPin()" style="width:100%;padding:.6rem;background:#c9a96e;color:#2d1b12;border:none;border-radius:8px;font-weight:600;cursor:pointer">Buka</button>
+        <button @click="checkPin()" style="width:100%;padding:.6rem;background:var(--gold);color:#1a1a24;border:none;border-radius:8px;font-weight:600;cursor:pointer">Buka</button>
         <p x-show="pinError" x-cloak style="margin-top:.7rem;font-size:.75rem;color:#e07070">PIN salah. Coba lagi.</p>
     </div>
 </div>
@@ -138,12 +329,24 @@
 </div>
 
 <!-- Main content -->
-<div x-show="opened" x-transition.duration.500ms>
+<div class="main-content" x-show="opened" x-transition.duration.500ms>
 
-    <!-- Couple section -->
+    <!-- Opening verse / bismillah -->
     <section>
-        <p class="ornament">✦ ✦ ✦</p>
-        <h2>Bismillahirrahmanirrahim</h2>
+        <p class="ornament" th:switch="${stylePreset}">
+            <span th:case="'GRACE'">✿ ✿ ✿</span>
+            <span th:case="'COVENANT'">✦ ✦ ✦</span>
+            <span th:case="'EDEN'">❧ ❧ ❧</span>
+            <span th:case="'GLORIA'">✧ ✧ ✧</span>
+            <span th:case="*">✦ ✦ ✦</span>
+        </p>
+        <h2 th:switch="${stylePreset}">
+            <span th:case="'GRACE'">Bismillahirrahmanirrahim</span>
+            <span th:case="'COVENANT'">Sola Deo Gloria</span>
+            <span th:case="'EDEN'">Dengan Penuh Syukur</span>
+            <span th:case="'GLORIA'">Dengan Nama Tuhan</span>
+            <span th:case="*">Bismillahirrahmanirrahim</span>
+        </h2>
         <p style="margin-top:1rem">
             Dengan memohon rahmat dan ridho Allah SWT, kami mengundang Bapak/Ibu/Saudara/i
             untuk hadir dan memberikan doa restu pada pernikahan kami.
@@ -159,12 +362,12 @@
         </div>
     </section>
 
-    <!-- Venue map cards (structured events from content.events[]) -->
+    <!-- Venue map cards -->
     <div th:replace="~{fragments/venue-map :: venue-map(${events})}"></div>
 
-    <!-- Fallback: legacy flat fields rendered when events[] is absent -->
+    <!-- Fallback: legacy flat fields -->
     <section th:if="${(events == null or #lists.isEmpty(events)) and (akadDate != '' or receptionDate != '')}"
-             style="background:#fff; max-width:100%; padding: 5rem 1.5rem;">
+             class="section-alt" style="max-width:100%; padding: 5rem 1.5rem;">
         <div style="max-width:720px; margin:0 auto; text-align:center">
             <p class="ornament">﹡</p>
             <h2>Detail Acara</h2>
@@ -202,7 +405,7 @@
     </section>
 
     <!-- RSVP -->
-    <section style="background:#fdfaf6">
+    <section class="section-alt">
         <p class="ornament">✉</p>
         <h2>Konfirmasi Kehadiran</h2>
         <p>Mohon konfirmasi kehadiran Anda agar kami dapat mempersiapkan segalanya dengan baik.</p>
@@ -232,7 +435,7 @@
             <label>Pesan (opsional)
                 <textarea name="message" placeholder="Tulis pesan..."></textarea>
             </label>
-            <button type="submit" class="btn-gold">Kirim Konfirmasi</button>
+            <button type="submit" class="btn-primary">Kirim Konfirmasi</button>
         </form>
         <div id="rsvp-feedback" style="margin-top:1rem"></div>
     </section>
@@ -254,18 +457,17 @@
             <label>Ucapan *
                 <textarea name="message" required placeholder="Tulis ucapan dan doa..."></textarea>
             </label>
-            <button type="submit" class="btn-gold">Kirim Ucapan</button>
+            <button type="submit" class="btn-primary">Kirim Ucapan</button>
         </form>
         <div id="gb-feedback" style="margin-top:1rem"></div>
 
-        <!-- Approved entries loaded via HTMX -->
         <div class="guestbook-entries"
              hx-get="#"
              th:attr="hx-get=|/api/v1/invitations/${slug}/guestbook|"
              hx-trigger="load"
              hx-target="this"
              hx-swap="innerHTML">
-            <p style="color:#9e8678; font-size:.9rem">Memuat ucapan...</p>
+            <p style="color:var(--text-muted); font-size:.9rem">Memuat ucapan...</p>
         </div>
     </section>
 

@@ -64,6 +64,9 @@ public class InvitationPageController {
         model.addAttribute("events", extractEvents(content));
         model.addAttribute("christian", ChristianContentSchema.from(content));
 
+        String stylePreset = textOf(content, "stylePreset", "GRACE");
+        model.addAttribute("stylePreset", stylePreset);
+
         return "invitation/view";
     }
 
