@@ -66,19 +66,29 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
 
     private String readRequestBody(HttpServletRequest request) {
         Object cached = request.getAttribute(ContentCachingFilter.ATTR_CACHED_REQUEST);
-        if (!(cached instanceof ContentCachingRequestWrapper wrapper)) return "-";
+        if (!(cached instanceof ContentCachingRequestWrapper wrapper)) {
+            return "-";
+        }
         String contentType = request.getContentType();
-        if (contentType != null && shouldSkipBody(contentType)) return "(binary)";
+        if (contentType != null && shouldSkipBody(contentType)) {
+            return "(binary)";
+        }
         byte[] bytes = wrapper.getContentAsByteArray();
-        if (bytes.length == 0) return "-";
+        if (bytes.length == 0) {
+            return "-";
+        }
         return truncate(new String(bytes, StandardCharsets.UTF_8));
     }
 
     private String readResponseBody(HttpServletRequest request) {
         Object cached = request.getAttribute(ContentCachingFilter.ATTR_CACHED_RESPONSE);
-        if (!(cached instanceof ContentCachingResponseWrapper wrapper)) return "-";
+        if (!(cached instanceof ContentCachingResponseWrapper wrapper)) {
+            return "-";
+        }
         byte[] bytes = wrapper.getContentAsByteArray();
-        if (bytes.length == 0) return "-";
+        if (bytes.length == 0) {
+            return "-";
+        }
         return truncate(new String(bytes, StandardCharsets.UTF_8));
     }
 
@@ -88,9 +98,13 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
     }
 
     private String truncate(String s) {
-        if (s == null) return "-";
+        if (s == null) {
+            return "-";
+        }
         String trimmed = s.trim();
-        if (trimmed.isEmpty()) return "-";
+        if (trimmed.isEmpty()) {
+            return "-";
+        }
         return trimmed.length() > MAX_BODY_LENGTH
                 ? trimmed.substring(0, MAX_BODY_LENGTH) + "…"
                 : trimmed;

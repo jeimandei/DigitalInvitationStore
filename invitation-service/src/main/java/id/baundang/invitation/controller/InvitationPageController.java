@@ -12,6 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ public class InvitationPageController {
 
     @GetMapping("/{slug}")
     public String viewInvitation(@PathVariable String slug,
-                                 @org.springframework.web.bind.annotation.RequestParam(name = "to", required = false) String to,
+                                 @RequestParam(name = "to", required = false) String to,
                                  Model model) {
         Invitation inv = invitationService.getBySlugAndIncrementView(slug);
         JsonNode content = inv.getContent();
@@ -66,6 +67,10 @@ public class InvitationPageController {
 
         String stylePreset = textOf(content, "stylePreset", "GRACE");
         model.addAttribute("stylePreset", stylePreset);
+
+        // Midtrans Snap for the floating gift (amplop) button
+        model.addAttribute("snapJsUrl", snapJsUrl);
+        model.addAttribute("midtransClientKey", midtransClientKey);
 
         return "invitation/view";
     }

@@ -10,8 +10,19 @@ public class MidtransProperties {
     private String clientKey;
     private String snapJsUrl = "https://app.sandbox.midtrans.com/snap/snap.js";
 
-    public String getClientKey() { return clientKey; }
-    public void setClientKey(String clientKey) { this.clientKey = clientKey; }
-    public String getSnapJsUrl() { return snapJsUrl; }
-    public void setSnapJsUrl(String snapJsUrl) { this.snapJsUrl = snapJsUrl; }
+    public String getClientKey() {
+        return clientKey;
+    }
+
+    public void setClientKey(String clientKey) {
+        this.clientKey = clientKey;
+    }
+
+    public String getSnapJsUrl() {
+        return snapJsUrl;
+    }
+
+    public void setSnapJsUrl(String snapJsUrl) {
+        this.snapJsUrl = snapJsUrl;
+    }
 }

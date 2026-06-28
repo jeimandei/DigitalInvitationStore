@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.Set;
 
 @Aspect
@@ -42,10 +41,14 @@ public class ServiceLoggingAspect {
     }
 
     private String maskArgs(String[] names, Object[] args) {
-        if (args == null || args.length == 0) return "[]";
+        if (args == null || args.length == 0) {
+            return "[]";
+        }
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < args.length; i++) {
-            if (i > 0) sb.append(", ");
+            if (i > 0) {
+                sb.append(", ");
+            }
             String name = (names != null && i < names.length) ? names[i].toLowerCase() : "";
             boolean sensitive = SENSITIVE.stream().anyMatch(name::contains);
             sb.append(sensitive ? "***" : args[i]);

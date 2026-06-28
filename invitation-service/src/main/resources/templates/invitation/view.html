@@ -43,6 +43,8 @@
 
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+    <!-- Midtrans Snap (floating amplop / digital gift) -->
+    <script th:if="${snapJsUrl != null}" th:src="${snapJsUrl}" th:attr="data-client-key=${midtransClientKey}"></script>
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -294,6 +296,50 @@
         [data-theme="GLORIA"] section { background: var(--bg); }
         [data-theme="GLORIA"] .main-content { background: var(--bg); }
 
+        /* ───── Floating amplop (digital gift) button + modal ───── */
+        .amplop-fab {
+            position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 150;
+            display: flex; align-items: center; gap: .5rem;
+            padding: .7rem 1.1rem; border: none; border-radius: 999px;
+            background: var(--btn-bg); color: var(--cover-text);
+            font-family: var(--body-font); font-size: .85rem; font-weight: 600;
+            letter-spacing: .02em; cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0,0,0,.25); transition: transform .2s, background .3s;
+        }
+        .amplop-fab:hover { transform: translateY(-2px); background: var(--btn-hover); }
+        [data-theme="GLORIA"] .amplop-fab { color: #0e0e18; }
+        .amplop-fab-icon { font-size: 1.1rem; line-height: 1; }
+        @media (max-width: 420px) { .amplop-fab-label { display: none; } .amplop-fab { padding: .8rem; } }
+
+        .amplop-overlay {
+            position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.6);
+            display: flex; align-items: center; justify-content: center; padding: 1.25rem;
+        }
+        .amplop-modal {
+            position: relative; background: var(--bg-card); color: var(--text);
+            border-radius: 16px; padding: 1.6rem 1.4rem; max-width: 380px; width: 100%;
+            max-height: 90svh; overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,.3);
+        }
+        .amplop-close {
+            position: absolute; top: .6rem; right: .8rem; background: none; border: none;
+            font-size: 1.5rem; line-height: 1; color: var(--text-muted); cursor: pointer;
+        }
+        .amplop-label { display: block; font-size: .78rem; color: var(--text-muted); margin: .8rem 0 .3rem; }
+        .amplop-input {
+            width: 100%; padding: .65rem .85rem; border: 1px solid var(--border);
+            border-radius: 8px; background: var(--bg); color: var(--text);
+            font-family: inherit; font-size: 1rem; resize: vertical;
+        }
+        .amplop-amount { font-size: 1.25rem; font-weight: 700; letter-spacing: .02em; }
+        .amplop-chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; margin: .6rem 0 .3rem; }
+        .amplop-chip {
+            padding: .5rem; border: 1px solid var(--border); border-radius: 8px;
+            background: var(--bg); color: var(--text); font-family: inherit;
+            font-size: .8rem; cursor: pointer; transition: all .2s;
+        }
+        .amplop-chip.active { background: var(--btn-bg); color: var(--cover-text); border-color: var(--btn-bg); }
+        [data-theme="GLORIA"] .amplop-chip.active { color: #0e0e18; }
+
         [x-cloak] { display: none !important; }
     </style>
 </head>
@@ -476,6 +522,57 @@
     </footer>
 </div>
 
+<!-- Floating amplop (digital gift) button -->
+<button type="button" class="amplop-fab" x-show="opened && pinOk" x-cloak
+        @click="openGift()" aria-label="Kirim Amplop">
+    <span class="amplop-fab-icon">🎁</span>
+    <span class="amplop-fab-label">Kirim Amplop</span>
+</button>
+
+<!-- Amplop modal -->
+<div class="amplop-overlay" x-show="giftOpen" x-cloak @click.self="giftOpen = false">
+    <div class="amplop-modal">
+        <button type="button" class="amplop-close" @click="giftOpen = false" aria-label="Tutup">×</button>
+        <div style="text-align:center">
+            <div style="font-size:1.8rem">🎁</div>
+            <h3 style="font-family:var(--heading-font);color:var(--section-h2);margin:.25rem 0 .25rem">Kirim Amplop Digital</h3>
+            <p style="font-size:.85rem;color:var(--text-muted)" th:text="|untuk ${coupleName}|">untuk Pasangan</p>
+        </div>
+
+        <div x-show="!giftDone">
+            <label class="amplop-label">Nama Anda</label>
+            <input class="amplop-input" type="text" x-model="giftName" placeholder="Nama lengkap Anda"/>
+
+            <label class="amplop-label">Nominal (Rp)</label>
+            <input class="amplop-input amplop-amount" type="text" inputmode="numeric"
+                   :value="giftAmountDisplay" @input="onAmountInput($event)" placeholder="0"/>
+            <div class="amplop-chips">
+                <template x-for="amt in [50000, 100000, 200000, 500000]" :key="amt">
+                    <button type="button" class="amplop-chip" :class="giftAmount === amt ? 'active' : ''"
+                            @click="giftAmount = amt" x-text="'Rp ' + amt.toLocaleString('id-ID')"></button>
+                </template>
+            </div>
+            <p style="font-size:.72rem;color:var(--text-muted);margin-bottom:.6rem">Minimum Rp 20.000</p>
+
+            <label class="amplop-label">Pesan (opsional)</label>
+            <textarea class="amplop-input" x-model="giftMessage" rows="2" placeholder="Selamat menempuh hidup baru..."></textarea>
+
+            <p x-show="giftError" x-cloak style="color:#c0392b;font-size:.8rem;margin-bottom:.5rem" x-text="giftError"></p>
+            <button type="button" class="btn-primary" style="width:100%" :disabled="giftSubmitting"
+                    @click="sendGift()" x-text="giftSubmitting ? 'Memproses…' : 'Lanjut Pembayaran →'"></button>
+            <p style="font-size:.72rem;color:var(--text-muted);text-align:center;margin-top:.7rem">
+                Pembayaran aman via Midtrans · QRIS, GoPay, Transfer Bank
+            </p>
+        </div>
+
+        <div x-show="giftDone" x-cloak style="text-align:center;padding:1.5rem 0">
+            <div style="font-size:2rem">🎉</div>
+            <h3 style="font-family:var(--heading-font);color:var(--section-h2);margin:.5rem 0">Terima kasih!</h3>
+            <p style="color:var(--text-muted);font-size:.9rem">Amplop Anda telah terkirim. Semoga menjadi berkah.</p>
+        </div>
+    </div>
+</div>
+
 <script th:inline="javascript">
     function invitationApp() {
         return {
@@ -485,6 +582,49 @@
             pinError: false,
             get pinOk() { return !this.requiredPin || this._pinOk; },
             _pinOk: false,
+            // Amplop (digital gift) state
+            invitationId: /*[[${invitationId}]]*/ '',
+            giftOpen: false, giftDone: false, giftSubmitting: false, giftError: '',
+            giftName: '', giftMessage: '', giftAmount: 0,
+            get giftAmountDisplay() { return this.giftAmount ? this.giftAmount.toLocaleString('id-ID') : ''; },
+            onAmountInput(e) {
+                const digits = (e.target.value || '').replace(/\D/g, '');
+                this.giftAmount = digits ? parseInt(digits, 10) : 0;
+            },
+            openGift() {
+                this.giftError = ''; this.giftOpen = true;
+            },
+            async sendGift() {
+                this.giftError = '';
+                if (!this.giftName.trim()) { this.giftError = 'Masukkan nama Anda.'; return; }
+                if (!this.giftAmount || this.giftAmount < 20000) { this.giftError = 'Nominal minimum Rp 20.000.'; return; }
+                if (typeof window.snap === 'undefined') { this.giftError = 'Pembayaran belum siap. Muat ulang halaman.'; return; }
+                this.giftSubmitting = true;
+                try {
+                    const res = await fetch('/api/v1/payments/gifts/charge', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            invitationId: this.invitationId,
+                            senderName: this.giftName.trim(),
+                            message: this.giftMessage.trim(),
+                            amount: this.giftAmount
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Gagal membuat transaksi');
+                    const self = this;
+                    window.snap.pay(data.data.snapToken, {
+                        onSuccess() { self.giftDone = true; self.giftSubmitting = false; },
+                        onPending() { self.giftDone = true; self.giftSubmitting = false; },
+                        onError()   { self.giftError = 'Pembayaran gagal. Silakan coba lagi.'; self.giftSubmitting = false; },
+                        onClose()   { self.giftSubmitting = false; }
+                    });
+                } catch (err) {
+                    this.giftError = err.message;
+                    this.giftSubmitting = false;
+                }
+            },
             checkPin() {
                 if (this.pinInput === this.requiredPin) { this._pinOk = true; this.pinError = false; }
                 else { this.pinError = true; }

@@ -101,6 +101,10 @@
              class="bg-stone-800 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-stone-900"
              x-text="o.intakeDone ? 'Lihat Jawaban' : 'Isi Detail Undangan'"></a>
 
+          <a x-show="o.status === 'PAID' || o.status === 'IN_REVISION' || o.status === 'COMPLETED'"
+             :href="'/pesanan/' + o.id + '/kelola'"
+             class="border border-rose-200 text-rose-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-rose-50">Kelola Undangan</a>
+
           <a x-show="o.coupleSlug" :href="'/i/' + o.coupleSlug" target="_blank"
              class="border border-stone-200 text-stone-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-stone-50">Lihat Undangan ↗</a>
         </div>
