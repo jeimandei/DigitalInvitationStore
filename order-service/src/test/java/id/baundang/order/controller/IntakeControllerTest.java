@@ -77,7 +77,8 @@ class IntakeControllerTest {
     @Test
     void createQuestion_validBody_returns200() throws Exception {
         when(intakeService.createQuestion(any())).thenReturn(sampleQuestion());
-        String body = "{\"section\":\"Pasangan\",\"label\":\"Nama\",\"fieldKey\":\"coupleName\",\"inputType\":\"TEXT\"}";
+        String body = "{\"section\":\"Pasangan\",\"label\":\"Nama\","
+                + "\"fieldKey\":\"coupleName\",\"inputType\":\"TEXT\"}";
         mockMvc.perform(post("/api/v1/admin/intake/questions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))

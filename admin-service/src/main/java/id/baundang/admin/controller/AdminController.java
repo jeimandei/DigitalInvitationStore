@@ -98,7 +98,9 @@ public class AdminController {
     }
 
     private java.util.List<String> parseOptions(String options) {
-        if (options == null || options.isBlank()) return java.util.List.of();
+        if (options == null || options.isBlank()) {
+            return java.util.List.of();
+        }
         return java.util.Arrays.stream(options.split("\\r?\\n|,"))
                 .map(String::trim).filter(s -> !s.isBlank()).toList();
     }
@@ -315,7 +317,9 @@ public class AdminController {
         com.fasterxml.jackson.databind.node.ObjectNode patch =
                 com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
         params.forEach((k, v) -> {
-            if (k == null || k.isBlank() || "id".equals(k)) return;
+            if (k == null || k.isBlank() || "id".equals(k)) {
+                return;
+            }
             if (v != null && !v.isBlank()) {
                 patch.put(k, v);
             }

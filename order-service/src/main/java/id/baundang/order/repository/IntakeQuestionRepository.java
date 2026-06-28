@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface IntakeQuestionRepository extends JpaRepository<IntakeQuestion, UUID> {
+
     List<IntakeQuestion> findAllByOrderBySortOrderAsc();
+
     List<IntakeQuestion> findAllByActiveTrueAndMinTierLessThanEqualOrderBySortOrderAsc(short minTier);
 }
