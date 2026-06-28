@@ -34,7 +34,7 @@ public class Invitation {
     @Column(name = "couple_slug", nullable = false, unique = true)
     private String coupleSlug;
 
-    @Column(name = "template_id", nullable = false)
+    @Column(name = "template_id")
     private UUID templateId;
 
     @Type(JsonBinaryType.class)
