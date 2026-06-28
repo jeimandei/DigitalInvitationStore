@@ -96,6 +96,42 @@ public final class MessageTemplates {
                 """.formatted(coupleName, orderNumber, paymentUrl);
     }
 
+    public static String orderCompletedEmailBuyer(String orderNumber, String coupleName,
+                                                  String invitationUrl) {
+        return """
+                Halo %s,
+
+                Kabar gembira! Undangan digital Anda telah selesai dan siap dibagikan 🎉
+
+                  No. Pesanan : %s
+
+                Buka undangan Anda di sini:
+                %s
+
+                Anda bisa langsung membagikan tautan tersebut kepada para tamu. Untuk tautan
+                personal per tamu, tambahkan ?to=Nama+Tamu di akhir tautan.
+
+                Selamat menempuh hidup baru — terima kasih telah mempercayakan undangan Anda
+                kepada baundang.id ❤️
+
+                —
+                Tim baundang.id
+                """.formatted(coupleName, orderNumber, invitationUrl);
+    }
+
+    public static String orderCompletedBuyer(String orderNumber, String coupleName, String invitationUrl) {
+        return """
+                Halo %s 🎉
+
+                Undangan digital Anda (*%s*) telah *SELESAI* dan siap dibagikan!
+
+                Buka di sini: %s
+
+                Bagikan ke para tamu, atau pakai tautan personal dengan menambahkan
+                ?to=Nama+Tamu di akhir tautan. Selamat! ❤️
+                """.formatted(coupleName, orderNumber, invitationUrl);
+    }
+
     public static String orderPaidEmailBuyer(String orderNumber, String coupleName,
                                               long amount, String dashboardUrl) {
         return """

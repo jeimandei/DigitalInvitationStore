@@ -32,6 +32,9 @@ public class OrderEventPublisher {
     @Value("${app.rabbitmq.routing-key.revision-completed}")
     private String revisionCompletedKey;
 
+    @Value("${app.rabbitmq.routing-key.completed}")
+    private String completedKey;
+
     public void publishOrderCreated(Order order, String packageName) {
         var payload = new java.util.HashMap<String, Object>();
         payload.put("orderId", order.getId());
@@ -87,6 +90,19 @@ public class OrderEventPublisher {
                 "contactWhatsapp", order.getContactWhatsapp(),
                 "occurredAt", Instant.now()
         ));
+    }
+
+    public void publishOrderCompleted(Order order) {
+        var payload = new java.util.HashMap<String, Object>();
+        payload.put("orderId", order.getId());
+        payload.put("orderNumber", order.getOrderNumber());
+        payload.put("buyerId", order.getBuyerId());
+        payload.put("coupleName", order.getCoupleName() != null ? order.getCoupleName() : "");
+        payload.put("contactEmail", order.getContactEmail() != null ? order.getContactEmail() : "");
+        payload.put("contactWhatsapp", order.getContactWhatsapp() != null ? order.getContactWhatsapp() : "");
+        payload.put("coupleSlug", order.getCoupleSlug() != null ? order.getCoupleSlug() : "");
+        payload.put("occurredAt", Instant.now());
+        publish(completedKey, payload);
     }
 
     private void publish(String routingKey, Object payload) {

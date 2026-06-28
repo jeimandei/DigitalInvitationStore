@@ -126,7 +126,11 @@ public class OrderService {
             }
             eventPublisher.publishOrderPaid(order);
         }
-        return OrderDTO.from(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+        if (req.status() == OrderStatusPg.COMPLETED) {
+            eventPublisher.publishOrderCompleted(saved);
+        }
+        return OrderDTO.from(saved);
     }
 
     @Transactional(readOnly = true)

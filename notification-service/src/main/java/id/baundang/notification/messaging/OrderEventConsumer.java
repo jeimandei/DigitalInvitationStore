@@ -102,6 +102,39 @@ public class OrderEventConsumer {
         }
     }
 
+    @RabbitListener(queues = "notification.order.completed")
+    public void onOrderCompleted(Map<String, Object> event) {
+        try {
+            if (event.get("orderNumber") == null) return;
+            String orderNumber  = event.get("orderNumber").toString();
+            String coupleName   = event.getOrDefault("coupleName", "").toString();
+            String contactWa    = event.getOrDefault("contactWhatsapp", "").toString();
+            String contactEmail = event.getOrDefault("contactEmail", "").toString();
+            String coupleSlug   = event.getOrDefault("coupleSlug", "").toString();
+            String invitationUrl = coupleSlug.isBlank()
+                    ? "https://baundang.id/lacak"
+                    : "https://baundang.id/i/" + coupleSlug;
+
+            if (!contactEmail.isBlank()) {
+                notificationService.sendEmail(
+                        "order.completed.buyer.email", contactEmail,
+                        "Undangan Anda Sudah Siap — " + orderNumber,
+                        MessageTemplates.orderCompletedEmailBuyer(orderNumber, coupleName, invitationUrl),
+                        event
+                );
+            }
+            if (!contactWa.isBlank()) {
+                notificationService.sendWhatsApp(
+                        "order.completed.buyer", contactWa,
+                        MessageTemplates.orderCompletedBuyer(orderNumber, coupleName, invitationUrl),
+                        event
+                );
+            }
+        } catch (Exception e) {
+            log.error("Failed to handle order.completed event: {}", e.getMessage(), e);
+        }
+    }
+
     @RabbitListener(queues = "notification.revision.completed")
     public void onRevisionCompleted(Map<String, Object> event) {
         try {
