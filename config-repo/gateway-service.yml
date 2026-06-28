@@ -28,7 +28,7 @@ spring:
         - id: storefront
           uri: http://storefront-service:1082
           predicates:
-            - Path=/, /templates, /templates/**, /pesan, /pesan/**, /bayar, /bayar/**, /tentang, /tentang/**, /masuk, /masuk/**, /daftar, /daftar/**, /sitemap.xml, /robots.txt
+            - Path=/, /templates, /templates/**, /pesan, /pesan/**, /pesanan-saya, /pesanan/**, /bayar, /bayar/**, /tentang, /tentang/**, /masuk, /masuk/**, /daftar, /daftar/**, /sitemap.xml, /robots.txt
 
         - id: admin-login
           uri: http://admin-service:1088
