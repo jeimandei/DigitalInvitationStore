@@ -328,9 +328,9 @@ public class AdminController {
         // Assemble christian* form fields into the nested content.christian block
         // expected by the invitation renderer: {bibleVerse:{reference,translation,text},
         // ceremonyType, churchName, churchAddress, churchTime}
-        com.fasterxml.jackson.databind.node.ObjectNode christian =
+        final com.fasterxml.jackson.databind.node.ObjectNode christian =
                 com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
-        com.fasterxml.jackson.databind.node.ObjectNode verse =
+        final com.fasterxml.jackson.databind.node.ObjectNode verse =
                 com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
         putIfPresent(verse, "reference", params.get("christianVerseReference"));
         putIfPresent(verse, "translation", params.get("christianVerseTranslation"));
