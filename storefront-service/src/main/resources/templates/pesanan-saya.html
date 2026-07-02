@@ -105,6 +105,12 @@
              :href="'/pesanan/' + o.id + '/kelola'"
              class="border border-rose-200 text-rose-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-rose-50">Kelola Undangan</a>
 
+          <button x-show="(o.status === 'PAID' || o.status === 'IN_REVISION') && o.maxRevisions > 0 && o.revisionCount < o.maxRevisions"
+                  @click="openRevision(o)"
+                  class="border border-stone-200 text-stone-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-stone-50">
+            Minta Revisi (<span x-text="o.maxRevisions - o.revisionCount"></span> tersisa)
+          </button>
+
           <a x-show="o.coupleSlug" :href="'/i/' + o.coupleSlug" target="_blank"
              class="border border-stone-200 text-stone-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-stone-50">Lihat Undangan ↗</a>
         </div>
@@ -113,10 +119,34 @@
     </template>
   </div>
 
+  <!-- Revision request modal -->
+  <div x-show="revOpen" x-cloak @click.self="revOpen = false"
+       class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full">
+      <h3 class="text-lg font-semibold text-stone-800">Minta Revisi</h3>
+      <p class="text-sm text-stone-500 mt-1">
+        Jelaskan perubahan yang kamu inginkan pada undangan
+        <span class="font-medium text-stone-700" x-text="revOrder?.coupleName"></span>.
+        Sisa kuota: <span class="font-medium" x-text="revOrder ? (revOrder.maxRevisions - revOrder.revisionCount) : 0"></span> revisi.
+      </p>
+      <textarea x-model="revNote" rows="4" placeholder="Contoh: Ganti foto sampul, perbaiki nama orang tua, ubah warna tema..."
+                class="mt-4 w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"></textarea>
+      <p x-show="revError" x-cloak class="mt-2 text-sm text-red-600" x-text="revError"></p>
+      <div class="mt-5 flex gap-3">
+        <button @click="revOpen = false"
+                class="flex-1 border border-stone-200 text-stone-600 py-2.5 rounded-full text-sm font-medium hover:bg-stone-50">Batal</button>
+        <button @click="submitRevision()" :disabled="revSaving"
+                class="flex-1 bg-rose-600 text-white py-2.5 rounded-full text-sm font-medium hover:bg-rose-700 disabled:opacity-50"
+                x-text="revSaving ? 'Mengirim…' : 'Kirim Permintaan'"></button>
+      </div>
+    </div>
+  </div>
+
   <script>
     function ordersApp() {
       return {
         orders: [], loading: true, error: '',
+        revOpen: false, revOrder: null, revNote: '', revError: '', revSaving: false,
         steps: ['Dipesan', 'Dibayar', 'Dikerjakan', 'Selesai'],
         token() { return sessionStorage.getItem('buyer_token'); },
         async load() {
@@ -125,14 +155,41 @@
             const res = await fetch('/api/v1/orders/mine', {
               headers: { 'Authorization': 'Bearer ' + this.token() }
             });
-            if (res.status === 401) { sessionStorage.removeItem('buyer_token'); window.location.href = '/masuk?redirect=/pesanan-saya'; return; }
+            if (res.status === 401) {
+              if (await window.tryRefreshToken()) { return this.load(); }
+              sessionStorage.removeItem('buyer_token'); window.location.href = '/masuk?redirect=/pesanan-saya'; return;
+            }
             if (!res.ok) throw new Error('Gagal memuat pesanan');
             const data = await res.json();
             this.orders = (data.data?.content || data.content || data.data || []);
           } catch (e) { this.error = e.message; }
           finally { this.loading = false; }
         },
-        logout() { sessionStorage.removeItem('buyer_token'); window.location.href = '/'; },
+        logout() {
+          sessionStorage.removeItem('buyer_token');
+          sessionStorage.removeItem('buyer_refresh');
+          window.location.href = '/';
+        },
+        openRevision(o) {
+          this.revOrder = o; this.revNote = ''; this.revError = ''; this.revOpen = true;
+        },
+        async submitRevision() {
+          if (!this.revNote.trim()) { this.revError = 'Tuliskan detail revisi yang diinginkan.'; return; }
+          this.revSaving = true; this.revError = '';
+          try {
+            const res = await fetch('/api/v1/orders/' + this.revOrder.id + '/revisions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.token() },
+              body: JSON.stringify({ changes: { note: this.revNote.trim() } })
+            });
+            if (res.status === 401 && await window.tryRefreshToken()) { this.revSaving = false; return this.submitRevision(); }
+            const data = await res.json();
+            if (!res.ok) { this.revError = data.message || 'Gagal mengirim permintaan revisi.'; return; }
+            this.revOpen = false;
+            await this.load();
+          } catch (e) { this.revError = 'Terjadi kesalahan, coba lagi.'; }
+          finally { this.revSaving = false; }
+        },
         stepIndex(status) {
           switch (status) {
             case 'PENDING': return 0;

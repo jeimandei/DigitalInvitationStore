@@ -84,6 +84,7 @@ public class InvitationPageController {
         model.addAttribute("coupleName", textOf(content, "coupleName", slug));
         model.addAttribute("snapJsUrl", snapJsUrl);
         model.addAttribute("midtransClientKey", midtransClientKey);
+        model.addAttribute("giftAccount", invitationService.getGiftAccount(slug));
         return "invitation/gift";
     }
 

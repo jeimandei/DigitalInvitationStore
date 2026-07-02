@@ -240,7 +240,13 @@
         async api(path, opts = {}) {
           const headers = Object.assign({ 'Authorization': 'Bearer ' + this.token() }, opts.headers || {});
           const res = await fetch(this.base(path), Object.assign({}, opts, { headers }));
-          if (res.status === 401) { this.redirect(); throw new Error('unauthorized'); }
+          if (res.status === 401) {
+            if (await window.tryRefreshToken()) {
+              const retryHeaders = Object.assign({ 'Authorization': 'Bearer ' + this.token() }, opts.headers || {});
+              return fetch(this.base(path), Object.assign({}, opts, { headers: retryHeaders }));
+            }
+            this.redirect(); throw new Error('unauthorized');
+          }
           return res;
         },
 

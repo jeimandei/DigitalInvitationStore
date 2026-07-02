@@ -40,6 +40,20 @@
               <textarea x-show="q.inputType === 'TEXTAREA'" x-model="answers[q.fieldKey]" :required="q.required" rows="3"
                         class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"></textarea>
 
+              <!-- Photo upload for the gallery question: presigned PUT straight to MinIO -->
+              <div x-show="q.fieldKey === 'galleryNote'" class="mt-2">
+                <div class="flex items-center gap-3">
+                  <input type="file" :id="'upl-' + q.fieldKey" accept="image/jpeg,image/png,image/webp" multiple
+                         class="text-sm text-stone-500 file:mr-3 file:px-4 file:py-1.5 file:rounded-full file:border-0 file:bg-rose-50 file:text-rose-700 file:text-sm file:font-medium hover:file:bg-rose-100"/>
+                  <button type="button" @click="uploadGallery(q.fieldKey)" :disabled="uploading"
+                          class="shrink-0 bg-stone-800 text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-stone-900 disabled:opacity-50"
+                          x-text="uploading ? 'Mengunggah…' : 'Unggah Foto'"></button>
+                </div>
+                <p x-show="uploadMsg" x-cloak class="text-xs mt-1"
+                   :class="uploadOk ? 'text-green-600' : 'text-red-600'" x-text="uploadMsg"></p>
+                <p class="text-xs text-stone-400 mt-1">JPG/PNG/WebP. Foto yang diunggah otomatis tercatat di jawaban ini.</p>
+              </div>
+
               <input x-show="q.inputType === 'DATE'" type="date" x-model="answers[q.fieldKey]" :required="q.required"
                      class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
 
@@ -77,6 +91,7 @@
     function intakeApp(orderId) {
       return {
         orderId, loading: true, saving: false, error: '', saved: false,
+        uploading: false, uploadMsg: '', uploadOk: false,
         questions: [], answers: {},
         token() { return sessionStorage.getItem('buyer_token'); },
         get sections() {
@@ -96,7 +111,10 @@
               fetch('/api/v1/orders/' + this.orderId + '/intake/questions', { headers: h }),
               fetch('/api/v1/orders/' + this.orderId + '/intake', { headers: h })
             ]);
-            if (qRes.status === 401 || aRes.status === 401) { sessionStorage.removeItem('buyer_token'); window.location.href = '/masuk?redirect=/pesanan/' + this.orderId + '/intake'; return; }
+            if (qRes.status === 401 || aRes.status === 401) {
+              if (await window.tryRefreshToken()) { return this.load(); }
+              sessionStorage.removeItem('buyer_token'); window.location.href = '/masuk?redirect=/pesanan/' + this.orderId + '/intake'; return;
+            }
             if (!qRes.ok) throw new Error('Gagal memuat pertanyaan');
             const qData = await qRes.json();
             this.questions = (qData.data || []);
@@ -104,6 +122,48 @@
             this.answers = (aData.data?.answers) || {};
           } catch (e) { this.error = e.message; }
           finally { this.loading = false; }
+        },
+        async uploadGallery(fieldKey) {
+          const input = document.getElementById('upl-' + fieldKey);
+          const files = input?.files;
+          if (!files || files.length === 0) { this.uploadOk = false; this.uploadMsg = 'Pilih foto dulu.'; return; }
+          this.uploading = true; this.uploadMsg = ''; this.uploadOk = false;
+          let done = 0;
+          try {
+            for (const file of files) {
+              let presignRes = await fetch('/api/v1/media/upload/presign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.token() },
+                body: JSON.stringify({ filename: file.name, contentType: file.type, folder: 'couples/' + this.orderId })
+              });
+              if (presignRes.status === 401 && await window.tryRefreshToken()) {
+                presignRes = await fetch('/api/v1/media/upload/presign', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.token() },
+                  body: JSON.stringify({ filename: file.name, contentType: file.type, folder: 'couples/' + this.orderId })
+                });
+              }
+              if (!presignRes.ok) throw new Error('Gagal menyiapkan unggahan untuk ' + file.name);
+              const presign = (await presignRes.json()).data;
+
+              const putRes = await fetch(presign.presignedUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': file.type },
+                body: file
+              });
+              if (!putRes.ok) throw new Error('Gagal mengunggah ' + file.name);
+
+              const existing = this.answers[fieldKey] || '';
+              this.answers[fieldKey] = (existing ? existing + '\n' : '') + '[foto] ' + presign.objectKey;
+              done++;
+            }
+            this.uploadOk = true;
+            this.uploadMsg = done + ' foto terunggah. Jangan lupa klik Simpan.';
+            input.value = '';
+          } catch (e) {
+            this.uploadOk = false;
+            this.uploadMsg = e.message + (done > 0 ? ' (' + done + ' foto sempat terunggah)' : '');
+          } finally { this.uploading = false; }
         },
         async save(submit) {
           this.saving = true; this.error = ''; this.saved = false;
