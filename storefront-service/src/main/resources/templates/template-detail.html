@@ -71,6 +71,10 @@
            class="block w-full text-center bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors">
           Pesan Template Ini
         </a>
+        <a th:href="'/api/v1/templates/' + ${template.slug} + '/preview'" target="_blank" rel="noopener"
+           class="block w-full text-center mt-3 border border-stone-200 text-stone-700 font-medium py-2.5 px-6 rounded-xl hover:bg-stone-50 transition-colors">
+          Lihat Pratinjau ↗
+        </a>
         <a href="/templates"
            class="block w-full text-center mt-3 text-stone-500 hover:text-stone-700 text-sm py-2 transition-colors">
           ← Lihat template lainnya

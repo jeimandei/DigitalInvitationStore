@@ -16,6 +16,27 @@
     .htmx-request .htmx-indicator { opacity: 1; }
   </style>
 
+  <script>
+    // Rotate the buyer access token using the stored refresh token.
+    // Returns true when a fresh access token is in place, false otherwise.
+    window.tryRefreshToken = async function () {
+      const refresh = sessionStorage.getItem('buyer_refresh');
+      if (!refresh) return false;
+      try {
+        const res = await fetch('/api/v1/auth/token/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refresh })
+        });
+        if (!res.ok) { sessionStorage.removeItem('buyer_refresh'); return false; }
+        const data = await res.json();
+        sessionStorage.setItem('buyer_token', data.access_token);
+        if (data.refresh_token) sessionStorage.setItem('buyer_refresh', data.refresh_token);
+        return true;
+      } catch (e) { return false; }
+    };
+  </script>
+
 
 </head>
 <body class="bg-stone-50 text-stone-800 font-sans antialiased">

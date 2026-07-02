@@ -13,9 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -34,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         value = OrderController.class,
         excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class}
 )
+@AutoConfigureMockMvc(addFilters = false)
 class OrderControllerTest {
 
     @Autowired
@@ -50,6 +54,11 @@ class OrderControllerTest {
 
     @MockBean
     GatewayHeaderFilter gatewayHeaderFilter;
+
+    private final UsernamePasswordAuthenticationToken buyerAuth =
+            new UsernamePasswordAuthenticationToken(
+                    UUID.randomUUID().toString(), null,
+                    List.of(new SimpleGrantedAuthority("ROLE_BUYER")));
 
     private OrderDTO sampleOrderDTO() {
         return new OrderDTO(
@@ -97,7 +106,7 @@ class OrderControllerTest {
         UUID id = UUID.randomUUID();
         when(orderService.getOrder(any(), any(), anyBoolean())).thenReturn(sampleOrderDTO());
 
-        mockMvc.perform(get("/api/v1/orders/" + id))
+        mockMvc.perform(get("/api/v1/orders/" + id).principal(buyerAuth))
                 .andExpect(status().isOk());
     }
 
@@ -132,6 +141,7 @@ class OrderControllerTest {
 
         String body = "{\"changes\":{\"field\":\"value\"}}";
         mockMvc.perform(post("/api/v1/orders/" + id + "/revisions")
+                        .principal(buyerAuth)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk());
@@ -155,7 +165,7 @@ class OrderControllerTest {
         UUID id = UUID.randomUUID();
         when(orderService.listRevisions(any(), any(), anyBoolean())).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/v1/orders/" + id + "/revisions"))
+        mockMvc.perform(get("/api/v1/orders/" + id + "/revisions").principal(buyerAuth))
                 .andExpect(status().isOk());
     }
 }

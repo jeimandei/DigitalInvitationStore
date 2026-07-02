@@ -74,13 +74,90 @@
     <p class="note">Pembayaran aman via Midtrans · QRIS, GoPay, OVO, Transfer Bank</p>
 </div>
 
+<!-- Manual transfer (gift registry) -->
+<div class="card" style="margin-top:1.5rem"
+     th:if="${giftAccount != null and (giftAccount.bankName != null or giftAccount.gopayNumber != null
+             or giftAccount.ovoNumber != null or giftAccount.qrisImageUrl != null)}">
+    <div class="ornament">🏦</div>
+    <h1>Transfer Manual</h1>
+    <p class="couple-sub">Kirim langsung ke rekening pasangan, lalu konfirmasi di bawah</p>
+
+    <div style="border:1px solid #d6c4a8; padding:1rem 1.25rem; margin-bottom:1.5rem; font-size:.95rem; line-height:2">
+        <div th:if="${giftAccount.bankName != null}">
+            <strong th:text="${giftAccount.bankName}">Bank</strong>
+            <span th:text="${giftAccount.accountNumber}" style="font-family:monospace; margin-left:.5rem">0000</span>
+            <span th:if="${giftAccount.accountHolder != null}" th:text="'a.n. ' + ${giftAccount.accountHolder}"
+                  style="display:block; font-size:.85rem; color:#9e8678"></span>
+        </div>
+        <div th:if="${giftAccount.gopayNumber != null}">GoPay:
+            <span th:text="${giftAccount.gopayNumber}" style="font-family:monospace"></span></div>
+        <div th:if="${giftAccount.ovoNumber != null}">OVO:
+            <span th:text="${giftAccount.ovoNumber}" style="font-family:monospace"></span></div>
+        <div th:if="${giftAccount.qrisImageUrl != null}" style="text-align:center; margin-top:.75rem">
+            <img th:src="${giftAccount.qrisImageUrl}" alt="QRIS" style="max-width:220px; width:100%"/>
+        </div>
+    </div>
+
+    <form id="confirm-form">
+        <label>Nama Anda *
+            <input type="text" id="confSenderName" required placeholder="Nama lengkap Anda"/>
+        </label>
+        <label>Nominal Transfer (Rp) *
+            <input type="number" id="confAmount" min="1" step="1000" required placeholder="Contoh: 200000"/>
+        </label>
+        <label>Bank / E-Wallet Pengirim
+            <input type="text" id="confBankFrom" placeholder="Contoh: BCA, GoPay"/>
+        </label>
+        <label>Pesan (opsional)
+            <textarea id="confMessage" placeholder="Selamat menempuh hidup baru..."></textarea>
+        </label>
+        <button type="submit" class="btn-gold">Konfirmasi Transfer</button>
+    </form>
+    <p id="confirm-feedback" class="note" style="display:none"></p>
+</div>
+
 <footer>
     <p>Dibuat dengan ❤ oleh <a href="https://baundang.id" target="_blank">baundang.id</a></p>
 </footer>
 
 <script th:inline="javascript">
     const INVITATION_ID = /*[[${invitationId}]]*/ '';
+    const SLUG = /*[[${slug}]]*/ '';
     const GIFT_CHARGE_URL = '/api/v1/payments/gifts/charge';
+
+    // Manual transfer confirmation (gift registry)
+    const confirmForm = document.getElementById('confirm-form');
+    if (confirmForm) {
+        confirmForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const feedback = document.getElementById('confirm-feedback');
+            const senderName = document.getElementById('confSenderName').value.trim();
+            const amount = parseInt(document.getElementById('confAmount').value) || 0;
+            if (!senderName || amount <= 0) return;
+
+            const btn = this.querySelector('button[type=submit]');
+            btn.disabled = true; btn.textContent = 'Mengirim...';
+            try {
+                const res = await fetch('/api/v1/invitations/' + SLUG + '/gift-confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        senderName,
+                        amount,
+                        bankFrom: document.getElementById('confBankFrom').value.trim() || null,
+                        message: document.getElementById('confMessage').value.trim() || null
+                    })
+                });
+                if (!res.ok) throw new Error('Gagal mengirim konfirmasi');
+                confirmForm.style.display = 'none';
+                feedback.style.display = 'block';
+                feedback.textContent = 'Terima kasih! Konfirmasi transfer Anda telah dikirim ke pasangan. 🙏';
+            } catch (err) {
+                btn.disabled = false; btn.textContent = 'Konfirmasi Transfer';
+                alert('Terjadi kesalahan: ' + err.message);
+            }
+        });
+    }
 
     let selectedAmount = 0;
 

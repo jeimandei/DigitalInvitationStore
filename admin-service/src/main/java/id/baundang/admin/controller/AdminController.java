@@ -98,7 +98,9 @@ public class AdminController {
     }
 
     private java.util.List<String> parseOptions(String options) {
-        if (options == null || options.isBlank()) return java.util.List.of();
+        if (options == null || options.isBlank()) {
+            return java.util.List.of();
+        }
         return java.util.Arrays.stream(options.split("\\r?\\n|,"))
                 .map(String::trim).filter(s -> !s.isBlank()).toList();
     }
@@ -315,15 +317,46 @@ public class AdminController {
         com.fasterxml.jackson.databind.node.ObjectNode patch =
                 com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
         params.forEach((k, v) -> {
-            if (k == null || k.isBlank() || "id".equals(k)) return;
+            if (k == null || k.isBlank() || "id".equals(k) || k.startsWith("christian")) {
+                return;
+            }
             if (v != null && !v.isBlank()) {
                 patch.put(k, v);
             }
         });
+
+        // Assemble christian* form fields into the nested content.christian block
+        // expected by the invitation renderer: {bibleVerse:{reference,translation,text},
+        // ceremonyType, churchName, churchAddress, churchTime}
+        final com.fasterxml.jackson.databind.node.ObjectNode christian =
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+        final com.fasterxml.jackson.databind.node.ObjectNode verse =
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+        putIfPresent(verse, "reference", params.get("christianVerseReference"));
+        putIfPresent(verse, "translation", params.get("christianVerseTranslation"));
+        putIfPresent(verse, "text", params.get("christianVerseText"));
+        if (!verse.isEmpty()) {
+            christian.set("bibleVerse", verse);
+        }
+        putIfPresent(christian, "ceremonyType", params.get("christianCeremonyType"));
+        putIfPresent(christian, "churchName", params.get("christianChurchName"));
+        putIfPresent(christian, "churchAddress", params.get("christianChurchAddress"));
+        putIfPresent(christian, "churchTime", params.get("christianChurchTime"));
+        if (!christian.isEmpty()) {
+            patch.set("christian", christian);
+        }
+
         if (!patch.isEmpty()) {
             invitationClient.updateContent(id, patch);
         }
         return "redirect:/admin/invitations/" + id + "/build";
+    }
+
+    private void putIfPresent(com.fasterxml.jackson.databind.node.ObjectNode node,
+                              String key, String value) {
+        if (value != null && !value.isBlank()) {
+            node.put(key, value.trim());
+        }
     }
 
     @GetMapping("/invitations/{id}/rsvp")

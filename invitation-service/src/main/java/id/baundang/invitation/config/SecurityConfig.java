@@ -34,6 +34,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/invitations/*/guestbook").permitAll()
                         // Public guest check-in (door staff scan QR, no login)
                         .requestMatchers(HttpMethod.POST, "/api/v1/invitations/*/checkin/*").permitAll()
+                        // Public gift registry info + manual transfer confirmation (guests, no login)
+                        .requestMatchers(HttpMethod.GET,  "/api/v1/invitations/*/gift-accounts").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/invitations/*/gift-confirm").permitAll()
                         // Expiring list consumed internally by notification-service scheduler
                         .requestMatchers(HttpMethod.GET, "/api/v1/invitations/expiring").permitAll()
                         // Client self-service portal — any authenticated buyer (ownership checked in controller)

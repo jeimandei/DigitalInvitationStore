@@ -23,7 +23,9 @@ public class OrderEventConsumer {
     @RabbitListener(queues = "notification.order.created")
     public void onOrderCreated(Map<String, Object> event) {
         try {
-            if (event.get("orderNumber") == null) return;
+            if (event.get("orderNumber") == null) {
+                return;
+            }
             String orderNumber  = event.get("orderNumber").toString();
             String orderId      = event.getOrDefault("orderId", "").toString();
             String coupleName   = event.getOrDefault("coupleName", "").toString();
@@ -105,7 +107,9 @@ public class OrderEventConsumer {
     @RabbitListener(queues = "notification.order.completed")
     public void onOrderCompleted(Map<String, Object> event) {
         try {
-            if (event.get("orderNumber") == null) return;
+            if (event.get("orderNumber") == null) {
+                return;
+            }
             String orderNumber  = event.get("orderNumber").toString();
             String coupleName   = event.getOrDefault("coupleName", "").toString();
             String contactWa    = event.getOrDefault("contactWhatsapp", "").toString();

@@ -408,6 +408,36 @@
         </div>
     </section>
 
+    <!-- Bible verse (christian content block) -->
+    <section th:if="${christian != null and christian.hasVerse()}">
+        <p class="ornament">✝</p>
+        <blockquote style="font-family:var(--heading-font); font-size:1.15rem; font-style:italic; line-height:1.9; color:var(--text)"
+                    th:text="|“${christian.verseText()}”|"></blockquote>
+        <p style="margin-top:1rem; font-size:.9rem; letter-spacing:.05em; color:var(--text-muted)">
+            <span th:text="${christian.verseReference()}"></span>
+            <span th:if="${christian.verseTranslation() != null and !christian.verseTranslation().isBlank()}"
+                  th:text="| (${christian.verseTranslation()})|"></span>
+        </p>
+    </section>
+
+    <!-- Church / ceremony info -->
+    <section th:if="${christian != null and christian.hasChurchInfo()}" class="section-alt"
+             style="max-width:100%; padding:5rem 1.5rem">
+        <div style="max-width:720px; margin:0 auto; text-align:center">
+            <p class="ornament">⛪</p>
+            <h2 th:text="${christian.ceremonyType()}">Holy Matrimony</h2>
+            <div class="event-card" style="margin-top:2rem; display:inline-block; min-width:min(100%, 380px)">
+                <h3 th:text="${christian.churchName()}">Nama Gereja</h3>
+                <div class="detail">
+                    <p th:if="${christian.churchAddress() != null and !christian.churchAddress().isBlank()}"
+                       th:text="${christian.churchAddress()}"></p>
+                    <p th:if="${christian.churchTime() != null and !christian.churchTime().isBlank()}"
+                       th:text="${christian.churchTime()}" style="margin-top:.5rem"></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Venue map cards -->
     <div th:replace="~{fragments/venue-map :: venue-map(${events})}"></div>
 
@@ -562,6 +592,9 @@
                     @click="sendGift()" x-text="giftSubmitting ? 'Memproses…' : 'Lanjut Pembayaran →'"></button>
             <p style="font-size:.72rem;color:var(--text-muted);text-align:center;margin-top:.7rem">
                 Pembayaran aman via Midtrans · QRIS, GoPay, Transfer Bank
+            </p>
+            <p style="font-size:.78rem;text-align:center;margin-top:.4rem">
+                <a th:href="|/i/${slug}/gift|" style="color:var(--accent)">Atau transfer manual ke rekening pasangan →</a>
             </p>
         </div>
 

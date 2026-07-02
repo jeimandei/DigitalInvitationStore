@@ -1,6 +1,5 @@
 package id.baundang.order.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import id.baundang.common.exception.NotFoundException;
 import id.baundang.common.exception.UnauthorizedException;
@@ -59,15 +58,27 @@ public class IntakeService {
     }
 
     private void apply(IntakeQuestion q, IntakeQuestionRequest req) {
-        if (req.section() != null) q.setSection(req.section().isBlank() ? "Umum" : req.section());
+        if (req.section() != null) {
+            q.setSection(req.section().isBlank() ? "Umum" : req.section());
+        }
         q.setLabel(req.label());
         q.setFieldKey(req.fieldKey());
-        if (req.inputType() != null && !req.inputType().isBlank()) q.setInputType(req.inputType());
+        if (req.inputType() != null && !req.inputType().isBlank()) {
+            q.setInputType(req.inputType());
+        }
         q.setOptions(req.options() != null ? req.options() : JsonNodeFactory.instance.arrayNode());
-        if (req.minTier() != null) q.setMinTier(req.minTier());
-        if (req.required() != null) q.setRequired(req.required());
-        if (req.sortOrder() != null) q.setSortOrder(req.sortOrder());
-        if (req.active() != null) q.setActive(req.active());
+        if (req.minTier() != null) {
+            q.setMinTier(req.minTier());
+        }
+        if (req.required() != null) {
+            q.setRequired(req.required());
+        }
+        if (req.sortOrder() != null) {
+            q.setSortOrder(req.sortOrder());
+        }
+        if (req.active() != null) {
+            q.setActive(req.active());
+        }
     }
 
     // ── Per-order intake (client) ─────────────────────────────────────────────
@@ -97,8 +108,12 @@ public class IntakeService {
             i.setOrderId(orderId);
             return i;
         });
-        if (req.answers() != null) intake.setAnswers(req.answers());
-        if (req.submitted() != null) intake.setSubmitted(req.submitted());
+        if (req.answers() != null) {
+            intake.setAnswers(req.answers());
+        }
+        if (req.submitted() != null) {
+            intake.setSubmitted(req.submitted());
+        }
         intake.setUpdatedAt(Instant.now());
         return OrderIntakeDTO.from(intakeRepository.save(intake));
     }
