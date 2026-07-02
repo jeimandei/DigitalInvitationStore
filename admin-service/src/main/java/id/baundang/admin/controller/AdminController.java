@@ -98,7 +98,9 @@ public class AdminController {
     }
 
     private java.util.List<String> parseOptions(String options) {
-        if (options == null || options.isBlank()) return java.util.List.of();
+        if (options == null || options.isBlank()) {
+            return java.util.List.of();
+        }
         return java.util.Arrays.stream(options.split("\\r?\\n|,"))
                 .map(String::trim).filter(s -> !s.isBlank()).toList();
     }

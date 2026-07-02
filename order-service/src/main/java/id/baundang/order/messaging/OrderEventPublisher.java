@@ -47,7 +47,9 @@ public class OrderEventPublisher {
         payload.put("contactEmail", order.getContactEmail());
         payload.put("contactWhatsapp", order.getContactWhatsapp());
         payload.put("occurredAt", Instant.now());
-        if (order.getTemplateId() != null) payload.put("templateId", order.getTemplateId());
+        if (order.getTemplateId() != null) {
+            payload.put("templateId", order.getTemplateId());
+        }
         publish(createdKey, payload);
     }
 
@@ -65,7 +67,9 @@ public class OrderEventPublisher {
         payload.put("paidAt", order.getPaidAt());
         payload.put("midtransTransactionId", order.getMidtransTransactionId() != null
                 ? order.getMidtransTransactionId() : "");
-        if (order.getTemplateId() != null) payload.put("templateId", order.getTemplateId());
+        if (order.getTemplateId() != null) {
+            payload.put("templateId", order.getTemplateId());
+        }
         payload.put("occurredAt", Instant.now());
         publish(paidKey, payload);
     }

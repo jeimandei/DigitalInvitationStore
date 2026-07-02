@@ -78,8 +78,11 @@ public class IntakeController {
     }
 
     private UUID callerId(Authentication auth) {
-        try { return auth != null ? UUID.fromString(auth.getName()) : null; }
-        catch (Exception e) { return null; }
+        try {
+            return auth != null ? UUID.fromString(auth.getName()) : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private boolean isAdmin(Authentication auth) {
