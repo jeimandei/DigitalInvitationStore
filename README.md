@@ -10,14 +10,18 @@ A production-ready SaaS platform for creating and managing digital wedding invit
 
 - [Feature Overview](#feature-overview)
 - [Architecture Overview](#architecture-overview)
-- [Services](#services)
+- [Services in Depth](#services-in-depth)
 - [Tech Stack](#tech-stack)
 - [Order Lifecycle & Event Flow](#order-lifecycle--event-flow)
 - [Invitation Themes](#invitation-themes)
+- [Security Model](#security-model)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
+- [Database Schemas](#database-schemas)
 - [API Reference](#api-reference)
+- [Pages](#pages)
 - [Pricing Tiers](#pricing-tiers)
+- [Scheduled Jobs](#scheduled-jobs)
 - [CI / CD](#ci--cd)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
@@ -28,42 +32,44 @@ A production-ready SaaS platform for creating and managing digital wedding invit
 
 ### For couples (buyers)
 
-- **Template catalogue** — browse active templates by category, view details, order straight from a template
-- **Online ordering** — pick a package (Dasar / Standar / Premium), pay via **Midtrans Snap** (QRIS, GoPay, OVO, bank transfer); order status updates automatically from the payment webhook
+- **Template catalogue** — browse active templates filtered by category and price level; only admin-activated templates are shown publicly
+- **Online ordering** — pick a package (Dasar / Standar / Premium); the Midtrans Snap transaction is created **automatically the moment the order is placed** (payment-service consumes `order.created`), so the payment link is instantly available; login is optional at checkout
 - **Order tracking**
-  - **Public tracker** (`/lacak`) — check any order by order number + email/WhatsApp, no login needed
-  - **Pesanan Saya** (`/pesanan-saya`) — logged-in dashboard with a progress timeline (Dipesan → Dibayar → Dikerjakan → Selesai), pay-now link, and revision counters
-- **Intake questionnaire** — after payment, a guided, **tier-aware** wizard collects everything needed to build the invitation (couple names, matrimony & reception details, colour palette, love story, gallery, premium extras). Questions are fully configurable by the admin.
+  - **Public tracker** (`/lacak`) — look up any order by order number + the email or WhatsApp used on it (WA numbers match on digit suffix, so `08…` and `628…` both work), no login needed
+  - **Pesanan Saya** (`/pesanan-saya`) — logged-in dashboard with a progress timeline (Dipesan → Dibayar → Dikerjakan → Selesai), pay-now link, revision counters
+- **Intake questionnaire** — after payment, a guided, **tier-aware** wizard collects everything needed to build the invitation. Questions are stored in the database and fully editable by the admin (input types: TEXT, TEXTAREA, DATE, TIME, SELECT, COLOR, NUMBER; each question has a `minTier` so Premium-only questions hide for lower tiers). Draft-save and submit are separate actions.
 - **Kelola Undangan** (`/pesanan/{orderId}/kelola`) — self-service portal for the couple:
-  - **Tamu** — add/remove guests, copy personal invitation links, download per-guest QR codes
-  - **RSVP** — see who confirmed attendance
-  - **Kehadiran** — live check-in stats and attendance rate
+  - **Tamu** — add/remove guests (name, group, table, seat allocation), copy personal invitation links, download per-guest QR codes
+  - **RSVP** — see who confirmed attendance, with head counts and messages
+  - **Kehadiran** — live check-in stats: invited, total seats, checked-in guests/heads, attendance percentage
   - **Amplop** — digital gift totals and sender list
-  - **Buku Tamu** — moderate (approve) guestbook messages
-- **Revisions** — request design revisions within the package quota (Premium: 2)
+  - **Buku Tamu** — approve pending guestbook messages
+- **Revisions** — request design revisions on PAID/IN_REVISION orders within the package quota (Premium: 2); each request bumps the order to IN_REVISION until the admin completes it
 - **Email + WhatsApp notifications** at every step: order placed (with payment link), payment received, invitation ready (with shareable link), revision completed
 
 ### For wedding guests
 
-- **Invitation page** (`/i/{slug}`) — server-rendered, mobile-first, with cover/open animation, couple profile, event details with embedded Google Maps, love story, countdown-style layout
-- **Four visual themes** — each invitation renders in one of four distinct style presets (see [Invitation Themes](#invitation-themes))
+- **Invitation page** (`/i/{slug}`) — server-rendered, mobile-first, with a full-screen cover ("Buka Undangan"), couple profile, structured event cards with embedded Google Maps (from stored lat/lng), love story, and per-view counter
+- **Four visual themes** — GRACE / COVENANT / EDEN / GLORIA (see [Invitation Themes](#invitation-themes))
 - **Personal greeting** — links with `?to=Nama+Tamu` greet the guest by name on the cover
-- **Optional PIN gate** — invitations can require a PIN before opening
-- **RSVP** — confirm attendance with guest count and a message
-- **Buku Tamu (guestbook)** — leave wishes; entries appear after approval
-- **Kirim Amplop (digital gift)** — floating button opens a gift modal with a free-form amount (plus quick-pick chips); payment goes through Midtrans Snap, no account needed. A bank/e-wallet **gift registry** page (`/i/{slug}/gift`) is also available with manual transfer confirmation.
-- **QR check-in** — each guest gets a unique QR code; door staff scan it at `/i/{slug}/scan` (html5-qrcode camera scanner with manual code fallback) which opens the check-in page showing name, group, table number and allotted seats, then records the actual head count
+- **Optional PIN gate** — if the admin sets an `accessPin`, guests must enter it before the invitation opens
+- **Christian wedding support** — invitations can carry a `christian` content block (Bible verse with reference/translation/text, ceremony type, church name/address/time); template-service ships a Bible verse catalogue (NIV/KJV/TB/BIS, categorised LOVE/COVENANT/BLESSING)
+- **RSVP** — confirm attendance (`hadir` / `tidak_hadir`) with guest count and message; the couple gets a WhatsApp ping
+- **Buku Tamu (guestbook)** — leave wishes; entries appear only after approval (couple or admin)
+- **Kirim Amplop (digital gift)** — floating button opens a modal with a free-form amount (min Rp 20.000, plus quick-pick chips) → Midtrans Snap, no account needed. Successful payment flows back via webhook → `gift.paid` event → recorded on the invitation. A **gift registry** page (`/i/{slug}/gift`) also shows bank/GoPay/OVO/QRIS details with manual transfer confirmation (`gift-confirm`), which pings the couple on WhatsApp.
+- **QR check-in** — every guest has a unique 24-hex invite code. Door staff open `/i/{slug}/scan` (html5-qrcode camera scanner with manual-code fallback), scan the guest's QR, land on the check-in page (name, group, table, allotted seats) and record the actual head count.
 
 ### For admins
 
-- **Dashboard** — today's orders, revenue, invitations, buyers at a glance
-- **Order management** — searchable/filterable order list, status machine (PENDING → PAID → IN_REVISION → COMPLETED / CANCELLED), internal notes, CSV export
-- **Bangun Undangan** (invitation builder) — structured content editor beside the client's questionnaire answers, with one-click **"Isi dari Kuesioner"** to fill the form from intake answers; sets couple info, matrimony/reception details, love story, cover photo, maps, colour palette, music, gift registry, **theme preset**, **custom slug**, and **access PIN**; per-guest link helper with copy button
-- **Guest management** — add guests with group/table/seat allocation, high-res printable QR codes (click to enlarge, download, print-all sheet)
-- **RSVP / Attendance / Guestbook / Gifts** — per-invitation views mirroring the client portal, plus guestbook approval and gift-account setup
-- **Template management** — create/edit templates with category, style preset, price level, thumbnail; activate/deactivate toggle controls what the storefront shows
-- **Intake question builder** — add/edit/delete questionnaire questions (text, textarea, date, time, select, colour, number), set section, minimum tier, required flag and sort order
-- **WhatsApp broadcast** — message all active couples or those expiring within 7 days
+- **Dashboard** — orders today, revenue, invitations, buyers at a glance
+- **Order management** — searchable (couple name / order number / email) and status-filterable list, status machine, internal admin notes per order, CSV export
+- **Bangun Undangan** (invitation builder) — structured content editor beside the client's questionnaire answers, with one-click **"Isi dari Kuesioner"**; sets couple info, matrimony/reception details, love story, cover photo, maps URL, colour palette, music, gift registry, **theme preset**, **custom slug** (validated `[a-z0-9-]`, uniqueness-checked), and **access PIN**; per-guest link helper. Saves are **merge-patched** into the invitation's JSONB content (existing keys preserved).
+- **Guest management** — add guests with group/table/seat allocation, high-res QR codes (click to enlarge, download, print-all sheet)
+- **RSVP / Attendance / Guestbook / Gifts** — per-invitation views, guestbook approval, gift-account setup (bank, GoPay, OVO, QRIS image), digital gift summary; RSVP CSV export
+- **Template management** — create/edit templates (name, slug, description, category GENERAL/CHRISTIAN/WEDDING/BIRTHDAY/GRADUATION/CORPORATE/OTHER, style preset, price level 1–3, thumbnail, JSONB config, key-value feature list); activate/deactivate toggle controls storefront visibility; delete is a soft-delete (deactivation)
+- **Intake question builder** — full CRUD on questionnaire questions with section, input type, options, min tier, required flag, sort order, active flag
+- **WhatsApp broadcast** — message all active couples (`ALL_ACTIVE`) or those expiring within 7 days (`EXPIRING_7D`); plus a `/test-wa` endpoint for verifying Fonnte connectivity
+- **Revision completion** — one click returns an IN_REVISION order to PAID and notifies the buyer
 
 ---
 
@@ -94,25 +100,26 @@ A production-ready SaaS platform for creating and managing digital wedding invit
                         └──────────────────────────────────┘
 ```
 
-All services communicate on a Podman bridge network (`baundang-network`) with DNS resolution enabled. The API Gateway is the single public entry point; internal services are not exposed to the internet. The gateway validates RS256 JWTs and forwards identity via `X-User-Id` / `X-User-Role` headers, which each service turns into its Spring Security principal.
+All services communicate on a Podman bridge network (`baundang-network`) with DNS resolution enabled. The API Gateway is the single public entry point; internal services are never exposed directly. Compose enforces start order via `service_healthy` conditions (config-server and RabbitMQ must be healthy before application services boot).
 
 ---
 
-## Services
+## Services in Depth
 
-| Service | Port | Description |
+| Service | Port | What it actually does |
 |---|---|---|
-| **gateway-service** | 1080 | Spring Cloud Gateway — routing, JWT auth filter (`JwtAuth` / `JwtAuth=ADMIN`), rate limiting (Redis) |
-| **auth-service** | 1081 | User registration, login, RS256 JWT issuance, refresh tokens, admin seeding |
-| **storefront-service** | 1082 | Public website — landing, catalogue, order flow, payment pages, order tracking, buyer login/register, intake wizard, Kelola Undangan portal (Thymeleaf + HTMX + Alpine.js) |
-| **template-service** | 1083 | Template CRUD, style presets, MinIO presigned URLs, Bible verse catalogue |
-| **invitation-service** | 1084 | Invitation lifecycle & themed rendering, RSVP, guestbook, gift registry, digital gifts, guest list & QR check-in, client self-service API |
-| **order-service** | 1085 | Order creation, status machine, revisions, public tracking lookup, intake questionnaire |
-| **payment-service** | 1086 | Midtrans Snap order payment + public webhook handler, digital gift (amplop) charges |
-| **notification-service** | 1087 | WhatsApp (Fonnte) + email (SMTP) notifications, RabbitMQ consumers, broadcast, expiry reminder scheduler |
-| **admin-service** | 1088 | Back-office web UI — dashboard, orders, invitation builder, guests/QR, templates, intake builder, broadcast, CSV export |
-| **media-service** | 1089 | Client-side MinIO presigned upload/download |
-| **config-server** | 8888 | Spring Cloud Config — centralised YAML for all services |
+| **gateway-service** | 1080 | Spring Cloud Gateway (WebFlux). Custom `JwtAuth` filter factory: verifies RS256 JWTs (public key fetched from auth-service at startup with exponential-backoff retry), accepts tokens from the `Authorization` header **or** the `admin_token` cookie (browser navigation), redirects browser navigations without a token to `/admin/login` while returning 401 to API/HTMX calls, enforces optional role (`JwtAuth=ADMIN`), and injects `X-User-Id` / `X-User-Role` headers downstream. Redis rate limiting keyed by client IP (`X-Forwarded-For`-aware). Permissive CORS. Global request/latency logging with upstream route resolution. All routes live in `config-repo/gateway-service.yml`. |
+| **auth-service** | 1081 | Registration/login with BCrypt (strength 12). Issues RS256 JWTs signed with an **RSA-4096 key pair generated on first boot** and persisted to a key volume (private key chmod'd owner-only). Token lifetimes: admin 8 h, buyer 24 h, order-scoped token 60 min. Refresh tokens are opaque 32-byte values stored **SHA-256-hashed** and **rotated on every refresh** (old one revoked). A 03:00 cron purges expired/revoked tokens. `register-admin` is gated by the `X-Admin-Seed-Key` header. Serves its public key as PEM for the gateway. |
+| **storefront-service** | 1082 | Public web UI (Thymeleaf + Tailwind + Alpine.js + HTMX): landing, catalogue (with HTMX pagination fragments), template detail, order flow, Midtrans payment page + selesai/pending/gagal result pages (enriched with public order detail), public tracker, login/register (JWT kept in `sessionStorage`, nav switches Masuk ⇄ Pesanan Saya), Pesanan Saya, intake wizard, Kelola Undangan portal, about page, robots.txt + sitemap.xml. Calls template/order services via `RestClient`. |
+| **template-service** | 1083 | Template CRUD with slug uniqueness, categories, style presets, per-template key-value features and JSONB config; `ChristianTemplateConfig` (motif, colour palette, hymn preset) 1-to-1 with templates; Bible verse catalogue with translation/category filters; MinIO presigned preview URLs (`previews/{slug}`); activate/deactivate; public list shows only active templates unless `includeInactive` (admin). |
+| **invitation-service** | 1084 | The heart of the product. Consumes `order.paid` → **auto-creates the invitation** (slugified couple name + 6-char order-id suffix, ACTIVE for 180 days, whole event payload stored as JSONB content). Consumes `gift.paid` → records digital gifts. Renders the themed invitation, gift, scanner and check-in pages. Public APIs for RSVP (publishes `rsvp.submitted`), guestbook (moderated), events, gift accounts, gift confirmation (publishes `gift.confirmed`), and check-in. Client self-service API under `/api/v1/invitations/my/**` gated on buyer ownership. Admin API for content merge-patch, status, custom slug, guests, attendance, gifts. Redis caching: invitation-by-slug 5 min, approved guestbook 1 min (evicted on writes). Two cron jobs (see [Scheduled Jobs](#scheduled-jobs)). |
+| **order-service** | 1085 | Order creation with `BND-yyyyMMdd-XXXX` order numbers (collision-checked), tier pricing from config, revision quota per tier ({0, 0, 2}), anonymous checkout support. Consumes the payment `order.paid` event → idempotently marks PAID → republishes an **enriched** `order.paid` (couple/contact/slug/template data) for invitation + notification. Admin status changes publish `order.paid`/`order.completed` as appropriate. Public order summary + tracking lookup. Revision request/complete workflow. Intake questionnaire definition (admin CRUD) + per-order answers with buyer/admin access checks. |
+| **payment-service** | 1086 | Midtrans Snap integration (sandbox/production switch). Consumes `order.created` → creates the Snap transaction immediately (`BND-{orderId}` Midtrans order id, item detail “Undangan Digital – Paket X”). Public webhook (3 URLs: base, `recurring`, `pay-account`) validated with the Midtrans **SHA-512 signature** (`order_id+status_code+gross_amount+serverKey`); handles capture/settlement/cancel/deny/expire with fraud-status checks; raw notification stored as JSONB. On success publishes the bare `order.paid`. **Digital gifts**: `GIFT-{uuid}` order ids skip signature-by-prefix routing to the gift handler; success publishes `gift.paid`. |
+| **notification-service** | 1087 | All buyer/admin comms. WhatsApp via Fonnte (`@Retryable` 3×/2 s backoff, Guava `RateLimiter` at 20 msg/min, bulk send support). Email via Spring Mail (SMTP). Every send is recorded in a `notifications` audit table (channel, template key, payload, SENT/FAILED). Consumers: `order.created` (payment link mail+WA), `order.paid` (buyer mail+WA, **admin WA ping**), `order.completed` (invitation-ready mail+WA), `order.revised` (admin WA), `revision.completed` (buyer WA), `rsvp.submitted` (couple WA), `gift.confirmed` (couple WA), `invitation.expiring` (couple WA). Daily expiry scheduler + admin broadcast endpoint + `/test-wa`. |
+| **admin-service** | 1088 | Server-rendered back office (Thymeleaf + Tailwind + Alpine). Aggregates the other services through internal REST clients (orders, invitations, templates, notifications, intake). Pages: dashboard, orders (detail/status/notes/CSV), templates (create/edit/toggle/delete), invitations (detail/status/build/slug/rsvp/guests/attendance/gifts/gift-account/guestbook), intake question builder, WA broadcast, buyers list, RSVP CSV export, revision completion. Own schema stores only `admin_notes`. |
+| **media-service** | 1089 | MinIO façade with **three buckets**: `templates`, `couples`, `admin`. Buyer presigned PUT uploads are forced into `couples/{slug}` folders (regex-validated), filenames sanitized and UUID-prefixed; content-type whitelist + per-type size limits; presigned GET for downloads (bucket resolved from key prefix); admin-only delete and server-side template upload. |
+| **config-server** | 8888 | Spring Cloud Config (native profile) serving `config-repo/`, protected by basic auth. |
+| **common** | — | Shared library auto-configured into every service: `ApiResponse`/`PagedResponse` envelopes, `GlobalExceptionHandler` (typed exceptions → 404/400/401 JSON), `SlugUtils`, `ContentCachingFilter` + `RequestLoggingInterceptor` (request/response body logging with binary skip + 2 KB truncation), `ServiceLoggingAspect` (AOP timing on every `@Service`/`@Repository` method with sensitive-arg masking). |
 
 ---
 
@@ -123,60 +130,60 @@ All services communicate on a Podman bridge network (`baundang-network`) with DN
 | Language | Java 21 |
 | Framework | Spring Boot 3.5.3, Spring Cloud 2025.0.0 |
 | Build | Maven (multi-module, parent POM) |
-| API Gateway | Spring Cloud Gateway with RS256 JWT filter |
-| Database | PostgreSQL 16 — single instance, one schema per service, native enums |
+| API Gateway | Spring Cloud Gateway (WebFlux) with RS256 JWT filter + Redis rate limiter |
+| Database | PostgreSQL 16 — single instance, one schema per service, native enums, `pgcrypto`, `set_updated_at` triggers |
 | Schema migration | Flyway (per-service, `create-schemas: true`) |
-| ORM | Spring Data JPA / Hibernate (+ hypersistence JSONB for invitation content) |
-| Cache | Redis 7 (Spring Cache with `JavaTimeModule`-aware JSON serialization) |
-| Messaging | RabbitMQ 3.13 — topic exchanges per domain |
-| Object storage | MinIO (presigned PUT/GET for client-side uploads) |
-| Frontend | Thymeleaf, HTMX, Alpine.js, Tailwind (storefront/admin), qrcodejs, html5-qrcode |
-| Payments | Midtrans Snap (orders + digital gifts) |
-| WhatsApp | Fonnte API (`@Retryable`, Guava `RateLimiter`) |
+| ORM | Spring Data JPA / Hibernate + hypersistence `JsonBinaryType` for JSONB columns |
+| Cache | Redis 7 — Spring Cache with a `JavaTimeModule`-aware polymorphic JSON serializer |
+| Messaging | RabbitMQ 3.13 — topic exchanges (orders / rsvp / invitations), durable queues, Jackson JSON converter |
+| Object storage | MinIO — presigned PUT/GET, three buckets (templates / couples / admin) |
+| Frontend | Thymeleaf, HTMX, Alpine.js, Tailwind, qrcodejs (QR generation), html5-qrcode (camera scanning) |
+| Payments | Midtrans Snap (orders + digital gifts), SHA-512 webhook signature validation |
+| WhatsApp | Fonnte API — `@Retryable`, Guava `RateLimiter` (20 msg/min), bulk send |
 | Email | Spring Mail (SMTP) |
-| Containers | Podman + podman-compose (rootless OCI images) |
-| Observability | AOP service-layer logging (`ServiceLoggingAspect`) + request/response interceptor |
-| Code quality | Checkstyle 10 (Google style, 120-char lines), bound to `validate` phase |
-| Testing | JUnit 5 + `@WebMvcTest` (MockMvc) controller tests per service |
-| CI | GitHub Actions — build + test + checkstyle on PRs |
-| CD | GitHub Actions — SSH deploy with per-service build/restart via checkboxes |
+| Containers | Podman + podman-compose (rootless OCI images, healthcheck-ordered startup) |
+| Observability | AOP service-layer logging + request/response interceptor + gateway route logging; actuator health/info/metrics/prometheus |
+| Code quality | Checkstyle 10 (Google style, 120-char lines, 4-space indent), bound to the `validate` phase |
+| Testing | JUnit 5 + `@WebMvcTest`/MockMvc controller tests in every service |
+| CI / CD | GitHub Actions — PR build+test+checkstyle; SSH deploy with per-service actions |
 
 ---
 
 ## Order Lifecycle & Event Flow
 
-The services are stitched together with RabbitMQ topic exchanges. The end-to-end happy path:
-
 ```
 Buyer orders on /pesan
-  └─ order-service creates order (PENDING) ──▶ order.created
-       ├─ notification-service → "Pesanan Diterima" email + WA with payment link
-       └─ Buyer pays via Midtrans Snap on /bayar/{orderId}
-            └─ payment-service webhook ──▶ order.paid (payment)
-                 └─ order-service marks PAID ──▶ order.paid (enriched)
-                      ├─ invitation-service auto-creates invitation (slug, content from event)
-                      └─ notification-service → payment emails/WA (buyer + admin)
-Buyer fills intake questionnaire → admin builds invitation (Bangun Undangan)
+  └─ order-service creates order (PENDING, BND-yyyyMMdd-XXXX) ──▶ order.created
+       ├─ payment-service creates the Midtrans Snap transaction immediately
+       └─ notification-service → "Pesanan Diterima" email + WA with payment link
+Buyer pays on /bayar/{orderId} (Snap popup)
+  └─ Midtrans webhook → payment-service (SHA-512 signature check) ──▶ order.paid (bare)
+       └─ order-service marks PAID (idempotent) ──▶ order.paid (enriched)
+            ├─ invitation-service auto-creates the invitation (slug, 180-day active window)
+            └─ notification-service → payment email/WA to buyer + WA ping to admin
+Buyer fills intake questionnaire → admin builds the invitation (Bangun Undangan)
 Admin marks order COMPLETED ──▶ order.completed
-  └─ notification-service → "Undangan Siap" email + WA with /i/{slug} link
+  └─ notification-service → "Undangan Siap" email + WA with the /i/{slug} link
 ```
 
 | Routing key | Publisher | Consumers | Purpose |
 |---|---|---|---|
-| `order.created` | order-service | notification | Order confirmation + payment link |
-| `order.paid` | payment-service, order-service | order, invitation, notification | Mark paid, create invitation, notify buyer & admin |
-| `order.completed` | order-service | notification | "Invitation ready" email/WA with link |
-| `order.revised` | order-service | notification | Alert admin of a revision request |
-| `revision.completed` | order-service | notification | Tell buyer their revision is done |
+| `order.created` | order-service | payment, notification | Create Snap transaction; send confirmation + payment link |
+| `order.paid` | payment-service (bare), order-service (enriched) | order, invitation, notification | Mark paid; create invitation; notify buyer & admin |
+| `order.completed` | order-service | notification | "Invitation ready" email/WA |
+| `order.revised` | order-service | notification | WA the admin about a revision request |
+| `revision.completed` | order-service | notification | WA the buyer that the revision is done |
+| `payment.failed` | payment-service | (logged) | Failed/expired transactions |
+| `gift.paid` | payment-service | invitation | Record a successful digital gift on the invitation |
 | `rsvp.submitted` | invitation-service | notification | WA the couple about a new RSVP |
-| `gift.confirmed` | invitation-service | notification | WA the couple about a gift confirmation |
-| `invitation.expiring` | notification scheduler | notification | Expiry reminders (7-day window) |
+| `gift.confirmed` | invitation-service | notification | WA the couple about a manual gift confirmation |
+| `invitation.expiring` | invitation + notification schedulers | notification | Expiry reminders (7-day window) |
 
 ---
 
 ## Invitation Themes
 
-Every invitation page renders in one of four visual presets, selected per invitation in **Bangun Undangan** (stored as `stylePreset` in the invitation's content JSON, default `GRACE`). Theming is pure CSS custom properties on `data-theme` — colours, fonts, ornaments and section styling all switch per preset, with fonts loaded conditionally.
+Every invitation page renders in one of four visual presets, selected per invitation in **Bangun Undangan** (stored as `stylePreset` in the invitation's content JSON, default `GRACE`; templates also carry a preset for cataloguing). Theming is pure CSS custom properties keyed on `data-theme` — colours, fonts, ornaments, buttons and section styling all switch per preset, and each theme loads only its own Google Fonts pair.
 
 | Preset | Mood | Palette | Typography |
 |---|---|---|---|
@@ -184,6 +191,23 @@ Every invitation page renders in one of four visual presets, selected per invita
 | **COVENANT** | Formal, classic | Deep navy + antique gold | Crimson Text + Raleway |
 | **EDEN** | Natural, warm | Sage green + earth tones | DM Serif Display + DM Sans |
 | **GLORIA** | Bold, elegant | Dark charcoal + bright gold | Cinzel + Raleway |
+
+### Invitation content JSON
+
+The invitation's single JSONB `content` column carries everything the renderer needs. Notable keys: `coupleName`, `groomFullName`/`brideFullName`, `matrimonyDate/Time/Venue` (with legacy `akad*` fallback), `receptionDate/Time/Venue`, `loveStory`, `coverPhotoUrl`, `mapsEmbedUrl`, `colorPalette`, `backgroundMusic`, `giftRegistry`, `stylePreset`, `accessPin`, `buyerId` (ownership), plus two structured blocks:
+
+- `events[]` — `{name, date, time, venue_name, venue_address, venue_lat, venue_lng, dress_code}`; lat/lng automatically produce Google Maps embed + directions links
+- `christian` — `{bibleVerse: {reference, translation, text}, ceremonyType, churchName, churchAddress, churchTime}`
+
+---
+
+## Security Model
+
+- **Edge**: the gateway is the only public entry. `JwtAuth` (any valid JWT) / `JwtAuth=ADMIN` filters guard routes declared in `config-repo/gateway-service.yml`. Valid tokens become `X-User-Id` / `X-User-Role` headers.
+- **Services** trust those headers (they are unreachable except through the gateway) and convert them into Spring Security principals via a `GatewayHeaderFilter`, then enforce per-endpoint rules (`permitAll` for public invitation interactions, `hasRole('ADMIN')` for admin APIs, `authenticated` + in-controller ownership checks for buyer data).
+- **Ownership checks**: orders/intake verify `buyerId == X-User-Id`; the client portal verifies the `buyerId` stored inside the invitation content; guests/guestbook entries are verified to belong to the invitation being operated on.
+- **Webhooks**: Midtrans notifications are authenticated by signature, not by network position.
+- **Secrets**: BCrypt-12 passwords, hashed+rotated refresh tokens, seed-key-gated admin registration, private JWT key readable only by its owner.
 
 ---
 
@@ -216,8 +240,6 @@ mvn -q clean package -DskipTests
 podman compose --env-file .env up -d
 ```
 
-Services start in dependency order. The config-server must be healthy before application services start; RabbitMQ must be healthy before messaging services start (all enforced via `condition: service_healthy` in compose).
-
 ### 4. Verify
 
 ```bash
@@ -237,20 +259,14 @@ mvn clean verify
 
 ## Configuration
 
-All service configuration is managed by **Spring Cloud Config Server** (`config-server`). Each service bootstraps with only its name and the config server URL; everything else is served from `config-repo/`. Gateway routes (path allowlists, `JwtAuth` filters) also live here — changing them requires a **deploy-config** plus a gateway restart.
+All service configuration is served by **Spring Cloud Config Server** from `config-repo/`. Each service bootstraps with only its name and the config server URL. Gateway routes also live here — changing them requires a **deploy-config** plus a gateway restart.
 
 ```
 config-repo/
-  application.yml          # shared config (datasource pool, Redis, RabbitMQ, scheduling)
-  auth-service.yml
-  gateway-service.yml
-  invitation-service.yml
-  order-service.yml
-  payment-service.yml
-  notification-service.yml
-  storefront-service.yml
-  template-service.yml
-  admin-service.yml
+  application.yml          # shared: Hikari pool (5/2), JPA validate, Flyway, RabbitMQ, Redis, scheduling pool
+  auth-service.yml         gateway-service.yml      invitation-service.yml
+  order-service.yml        payment-service.yml      notification-service.yml
+  storefront-service.yml   template-service.yml     admin-service.yml
   media-service.yml
 ```
 
@@ -260,40 +276,19 @@ config-repo/
 |---|---|
 | `DB_USER` / `DB_PASSWORD` | PostgreSQL credentials |
 | `REDIS_PASSWORD` | Redis auth password |
-| `RABBITMQ_USER` / `RABBITMQ_PASSWORD` | RabbitMQ credentials |
-| `RABBITMQ_VHOST` | RabbitMQ virtual host (default: `baundang`) |
-| `RABBITMQ_ERLANG_COOKIE` | RabbitMQ cluster cookie |
+| `RABBITMQ_USER` / `RABBITMQ_PASSWORD` / `RABBITMQ_VHOST` / `RABBITMQ_ERLANG_COOKIE` | RabbitMQ |
 | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` | MinIO root credentials |
-| `CONFIG_SERVER_USER` / `CONFIG_SERVER_PASSWORD` | Config server HTTP basic auth |
-| `JWT_SECRET` | 256-bit base64 secret for RS256 key generation |
-| `ADMIN_SEED_KEY` | Secret key for seeding the first admin account via `/api/v1/auth/register-admin` |
-| `MIDTRANS_SERVER_KEY` / `MIDTRANS_CLIENT_KEY` | Midtrans payment gateway keys |
+| `CONFIG_SERVER_USER` / `CONFIG_SERVER_PASSWORD` | Config server basic auth |
+| `JWT_SECRET` | Seed material for JWT key generation |
+| `ADMIN_SEED_KEY` | Secret for `/api/v1/auth/register-admin` |
+| `MIDTRANS_SERVER_KEY` / `MIDTRANS_CLIENT_KEY` | Midtrans keys (sandbox/production flag in config) |
 | `WHATSAPP_API_TOKEN` | Fonnte WhatsApp API token |
-| `ADMIN_WHATSAPP` | Admin WhatsApp number for notifications |
+| `ADMIN_WHATSAPP` | Admin number for order/revision pings |
 | `EMAIL_HOST` / `EMAIL_PORT` / `EMAIL_USERNAME` / `EMAIL_PASSWORD` | SMTP settings |
 
-See [`.env.example`](.env.example) for the full list with placeholder values.
-
-### Database
-
-A single PostgreSQL instance hosts all schemas in database `baundang`:
-
-| Schema | Owner service | Notable tables |
-|---|---|---|
-| `auth` | auth-service | users, refresh tokens |
-| `template` | template-service | templates (category, style preset, price level), verses |
-| `invitation` | invitation-service | invitations (JSONB content), rsvp, guestbook, guests (QR check-in), gift accounts, gifts, gift confirmations |
-| `orders` | order-service | orders, revisions, intake_question, order_intake |
-| `payment` | payment-service | payments, gift payments |
-| `notification` | notification-service | notification log |
-| `admin` | admin-service | admin notes |
-| `media` | media-service | — |
-
-Each service connects with `currentSchema=<schema>` in the JDBC URL so Flyway and Hibernate are fully isolated. `max_connections` is set to 200; HikariCP pool is 5 per service.
+See [`.env.example`](.env.example) for the full list.
 
 ### Seeding the first admin account
-
-Once the stack is running, use the seed endpoint to create the initial admin:
 
 ```bash
 curl -X POST https://<your-domain>/api/v1/auth/register-admin \
@@ -302,166 +297,190 @@ curl -X POST https://<your-domain>/api/v1/auth/register-admin \
   -d '{"email":"admin@baundang.id","password":"YourPassword123"}'
 ```
 
-The returned `accessToken` can be used immediately. The admin UI is at `/admin/login`.
+The admin UI is at `/admin/login`.
+
+---
+
+## Database Schemas
+
+A single PostgreSQL instance hosts all schemas in database `baundang`; each service connects with `currentSchema=<schema>` so Flyway and Hibernate stay isolated. `max_connections` 200; HikariCP 5 per service. Native enums (`order_status_enum`, `invitation_status_enum`), `pgcrypto` UUIDs and `set_updated_at` triggers are used where relevant.
+
+| Schema | Tables |
+|---|---|
+| `auth` | `users` (ADMIN/BUYER), `refresh_tokens` (hashed, revocable) |
+| `template` | `templates` (JSONB config, style preset, price level, active flag), `template_features` (key-value), `christian_template_configs`, `bible_verses` |
+| `invitation` | `invitations` (unique order_id & couple_slug, JSONB content, 180-day active window, view counter, partial index on active), `rsvp_responses`, `guestbook_entries` (approved flag), `gift_accounts`, `gift_confirmations`, `guests` (unique invite_code, check-in fields), `gifts` (Midtrans-paid amplop) |
+| `orders` | `orders` (BND order numbers, tier 1–3, revision counters, couple_slug), `order_revisions` (REQUESTED/IN_PROGRESS/COMPLETED), `intake_question` (seeded with 16 defaults), `order_intake` (JSONB answers per order) |
+| `payment` | `payments` (snap token, raw webhook JSONB, status), `gift_payments` (GIFT- order ids) |
+| `notification` | `notifications` (audit of every WA/email send) |
+| `admin` | `admin_notes` (free-form notes on any entity) |
 
 ---
 
 ## API Reference
 
-All public endpoints are exposed through the gateway on port **1080**.
+All public endpoints go through the gateway on port **1080**. Responses use a uniform envelope: `{success, data, message, timestamp}`; list endpoints add `{content, page, size, totalElements, totalPages, last}`.
 
 ### Auth — `/api/v1/auth`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/login` | — | Email + password → JWT tokens |
-| `POST` | `/register` | — | Create buyer account → JWT tokens |
-| `GET` | `/public-key` | — | RS256 public key (PEM) for token verification |
-| `POST` | `/token/refresh` | — | Exchange refresh token → new access token |
-| `POST` | `/order-token` | — | Issue short-lived order-scoped token |
-| `POST` | `/register-admin` | Seed key (`X-Admin-Seed-Key` header) | Create admin account |
+| `POST` | `/login` | — | Email + password → `{access_token, refresh_token, token_type, expires_in}` |
+| `POST` | `/register` | — | Create buyer account (password 8–72 chars) → token pair |
+| `GET` | `/public-key` | — | RS256 public key (PEM) |
+| `POST` | `/token/refresh` | — | Rotate refresh token → new pair (old token revoked) |
+| `POST` | `/order-token` | — | Access token + order id → 60-min order-scoped token |
+| `POST` | `/register-admin` | `X-Admin-Seed-Key` | Create admin account |
 
 ### Templates — `/api/v1/templates`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/` | — | Paginated template list (filter by category, priceLevel) |
-| `GET` | `/{slug}` | — | Template detail |
-| `GET` | `/{slug}/preview` | — | Redirect to MinIO presigned preview URL |
-| `POST` | `/` | Admin | Create template (name, slug, category, style preset, price level, thumbnail) |
-| `PUT` | `/{id}` | Admin | Update template / toggle active |
-| `DELETE` | `/{id}` | Admin | Soft-delete template |
-| `GET` | `/christian/verses` | — | Bible verse catalogue |
+| `GET` | `/` | — | Paginated list (`category`, `priceLevel`, `includeInactive`, max size 50); active-only for public |
+| `GET` | `/{slug}` | — | Detail incl. features map + JSONB config (active templates only) |
+| `GET` | `/{slug}/preview` | — | 302 → MinIO presigned preview URL |
+| `POST` / `PUT /{id}` | | Admin | Create / update (slug uniqueness enforced) |
+| `PUT` | `/{id}/active?active=` | Admin | Activate / deactivate |
+| `DELETE` | `/{id}` | Admin | Soft-delete (deactivate) |
+| `GET` | `/christian/verses` | — | Bible verses (`translation` NIV/KJV/TB/BIS, `category` LOVE/COVENANT/BLESSING) |
 
 ### Orders — `/api/v1/orders`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/` | — / Buyer JWT | Create order (templateId, tier, couple name, contacts) |
-| `GET` | `/mine` | Buyer JWT | List the caller's orders (powers Pesanan Saya) |
-| `GET` | `/{id}` | Buyer / Admin | Order detail (ownership enforced) |
-| `GET` | `/public/{id}` | — | Public order summary (payment result pages) |
-| `GET` | `/public/lookup?orderNumber=&contact=` | — | Public tracking by order number + matching email/WA |
-| `GET` | `/` | Admin | Paginated order list (status + search filters) |
-| `PUT` | `/{id}/status` | Admin | Update order status (publishes paid/completed events) |
-| `POST` | `/{id}/revisions` | Buyer | Request design revision |
-| `PUT` | `/revisions/{id}/complete` | Admin | Mark revision complete |
-| `GET` | `/{id}/revisions` | Buyer / Admin | List revisions |
+| `POST` | `/` | optional JWT | Create order `{templateId?, tier 1–3, coupleName, contactWhatsapp (8–15 digits), contactEmail, notes?}`; anonymous checkout allowed |
+| `GET` | `/mine` | Buyer | The caller's orders (paginated) |
+| `GET` | `/{id}` | Buyer/Admin | Detail (ownership enforced) |
+| `GET` | `/public/{id}` | — | Public summary (payment result pages) |
+| `GET` | `/public/lookup?orderNumber=&contact=` | — | Tracking by order number + matching email or WA (digit-suffix tolerant) |
+| `GET` | `/` | Admin | Paginated list (`status`, `search` over name/number/email) |
+| `PUT` | `/{id}/status` | Admin | `{status, midtransTransactionId?}`; PAID/COMPLETED publish events |
+| `POST` | `/{id}/revisions` | Buyer | `{changes: JSON}`; only on PAID/IN_REVISION, quota-checked |
+| `PUT` | `/revisions/{revisionId}/complete` | Admin | Complete revision → order back to PAID |
+| `GET` | `/{id}/revisions` | Buyer/Admin | Revision history |
 
 ### Intake questionnaire
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/api/v1/orders/{orderId}/intake/questions` | Buyer / Admin | Questions for the order's tier |
-| `GET` | `/api/v1/orders/{orderId}/intake` | Buyer / Admin | Saved answers |
-| `PUT` | `/api/v1/orders/{orderId}/intake` | Buyer / Admin | Save answers (`{answers, submitted}`) |
-| `GET` | `/api/v1/admin/intake/questions` | Admin | List all question definitions |
-| `POST` | `/api/v1/admin/intake/questions` | Admin | Create question (section, label, fieldKey, inputType, options, minTier, required, sortOrder, active) |
-| `PUT` | `/api/v1/admin/intake/questions/{id}` | Admin | Update question |
-| `DELETE` | `/api/v1/admin/intake/questions/{id}` | Admin | Delete question |
+| `GET` | `/api/v1/orders/{orderId}/intake/questions` | Buyer/Admin | Active questions with `minTier ≤ order.tier` |
+| `GET` / `PUT` | `/api/v1/orders/{orderId}/intake` | Buyer/Admin | Read / save answers `{answers, submitted}` |
+| `GET`/`POST`/`PUT /{id}`/`DELETE /{id}` | `/api/v1/admin/intake/questions` | Admin | Question CRUD `{section, label, fieldKey, inputType, options[], minTier, required, sortOrder, active}` |
 
 ### Payments — `/api/v1/payments`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/charge` | Buyer JWT | Create Midtrans Snap charge for an order |
-| `GET` | `/snap-token/{orderId}` | — | Get Snap token for an existing order |
-| `POST` | `/webhook/midtrans` | — (public) | Midtrans payment notification webhook |
-| `POST` | `/gifts/charge` | — (public) | Digital gift (amplop) charge — `{invitationId, senderName, message, amount ≥ 20000}` |
+| `POST` | `/charge` | internal | Create Snap transaction for an order (normally driven by the `order.created` event) |
+| `GET` | `/snap-token/{orderId}` | — | Snap token + redirect URL for an existing order |
+| `POST` | `/webhook/midtrans` (+ `/recurring`, `/pay-account`) | — (signature-validated) | Midtrans notifications; `GIFT-` order ids routed to the gift handler |
+| `POST` | `/gifts/charge` | — (public) | Digital gift: `{invitationId, senderName, message?, amount ≥ 20000}` → `{giftPaymentId, snapToken, paymentUrl}` |
 
 ### Invitations — public `/api/v1/invitations`
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/{slug}/rsvp` | — | Submit RSVP (name, attendance, guest count, message) |
-| `GET` | `/{slug}/guestbook` | — | List approved guestbook entries |
-| `POST` | `/{slug}/guestbook` | — | Submit guestbook message (pending approval) |
-| `GET` | `/{slug}/events` | — | List wedding events |
-| `GET` | `/{slug}/gift-accounts` | — | Gift registry info (bank / e-wallet / QRIS) |
-| `POST` | `/{slug}/gift-confirm` | — | Confirm a manual gift transfer |
-| `GET` | `/{slug}/checkin/{code}` | — | Guest lookup by invite code |
-| `POST` | `/{slug}/checkin/{code}` | — | Record check-in with actual head count |
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/{slug}/rsvp` | `{guestName, phone?, attendance: hadir\|tidak_hadir, guestCount ≥ 1, message?}` |
+| `GET` / `POST` | `/{slug}/guestbook` | Approved entries / submit (max 500 chars, pending approval) |
+| `GET` | `/{slug}/events` | Structured events with maps links |
+| `GET` | `/{slug}/gift-accounts` | Bank/GoPay/OVO/QRIS registry info |
+| `POST` | `/{slug}/gift-confirm` | Manual transfer confirmation `{senderName, amount, bankFrom?, proofUrl?, message?}` |
+| `GET` / `POST` | `/{slug}/checkin/{code}` | Guest lookup / check-in (form field `actualCount`, defaults 1) |
 
-### Invitations — client portal `/api/v1/invitations/my/{orderId}` (Buyer JWT, ownership enforced)
+### Invitations — client portal `/api/v1/invitations/my/{orderId}` (Buyer JWT; `buyerId` in invitation content must match)
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/` | Invitation summary (slug, couple name, status) |
-| `GET` / `POST` | `/guests` | List / add guests |
-| `DELETE` | `/guests/{guestId}` | Remove guest |
-| `GET` | `/rsvp` | RSVP responses |
-| `GET` | `/attendance` | Check-in statistics |
-| `GET` | `/gifts` | Digital gift summary + entries |
-| `GET` | `/guestbook` | All guestbook entries (incl. pending) |
-| `PUT` | `/guestbook/{entryId}/approve` | Approve a guestbook entry |
-
-Every call verifies the authenticated user's id matches the `buyerId` stored on the invitation — otherwise `401`.
+| `GET` | `/` | Summary (slug, couple name, status) |
+| `GET`/`POST` `/guests` · `DELETE /guests/{guestId}` | | Guest management (`{name, groupLabel?, tableNo?, allottedCount ≥ 1}`) |
+| `GET` | `/rsvp` · `/attendance` · `/gifts` · `/guestbook` | RSVP list, check-in stats, amplop summary, full guestbook |
+| `PUT` | `/guestbook/{entryId}/approve` | Approve an entry |
 
 ### Invitations — admin `/api/v1/admin/invitations` (Admin JWT)
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/` , `/{id}` | List / detail |
-| `PUT` | `/{id}/content` | Merge-patch invitation content JSON (builder save) |
-| `PUT` | `/{id}/status` | DRAFT / ACTIVE / EXPIRED |
-| `PUT` | `/{id}/slug` | Custom URL slug |
-| `GET` / `POST` | `/{id}/guests` · `DELETE /{id}/guests/{guestId}` | Guest management |
-| `GET` | `/{id}/attendance` | Check-in stats |
-| `GET` | `/{id}/rsvp` · `/{id}/guestbook` · `PUT /{id}/approve-guestbook/{entryId}` | RSVP + guestbook moderation |
-| `PUT` | `/{id}/gift-accounts` · `GET /{id}/gifts` | Gift registry setup + digital gift summary |
-| `GET` | `/active-phones` | WA numbers of all active invitations (broadcast) |
+| `GET` | `/`, `/{id}` | List / detail |
+| `PUT` | `/{id}/content` | **Merge-patch** invitation content JSON |
+| `PUT` | `/{id}/status` · `/{id}/slug` | DRAFT/ACTIVE/EXPIRED; custom slug (validated + unique) |
+| `GET`/`POST` `/{id}/guests` · `DELETE /{id}/guests/{guestId}` | | Guest management |
+| `GET` | `/{id}/attendance` · `/{id}/rsvp` · `/{id}/guestbook` · `/{id}/gifts` | Stats & lists |
+| `PUT` | `/{id}/approve-guestbook/{entryId}` · `/{id}/gift-accounts` | Moderation; registry setup |
+| `GET` | `/active-phones` | WA numbers of all ACTIVE invitations (broadcast source) |
+| `GET` | `/api/v1/invitations/expiring?days=` | Internal: invitations expiring within N days |
 
 ### Media — `/api/v1/media`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/upload/presign` | Buyer JWT | Request presigned PUT URL for direct MinIO upload |
-| `GET` | `/download/**` | Buyer JWT | Request presigned GET URL |
-| `DELETE` | `/**` | Admin JWT | Delete object |
-| `POST` | `/template/upload` | Admin JWT | Server-side template asset upload |
+| `POST` | `/upload/presign` | Buyer | `{filename, contentType, folder: couples/<slug>}` → presigned PUT (type whitelist, sanitized + UUID-prefixed key) |
+| `GET` | `/download/**` | Buyer | Presigned GET (bucket resolved from key prefix) |
+| `DELETE` | `/**` | Admin | Delete object |
+| `POST` | `/template/upload` | Admin | Server-side multipart upload to the templates bucket (size-limited) |
 
-### Notifications — `/api/v1/notifications`
+### Notifications — `/api/v1/notifications` (Admin JWT)
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/broadcast` | Admin JWT | Broadcast WhatsApp message (`ALL_ACTIVE`, `EXPIRING_7D`) |
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/broadcast` | `{targetGroup: ALL_ACTIVE\|EXPIRING_7D, message}` — bulk WA |
+| `POST` | `/test-wa` | `{phone, message}` — Fonnte connectivity test |
 
-### Storefront pages
+---
+
+## Pages
+
+### Storefront (public site)
 
 | Path | Description |
 |---|---|
-| `/` | Landing page |
-| `/templates` · `/templates/{slug}` | Template catalogue and detail |
-| `/pesan` | Order flow (package selection → details → confirmation) |
-| `/bayar/{orderId}` | Midtrans Snap payment page (+ `/bayar/selesai`, `/bayar/pending`, `/bayar/gagal` result pages) |
-| `/lacak` | Public order tracker (order number + contact, no login) |
-| `/masuk` · `/daftar` | Buyer login / registration (JWT in sessionStorage, `?redirect=` supported; nav shows **Masuk** or **Pesanan Saya** based on login state) |
-| `/pesanan-saya` | Buyer order dashboard with progress timeline |
+| `/` | Landing (pricing tiers + featured templates) |
+| `/templates` · `/templates/{slug}` | Catalogue (HTMX pagination) / detail |
+| `/pesan` | Order flow (template preselect via `?template=`) |
+| `/bayar/{orderId}` + `/bayar/selesai` · `/bayar/pending` · `/bayar/gagal` | Snap payment + result pages |
+| `/lacak` | Public order tracker |
+| `/masuk` · `/daftar` | Login / register (`?redirect=` supported; auth-aware nav) |
+| `/pesanan-saya` | Buyer order dashboard |
 | `/pesanan/{orderId}/intake` | Post-payment questionnaire wizard |
-| `/pesanan/{orderId}/kelola` | Kelola Undangan — client portal (Tamu / RSVP / Kehadiran / Amplop / Buku Tamu) |
-| `/tentang` | About page |
-| `/admin/login` · `/admin` | Admin back office (requires admin JWT) |
+| `/pesanan/{orderId}/kelola` | Kelola Undangan portal (Tamu / RSVP / Kehadiran / Amplop / Buku Tamu) |
+| `/tentang` · `/robots.txt` · `/sitemap.xml` | About + SEO |
 
 ### Invitation pages (invitation-service)
 
 | Path | Description |
 |---|---|
-| `/i/{slug}` | Themed invitation viewer (`?to=` personal greeting, PIN gate, floating amplop button) |
-| `/i/{slug}/gift` | Digital gift page (standalone) |
-| `/i/{slug}/scan` | QR check-in scanner for door staff (camera + manual code) |
-| `/i/{slug}/checkin/{code}` | Guest check-in page (name, group, table, seat count) |
+| `/i/{slug}` | Themed invitation (`?to=` greeting, PIN gate, floating amplop) |
+| `/i/{slug}/gift` | Standalone digital gift page |
+| `/i/{slug}/scan` | QR check-in scanner (camera + manual code) |
+| `/i/{slug}/checkin/{code}` | Guest check-in page |
+
+### Admin back office (`/admin`, admin JWT via cookie)
+
+Dashboard · Orders (list/detail/status/notes/`export.csv`) · Templates (create/edit/toggle/delete) · Invitations (detail/status/**build**/slug/rsvp/guests/attendance/gifts/gift-account/guestbook + RSVP `export.csv`) · Intake questions · WA broadcast · Buyers · Revision complete.
 
 ---
 
 ## Pricing Tiers
 
+Prices and names come from `app.pricing.tiers` config (order-service is the source of truth at checkout).
+
 | Tier | Price | Highlights |
 |---|---|---|
-| **Dasar** | Rp 119.000 | 1 template, event info, RSVP, unique link |
-| **Standar** ⭐ | Rp 199.000 | All templates, guestbook, gallery, countdown, interactive map |
-| **Premium** | Rp 249.000 | All Standar features + music, gift registry, 2 revisions, priority support |
+| **Dasar** (1) | Rp 119.000 | 1 template, event info, RSVP, unique link — 0 revisions |
+| **Standar** (2) ⭐ | Rp 199.000 | All templates, guestbook, gallery, countdown, interactive map — 0 revisions |
+| **Premium** (3) | Rp 249.000 | Everything + music, gift registry, priority support — **2 revisions** |
 
-The intake questionnaire automatically shows/hides questions based on the order's tier (`minTier` per question).
+The intake questionnaire shows/hides questions via each question's `minTier`.
+
+---
+
+## Scheduled Jobs
+
+| Job | Service | Schedule | What it does |
+|---|---|---|---|
+| Refresh-token purge | auth | 03:00 daily | Deletes expired/revoked refresh tokens |
+| Expiry reminders (publish) | invitation | 08:00 WIB daily | Publishes `invitation.expiring` for invitations due within 7 days |
+| Bulk expiry | invitation | 00:00 UTC daily | Flips overdue ACTIVE invitations to EXPIRED |
+| Expiry reminders (send) | notification | 01:00 UTC daily | Fetches expiring invitations and WhatsApps the couples |
 
 ---
 
@@ -471,35 +490,26 @@ The intake questionnaire automatically shows/hides questions based on the order'
 
 Runs on every pull request targeting `develop` or `main`:
 
-1. **Build & Test** — `mvn clean verify` (Checkstyle runs at the `validate` phase, then compile + all module test suites)
-2. **Checkstyle** — `mvn checkstyle:check` (Google style, 120-char limit)
-3. Surefire reports uploaded as CI artifacts
+1. **Build & Test** — `mvn clean verify` (Checkstyle at `validate`, then compile + every module's tests)
+2. **Checkstyle** — `mvn checkstyle:check`
+3. Surefire reports uploaded as artifacts
 
-Controller tests use `@WebMvcTest` with `@AutoConfigureMockMvc(addFilters = false)` so requests reach the real handler mappings; they cover endpoint routing, auth/ownership enforcement (401/404), and request-body validation (400) across all services.
+Controller tests use `@WebMvcTest` with `@AutoConfigureMockMvc(addFilters = false)` so requests hit real handler mappings; they cover routing, auth/ownership enforcement (401/404) and request-body validation (400).
 
 ### Continuous Deployment (`.github/workflows/cd.yml`)
 
-`workflow_dispatch` with an action selector plus per-service checkboxes:
+`workflow_dispatch` with an action selector + per-service checkboxes; deploys are serialized via a `deploy` concurrency group (queued, not cancelled):
 
-- **full-deploy** — git pull + `mvn package` + `podman compose up --build` for the whole stack
-- **build-service** — rebuild + recreate the selected service container(s) (`podman rm -f` + `--force-recreate`)
-- **restart-service** — restart selected containers without rebuilding
-- **restart-all** — remove every container and recreate from current images (no rebuild)
-- **deploy-config** — sync `config-repo/` to the server and refresh the config server (follow with a gateway restart when routes changed)
-- **deploy-env** — push `.env` from the `ENV_FILE` secret to the server
-
-Deploys are serialized via a `deploy` concurrency group (queued, not cancelled).
+- **full-deploy** — git pull + `mvn package` + `podman compose up --build`
+- **build-service** — rebuild + recreate selected containers (`podman rm -f` + `--force-recreate`)
+- **restart-service** — restart selected containers without rebuild
+- **restart-all** — remove every container and recreate from current images
+- **deploy-config** — sync `config-repo/` and refresh the config server (restart the gateway afterwards when routes changed)
+- **deploy-env** — push `.env` from the `ENV_FILE` secret
 
 #### Required GitHub Secrets
 
-| Secret | Value |
-|---|---|
-| `SSH_KEY` | Private SSH key for the deploy user |
-| `SSH_USER` | Deploy user on the server |
-| `SSH_HOST` | Server hostname or IP |
-| `SSH_PORT` | SSH port |
-| `SSH_PATH` | Deployment directory (e.g. `/opt/baundang`) |
-| `ENV_FILE` | Full contents of the production `.env` (for deploy-env) |
+`SSH_KEY`, `SSH_USER`, `SSH_HOST` (as `SSH_URL`), `SSH_PORT`, `SSH_PATH` (deploy dir), `ENV_FILE`.
 
 ---
 
@@ -507,25 +517,23 @@ Deploys are serialized via a `deploy` concurrency group (queued, not cancelled).
 
 ```
 DigitalInvitationStore/
-├── pom.xml                   # Parent POM — dependency management, Checkstyle
-├── common/                   # Shared library: ApiResponse, GlobalExceptionHandler, logging aspect/interceptor, exceptions
+├── pom.xml                   # Parent POM — dependency management, Checkstyle wiring
+├── common/                   # Shared auto-configured library (envelopes, exceptions, logging)
 ├── config-server/            # Spring Cloud Config Server
-├── config-repo/              # YAML configuration files for all services (incl. gateway routes)
-├── gateway-service/          # API Gateway — routing, JWT filter, rate limiting
-├── auth-service/             # Authentication & JWT issuance
-├── storefront-service/       # Public-facing website (Thymeleaf + HTMX + Alpine.js)
-├── template-service/         # Wedding template catalogue
-├── invitation-service/       # Invitation pages (4 themes), RSVP/guestbook/gifts/guests/check-in, client portal API
-├── order-service/            # Order lifecycle, revisions, public lookup, intake questionnaire
-├── payment-service/          # Midtrans payments (orders + digital gifts)
-├── notification-service/     # WhatsApp + email notifications, event consumers, expiry scheduler
-├── admin-service/            # Internal back-office web UI (incl. Bangun Undangan & intake builder)
-├── media-service/            # Object storage (MinIO) proxy
-├── checkstyle/
-│   └── checkstyle.xml        # Checkstyle rules (Google style)
-├── docs/
-│   └── server-setup.sh       # Server provisioning script
-├── podman-compose.yml        # Full stack orchestration
+├── config-repo/              # All service YAML incl. gateway routes
+├── gateway-service/          # Edge: routing, JWT filter, rate limiting, CORS
+├── auth-service/             # Users, RS256 JWTs, refresh rotation, admin seeding
+├── storefront-service/       # Public site: catalogue → order → pay → track → intake → kelola
+├── template-service/         # Template catalogue, presets, features, Bible verses
+├── invitation-service/       # Invitation rendering (4 themes), RSVP/guestbook/gifts/guests/check-in, portal API
+├── order-service/            # Orders, revisions, public lookup, intake questionnaire
+├── payment-service/          # Midtrans Snap (orders + gifts), webhook + signature validation
+├── notification-service/     # Fonnte WA + SMTP email, event consumers, broadcast, expiry reminders
+├── admin-service/            # Back office incl. Bangun Undangan and intake builder
+├── media-service/            # MinIO façade (3 buckets, presign, validation)
+├── checkstyle/checkstyle.xml # Google style, 120 cols, 4-space indent
+├── docs/server-setup.sh      # Server provisioning script
+├── podman-compose.yml        # Full stack orchestration (healthcheck-ordered)
 └── .env.example              # Environment variable template
 ```
 
@@ -536,16 +544,11 @@ DigitalInvitationStore/
 1. Fork the repository and create a feature branch off `develop`
 2. Write code that passes `mvn clean verify` (build + tests + Checkstyle)
 3. Open a pull request against `develop` — CI runs automatically
-4. Merges to `main` trigger automatic deployment to production
+4. Merges to `main` trigger deployment to production
 
 ### Code Style
 
-This project enforces [Google Java Style](https://google.github.io/styleguide/javaguide.html) with two project-level adjustments:
-
-- **Line length**: 120 characters (Google default is 100)
-- **Indentation**: 4 spaces (Google uses 2)
-
-Run `mvn checkstyle:check` locally before pushing.
+[Google Java Style](https://google.github.io/styleguide/javaguide.html) with two adjustments: **120-char lines** and **4-space indentation**. Run `mvn checkstyle:check` before pushing.
 
 ---
 
