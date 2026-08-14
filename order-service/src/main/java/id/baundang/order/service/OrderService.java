@@ -67,7 +67,9 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderDTO getOrder(UUID id, UUID callerId, boolean isAdmin) {
         Order order = findOrThrow(id);
-        if (!isAdmin && !order.getBuyerId().equals(callerId)) {
+        // An unclaimed order (null buyer) is denied outright rather than matched,
+        // so it can never be reached by an anonymous or mismatched caller.
+        if (!isAdmin && (order.getBuyerId() == null || !order.getBuyerId().equals(callerId))) {
             throw new UnauthorizedException("Access denied");
         }
         return OrderDTO.from(order);
@@ -138,7 +140,9 @@ public class OrderService {
     @Transactional(readOnly = true)
     public List<OrderRevisionDTO> listRevisions(UUID orderId, UUID callerId, boolean isAdmin) {
         Order order = findOrThrow(orderId);
-        if (!isAdmin && !order.getBuyerId().equals(callerId)) {
+        // An unclaimed order (null buyer) is denied outright rather than matched,
+        // so it can never be reached by an anonymous or mismatched caller.
+        if (!isAdmin && (order.getBuyerId() == null || !order.getBuyerId().equals(callerId))) {
             throw new UnauthorizedException("Access denied");
         }
         return revisionRepository.findAllByOrderIdOrderByCreatedAtAsc(orderId)
@@ -153,6 +157,40 @@ public class OrderService {
     /** Public order tracking — by order number + the email or WhatsApp used on the order. */
     @Transactional(readOnly = true)
     public PublicOrderDTO lookupPublic(String orderNumber, String contact) {
+        return PublicOrderDTO.from(findByNumberAndContact(orderNumber, contact));
+    }
+
+    /**
+     * Binds an anonymous order to the caller's account. Only an unclaimed order can be
+     * taken: without that guard, anyone knowing an order number and its contact could
+     * seize an order that already belongs to someone else. Re-claiming your own order
+     * is a no-op so a double submit is harmless.
+     */
+    @Transactional
+    public OrderDTO claimOrder(String orderNumber, String contact, UUID buyerId) {
+        if (buyerId == null) {
+            throw new UnauthorizedException("Akses ditolak");
+        }
+        Order order = findByNumberAndContact(orderNumber, contact);
+        UUID currentOwner = order.getBuyerId();
+        if (currentOwner != null) {
+            if (currentOwner.equals(buyerId)) {
+                return OrderDTO.from(order);
+            }
+            throw new ValidationException("Pesanan ini sudah terhubung ke akun lain");
+        }
+        order.setBuyerId(buyerId);
+        Order saved = orderRepository.save(order);
+        eventPublisher.publishOrderClaimed(saved);
+        return OrderDTO.from(saved);
+    }
+
+    /**
+     * Shared identity check for the public tracker and the claim flow: order number plus
+     * either the email or the WhatsApp number on the order. WhatsApp is matched on digit
+     * suffix so 08… and 628… forms both work.
+     */
+    private Order findByNumberAndContact(String orderNumber, String contact) {
         if (orderNumber == null || orderNumber.isBlank()) {
             throw new NotFoundException("Pesanan tidak ditemukan");
         }
@@ -160,18 +198,32 @@ public class OrderService {
                 .orElseThrow(() -> new NotFoundException("Pesanan tidak ditemukan"));
         String c = contact != null ? contact.trim() : "";
         boolean emailMatch = o.getContactEmail() != null && o.getContactEmail().equalsIgnoreCase(c);
-        String waDigits = digitsOnly(o.getContactWhatsapp());
-        String cDigits = digitsOnly(c);
+        String waDigits = normalizePhone(o.getContactWhatsapp());
+        String cDigits = normalizePhone(c);
         boolean waMatch = !waDigits.isEmpty() && !cDigits.isEmpty()
                 && (waDigits.equals(cDigits) || waDigits.endsWith(cDigits) || cDigits.endsWith(waDigits));
         if (!emailMatch && !waMatch) {
             throw new NotFoundException("Pesanan tidak ditemukan");
         }
-        return PublicOrderDTO.from(o);
+        return o;
     }
 
     private String digitsOnly(String s) {
         return s == null ? "" : s.replaceAll("\\D", "");
+    }
+
+    /**
+     * Reduces an Indonesian mobile number to a canonical 62-prefixed form so the local
+     * {@code 08…} spelling and the international {@code 628…} one compare equal. A bare
+     * suffix comparison is not enough on its own: the leading 0 makes {@code 081…} fail
+     * to match a stored {@code 62811…}, which would lock buyers out of their own orders.
+     */
+    private String normalizePhone(String s) {
+        String digits = digitsOnly(s);
+        if (digits.startsWith("0")) {
+            return "62" + digits.substring(1);
+        }
+        return digits;
     }
 
     private Order findOrThrow(UUID id) {

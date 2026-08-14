@@ -64,6 +64,19 @@ public class RabbitConfig {
     }
 
     @Bean
+    Queue invitationOrderClaimedQueue() {
+        return QueueBuilder.durable("invitation.order.claimed").build();
+    }
+
+    @Bean
+    Binding invitationOrderClaimedBinding(Queue invitationOrderClaimedQueue,
+                                          TopicExchange ordersTopicExchange) {
+        return BindingBuilder.bind(invitationOrderClaimedQueue)
+                .to(ordersTopicExchange)
+                .with("order.claimed");
+    }
+
+    @Bean
     Jackson2JsonMessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }

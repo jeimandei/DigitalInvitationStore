@@ -1,8 +1,10 @@
 package id.baundang.invitation.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import id.baundang.common.exception.NotFoundException;
+import id.baundang.common.exception.ValidationException;
 import id.baundang.invitation.domain.Gift;
 import id.baundang.invitation.domain.GiftAccount;
 import id.baundang.invitation.domain.GiftConfirmation;
@@ -55,6 +57,7 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -63,6 +66,13 @@ import java.util.UUID;
 public class InvitationService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    /**
+     * Content keys that identify or own the invitation. They are stripped from every
+     * inbound patch so an admin content update cannot reassign a tenant or repoint a slug.
+     */
+    private static final Set<String> RESERVED_CONTENT_KEYS =
+            Set.of("buyerId", "orderId", "slug", "coupleSlug");
 
     private final InvitationRepository invitationRepository;
     private final RsvpResponseRepository rsvpRepository;
@@ -168,14 +178,18 @@ public class InvitationService {
     public Invitation updateContent(UUID id, JsonNode patch) {
         Invitation inv = invitationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
-        JsonNode existing = inv.getContent();
-        if (existing != null && existing.isObject() && patch.isObject()) {
-            ObjectNode merged = (ObjectNode) existing.deepCopy();
-            merged.setAll((ObjectNode) patch);
-            inv.setContent(merged);
-        } else {
-            inv.setContent(patch);
+        if (patch == null || !patch.isObject()) {
+            throw new ValidationException("Konten undangan harus berupa objek JSON");
         }
+        ObjectNode sanitized = (ObjectNode) patch.deepCopy();
+        sanitized.remove(RESERVED_CONTENT_KEYS);
+
+        JsonNode existing = inv.getContent();
+        ObjectNode merged = existing != null && existing.isObject()
+                ? (ObjectNode) existing.deepCopy()
+                : JsonNodeFactory.instance.objectNode();
+        merged.setAll(sanitized);
+        inv.setContent(merged);
         return invitationRepository.save(inv);
     }
 

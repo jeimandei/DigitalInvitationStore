@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.Map;
 
 @Slf4j
 @Component
@@ -34,6 +33,19 @@ public class OrderEventPublisher {
 
     @Value("${app.rabbitmq.routing-key.completed}")
     private String completedKey;
+
+    @Value("${app.rabbitmq.routing-key.claimed}")
+    private String claimedKey;
+
+    /** An anonymous order was bound to an account; invitation-service mirrors the owner. */
+    public void publishOrderClaimed(Order order) {
+        var payload = new java.util.HashMap<String, Object>();
+        payload.put("orderId", order.getId());
+        payload.put("orderNumber", order.getOrderNumber());
+        payload.put("buyerId", order.getBuyerId());
+        payload.put("occurredAt", Instant.now());
+        publish(claimedKey, payload);
+    }
 
     public void publishOrderCreated(Order order, String packageName) {
         var payload = new java.util.HashMap<String, Object>();
@@ -75,25 +87,29 @@ public class OrderEventPublisher {
     }
 
     public void publishOrderRevised(Order order) {
-        publish(revisedKey, Map.of(
-                "orderId", order.getId(),
-                "orderNumber", order.getOrderNumber(),
-                "buyerId", order.getBuyerId(),
-                "revisionCount", order.getRevisionCount(),
-                "occurredAt", Instant.now()
-        ));
+        // HashMap rather than Map.of: buyerId is null on an unclaimed order and
+        // Map.of throws NPE on null values.
+        var payload = new java.util.HashMap<String, Object>();
+        payload.put("orderId", order.getId());
+        payload.put("orderNumber", order.getOrderNumber());
+        payload.put("buyerId", order.getBuyerId());
+        payload.put("revisionCount", order.getRevisionCount());
+        payload.put("occurredAt", Instant.now());
+        publish(revisedKey, payload);
     }
 
     public void publishRevisionCompleted(Order order, id.baundang.order.domain.OrderRevision revision) {
-        publish(revisionCompletedKey, Map.of(
-                "revisionId", revision.getId(),
-                "orderId", order.getId(),
-                "orderNumber", order.getOrderNumber(),
-                "buyerId", order.getBuyerId(),
-                "coupleSlug", order.getCoupleSlug() != null ? order.getCoupleSlug() : "",
-                "contactWhatsapp", order.getContactWhatsapp(),
-                "occurredAt", Instant.now()
-        ));
+        // HashMap rather than Map.of: buyerId is null on an unclaimed order and
+        // Map.of throws NPE on null values.
+        var payload = new java.util.HashMap<String, Object>();
+        payload.put("revisionId", revision.getId());
+        payload.put("orderId", order.getId());
+        payload.put("orderNumber", order.getOrderNumber());
+        payload.put("buyerId", order.getBuyerId());
+        payload.put("coupleSlug", order.getCoupleSlug() != null ? order.getCoupleSlug() : "");
+        payload.put("contactWhatsapp", order.getContactWhatsapp());
+        payload.put("occurredAt", Instant.now());
+        publish(revisionCompletedKey, payload);
     }
 
     public void publishOrderCompleted(Order order) {

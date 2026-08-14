@@ -2,6 +2,7 @@ package id.baundang.order.controller;
 
 import id.baundang.common.ApiResponse;
 import id.baundang.common.PagedResponse;
+import id.baundang.order.dto.ClaimOrderRequest;
 import id.baundang.order.dto.CreateOrderRequest;
 import id.baundang.order.dto.CreateOrderResponse;
 import id.baundang.order.dto.OrderDTO;
@@ -44,7 +45,9 @@ public class OrderController {
     public ResponseEntity<ApiResponse<CreateOrderResponse>> create(
             @Valid @RequestBody CreateOrderRequest req,
             Authentication auth) {
-        UUID buyerId = auth != null ? UUID.fromString(auth.getName()) : UUID.randomUUID();
+        // Anonymous checkout leaves the order unowned; the buyer claims it later via
+        // /claim. Minting a random UUID here would orphan the order permanently.
+        UUID buyerId = auth != null ? UUID.fromString(auth.getName()) : null;
         CreateOrderResponse resp = orderService.createOrder(req, buyerId);
         return ResponseEntity
                 .created(URI.create("/api/v1/orders/" + resp.orderId()))
@@ -60,6 +63,14 @@ public class OrderController {
     public ApiResponse<PublicOrderDTO> lookupPublic(@RequestParam String orderNumber,
                                                     @RequestParam String contact) {
         return ApiResponse.ok(orderService.lookupPublic(orderNumber, contact));
+    }
+
+    @PostMapping("/claim")
+    public ApiResponse<OrderDTO> claim(@Valid @RequestBody ClaimOrderRequest req, Authentication auth) {
+        UUID buyerId = auth != null ? UUID.fromString(auth.getName()) : null;
+        return ApiResponse.ok(
+                orderService.claimOrder(req.orderNumber(), req.contact(), buyerId),
+                "Pesanan berhasil dihubungkan ke akun Anda");
     }
 
     @GetMapping("/{id}")

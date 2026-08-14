@@ -1,19 +1,28 @@
 package id.baundang.invitation.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import id.baundang.invitation.domain.Invitation;
 import id.baundang.invitation.dto.ChristianContentSchema;
 import id.baundang.invitation.dto.EventDTO;
 import id.baundang.invitation.dto.GuestDTO;
 import id.baundang.invitation.service.InvitationService;
+import id.baundang.invitation.service.PinGateService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +32,7 @@ import java.util.List;
 public class InvitationPageController {
 
     private final InvitationService invitationService;
+    private final PinGateService pinGateService;
 
     @org.springframework.beans.factory.annotation.Value("${app.midtrans.snap-js-url}")
     private String snapJsUrl;
@@ -33,13 +43,21 @@ public class InvitationPageController {
     @GetMapping("/{slug}")
     public String viewInvitation(@PathVariable String slug,
                                  @RequestParam(name = "to", required = false) String to,
+                                 HttpServletRequest request,
                                  Model model) {
+        String greeting = to != null ? to.trim() : "";
+
+        // Gate before anything is read into the model: a protected invitation must not
+        // put its content — or its PIN — into the response at all.
+        Invitation gated = invitationService.getBySlug(slug);
+        if (isGateClosed(gated, request, slug)) {
+            return renderGate(gated, slug, greeting, false, model);
+        }
+
         Invitation inv = invitationService.getBySlugAndIncrementView(slug);
         JsonNode content = inv.getContent();
 
-        // Per-guest greeting + optional PIN gate (stored in content)
-        model.addAttribute("guestGreeting", to != null ? to.trim() : "");
-        model.addAttribute("accessPin", textOf(content, "accessPin", ""));
+        model.addAttribute("guestGreeting", greeting);
 
         model.addAttribute("slug", slug);
         model.addAttribute("invitationId", inv.getId());
@@ -47,7 +65,9 @@ public class InvitationPageController {
         model.addAttribute("status", inv.getStatus().name());
         model.addAttribute("activeUntil", inv.getActiveUntil());
         model.addAttribute("viewCount", inv.getViewCount());
-        model.addAttribute("content", content);
+        // The raw content node carries accessPin; expose a copy without it so no
+        // future template can render the PIN into a guest-facing page.
+        model.addAttribute("content", withoutPin(content));
 
         // Convenience fields extracted from JSONB for use in templates
         model.addAttribute("coupleName", textOf(content, "coupleName", slug));
@@ -75,8 +95,46 @@ public class InvitationPageController {
         return "invitation/view";
     }
 
+    /**
+     * Verifies a submitted PIN and, on success, issues the short-lived pass cookie.
+     * The PIN is compared server-side and never rendered into any response.
+     */
+    @PostMapping("/{slug}/pin")
+    public String submitPin(@PathVariable String slug,
+                            @RequestParam(name = "pin", required = false) String pin,
+                            @RequestParam(name = "to", required = false) String to,
+                            HttpServletResponse response,
+                            Model model) {
+        Invitation inv = invitationService.getBySlug(slug);
+        String storedPin = textOf(inv.getContent(), "accessPin", "");
+        String greeting = to != null ? to.trim() : "";
+
+        if (!pinGateService.matches(storedPin, pin)) {
+            return renderGate(inv, slug, greeting, true, model);
+        }
+
+        Cookie pass = new Cookie(pinGateService.cookieName(slug), pinGateService.issue(slug));
+        pass.setHttpOnly(true);
+        pass.setSecure(true);
+        pass.setPath("/i/" + slug);
+        pass.setMaxAge(pinGateService.cookieMaxAgeSeconds());
+        pass.setAttribute("SameSite", "Lax");
+        response.addCookie(pass);
+
+        String target = UriComponentsBuilder.fromPath("/i/{slug}").buildAndExpand(slug).toUriString();
+        return "redirect:" + (greeting.isBlank()
+                ? target
+                : target + "?to=" + URLEncoder.encode(greeting, StandardCharsets.UTF_8));
+    }
+
     @GetMapping("/{slug}/gift")
-    public String giftPage(@PathVariable String slug, Model model) {
+    public String giftPage(@PathVariable String slug, HttpServletRequest request, Model model) {
+        Invitation gated = invitationService.getBySlug(slug);
+        // The gift page exposes the couple's bank/GoPay/OVO/QRIS details, so it is
+        // gated alongside the invitation itself.
+        if (isGateClosed(gated, request, slug)) {
+            return renderGate(gated, slug, "", false, model);
+        }
         Invitation inv = invitationService.getBySlugAndIncrementView(slug);
         JsonNode content = inv.getContent();
         model.addAttribute("slug", slug);
@@ -113,6 +171,31 @@ public class InvitationPageController {
         model.addAttribute("alreadyCheckedIn", guest.checkedIn());
         model.addAttribute("checkedInCount", guest.checkedInCount());
         return "invitation/checkin";
+    }
+
+    private JsonNode withoutPin(JsonNode content) {
+        if (content == null || !content.isObject()) {
+            return content;
+        }
+        ObjectNode copy = (ObjectNode) content.deepCopy();
+        copy.remove("accessPin");
+        return copy;
+    }
+
+    /** True when this invitation has a PIN and the request has not yet cleared it. */
+    private boolean isGateClosed(Invitation inv, HttpServletRequest request, String slug) {
+        String storedPin = textOf(inv.getContent(), "accessPin", "");
+        return pinGateService.isProtected(storedPin) && !pinGateService.hasValidPass(request, slug);
+    }
+
+    /** Renders the gate with nothing in the model beyond the couple's name. */
+    private String renderGate(Invitation inv, String slug, String greeting,
+                              boolean pinError, Model model) {
+        model.addAttribute("slug", slug);
+        model.addAttribute("coupleName", textOf(inv.getContent(), "coupleName", slug));
+        model.addAttribute("guestGreeting", greeting);
+        model.addAttribute("pinError", pinError);
+        return "invitation/pin-gate";
     }
 
     private String textOf(JsonNode node, String field, String fallback) {
