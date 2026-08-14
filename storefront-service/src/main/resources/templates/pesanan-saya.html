@@ -15,6 +15,40 @@
     <button @click="logout()" class="text-sm text-stone-400 hover:text-rose-600">Keluar</button>
   </div>
 
+  <!-- Claim an order placed before signing in -->
+  <div class="mb-8 p-4 rounded-xl bg-stone-50 border border-stone-200">
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <p class="text-sm font-medium text-stone-700">Pesan sebelum punya akun?</p>
+        <p class="text-xs text-stone-500 mt-0.5">Hubungkan pesanan lamamu ke akun ini.</p>
+      </div>
+      <button @click="claimOpen = !claimOpen"
+              class="text-sm text-rose-600 hover:text-rose-700 font-medium whitespace-nowrap">
+        Hubungkan Pesanan
+      </button>
+    </div>
+
+    <div x-show="claimOpen" x-cloak class="mt-4 pt-4 border-t border-stone-200 space-y-3">
+      <div>
+        <label for="claimNumber" class="block text-xs text-stone-500 mb-1">Nomor Pesanan</label>
+        <input id="claimNumber" x-model="claimNumber" placeholder="BND-20260814-1234"
+               class="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm font-mono focus:outline-none focus:border-rose-400"/>
+      </div>
+      <div>
+        <label for="claimContact" class="block text-xs text-stone-500 mb-1">Email atau WhatsApp pada pesanan</label>
+        <input id="claimContact" x-model="claimContact" placeholder="nama@email.com atau 08…"
+               class="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-rose-400"/>
+      </div>
+      <p x-show="claimError" x-cloak class="text-xs text-red-600" x-text="claimError"></p>
+      <p x-show="claimOk" x-cloak class="text-xs text-emerald-600">Pesanan berhasil dihubungkan.</p>
+      <button @click="submitClaim()" :disabled="claimSaving"
+              class="bg-rose-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-rose-700 disabled:opacity-50">
+        <span x-show="!claimSaving">Hubungkan</span>
+        <span x-show="claimSaving" x-cloak>Menghubungkan…</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Loading -->
   <div x-show="loading" class="text-center py-20 text-stone-400 text-sm">Memuat pesanan…</div>
 
@@ -147,6 +181,8 @@
       return {
         orders: [], loading: true, error: '',
         revOpen: false, revOrder: null, revNote: '', revError: '', revSaving: false,
+        claimOpen: false, claimNumber: '', claimContact: '',
+        claimError: '', claimOk: false, claimSaving: false,
         steps: ['Dipesan', 'Dibayar', 'Dikerjakan', 'Selesai'],
         token() { return sessionStorage.getItem('buyer_token'); },
         async load() {
@@ -164,6 +200,35 @@
             this.orders = (data.data?.content || data.content || data.data || []);
           } catch (e) { this.error = e.message; }
           finally { this.loading = false; }
+        },
+        async submitClaim() {
+          if (!this.claimNumber.trim() || !this.claimContact.trim()) {
+            this.claimError = 'Isi nomor pesanan dan email/WhatsApp yang dipakai saat memesan.';
+            return;
+          }
+          this.claimSaving = true; this.claimError = ''; this.claimOk = false;
+          try {
+            const res = await fetch('/api/v1/orders/claim', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.token() },
+              body: JSON.stringify({
+                orderNumber: this.claimNumber.trim(),
+                contact: this.claimContact.trim()
+              })
+            });
+            if (res.status === 401 && await window.tryRefreshToken()) {
+              this.claimSaving = false; return this.submitClaim();
+            }
+            const data = await res.json();
+            if (!res.ok) {
+              this.claimError = data.message || 'Pesanan tidak ditemukan. Periksa kembali datanya.';
+              return;
+            }
+            this.claimOk = true;
+            this.claimNumber = ''; this.claimContact = '';
+            await this.load();
+          } catch (e) { this.claimError = 'Terjadi kesalahan, coba lagi.'; }
+          finally { this.claimSaving = false; }
         },
         logout() {
           sessionStorage.removeItem('buyer_token');

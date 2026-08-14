@@ -42,6 +42,7 @@ public class OrderPaidConsumer {
             invitation.setOrderId(orderId);
             invitation.setCoupleSlug(slug);
             invitation.setTemplateId(templateId);
+            invitation.setBuyerId(parseUuid(event.get("buyerId")));
             invitation.setContent(objectMapper.valueToTree(event));
             invitation.setStatus(InvitationStatus.ACTIVE);
             invitation.setActiveUntil(LocalDate.now().plusDays(ACTIVE_DAYS));
@@ -50,6 +51,23 @@ public class OrderPaidConsumer {
             log.info("Created invitation for order {} with slug {}", orderId, slug);
         } catch (Exception e) {
             log.error("Failed to handle order.paid event: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Anonymous orders carry no buyer until they are claimed, so a missing or
+     * malformed value simply leaves the invitation unowned rather than failing
+     * the whole event.
+     */
+    private UUID parseUuid(Object raw) {
+        if (raw == null || raw.toString().isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(raw.toString());
+        } catch (IllegalArgumentException e) {
+            log.warn("Ignoring malformed buyerId on order.paid: {}", raw);
+            return null;
         }
     }
 

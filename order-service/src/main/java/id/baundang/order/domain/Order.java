@@ -31,7 +31,8 @@ public class Order {
     @Column(name = "order_number", nullable = false, unique = true, length = 30)
     private String orderNumber;
 
-    @Column(name = "buyer_id", nullable = false)
+    /** Null for an anonymous order until it is claimed into an account. */
+    @Column(name = "buyer_id")
     private UUID buyerId;
 
     @Column(name = "template_id")

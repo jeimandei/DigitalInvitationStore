@@ -121,7 +121,8 @@ public class IntakeService {
     private Order requireOrderAccess(UUID orderId, UUID callerId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
-        if (!isAdmin && (callerId == null || !order.getBuyerId().equals(callerId))) {
+        if (!isAdmin && (callerId == null || order.getBuyerId() == null
+                || !order.getBuyerId().equals(callerId))) {
             throw new UnauthorizedException("Access denied");
         }
         return order;

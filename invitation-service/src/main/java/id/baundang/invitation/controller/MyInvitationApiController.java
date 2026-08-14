@@ -132,10 +132,11 @@ public class MyInvitationApiController {
         if (principal == null) {
             throw new UnauthorizedException("Akses ditolak");
         }
-        JsonNode content = inv.getContent();
-        String ownerId = content != null && content.hasNonNull("buyerId")
-                ? content.get("buyerId").asText("") : "";
-        if (ownerId.isBlank() || !ownerId.equals(principal.getName())) {
+        // Ownership is read from the column, never from content: the admin content
+        // merge-patch must not be able to reassign a tenant. A null owner (an order
+        // placed anonymously and not yet claimed) denies access rather than allowing it.
+        UUID ownerId = inv.getBuyerId();
+        if (ownerId == null || !ownerId.toString().equals(principal.getName())) {
             throw new UnauthorizedException("Akses ditolak");
         }
         return inv;

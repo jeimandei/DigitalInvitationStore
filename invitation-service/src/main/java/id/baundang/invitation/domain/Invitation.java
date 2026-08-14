@@ -34,6 +34,13 @@ public class Invitation {
     @Column(name = "couple_slug", nullable = false, unique = true)
     private String coupleSlug;
 
+    /**
+     * Owning buyer. Null until an anonymous order is claimed. Ownership lives here
+     * rather than in {@link #content} so the admin content merge-patch cannot move it.
+     */
+    @Column(name = "buyer_id")
+    private UUID buyerId;
+
     @Column(name = "template_id")
     private UUID templateId;
 

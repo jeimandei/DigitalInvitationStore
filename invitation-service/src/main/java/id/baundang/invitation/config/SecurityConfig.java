@@ -26,8 +26,9 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/error").permitAll()
-                        // Public invitation page
+                        // Public invitation page + its PIN gate submission
                         .requestMatchers(HttpMethod.GET, "/i/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/i/*/pin").permitAll()
                         // Public RSVP + guestbook reads/submissions
                         .requestMatchers(HttpMethod.GET,  "/api/v1/invitations/*/guestbook").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/invitations/*/rsvp").permitAll()

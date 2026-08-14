@@ -21,6 +21,10 @@ app:
     rsvp-exchange: baundang.rsvp
     invitations-exchange: baundang.invitations
   base-url: ${APP_BASE_URL:https://baundang.id}
+  invitation:
+    # Signs the short-lived cookie issued once a guest passes an invitation's PIN gate.
+    pin-secret: ${INVITATION_PIN_SECRET:${JWT_SECRET}}
+    pin-cookie-ttl-minutes: 720
   midtrans:
     client-key: ${MIDTRANS_CLIENT_KEY}
     snap-js-url: ${MIDTRANS_SNAP_JS_URL:https://app.sandbox.midtrans.com/snap/snap.js}

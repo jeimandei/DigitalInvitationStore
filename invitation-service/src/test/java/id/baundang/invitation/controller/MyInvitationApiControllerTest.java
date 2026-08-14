@@ -72,10 +72,18 @@ class MyInvitationApiControllerTest {
         inv.setId(UUID.randomUUID());
         inv.setOrderId(ORDER);
         inv.setCoupleSlug("budi-sari");
+        // Ownership is the column, not the content blob.
+        inv.setBuyerId(UUID.fromString(BUYER));
         ObjectNode content = objectMapper.createObjectNode();
-        content.put("buyerId", BUYER);
         content.put("coupleName", "Budi & Sari");
         inv.setContent(content);
+        return inv;
+    }
+
+    /** An anonymous order that has not been claimed yet: no owner at all. */
+    private Invitation unclaimed() {
+        Invitation inv = ownedByBuyer();
+        inv.setBuyerId(null);
         return inv;
     }
 
@@ -106,6 +114,25 @@ class MyInvitationApiControllerTest {
     @Test
     void getMyInvitation_noPrincipal_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/invitations/my/" + ORDER))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getMyInvitation_unclaimedInvitation_returns401() throws Exception {
+        when(invitationRepository.findByOrderId(ORDER)).thenReturn(Optional.of(unclaimed()));
+        mockMvc.perform(get("/api/v1/invitations/my/" + ORDER).principal(buyerPrincipal))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getMyInvitation_ownershipInContentIsIgnored() throws Exception {
+        // A stale or attacker-supplied buyerId inside the content blob must not grant
+        // access now that ownership lives in the column.
+        Invitation inv = unclaimed();
+        ((ObjectNode) inv.getContent()).put("buyerId", BUYER);
+        when(invitationRepository.findByOrderId(ORDER)).thenReturn(Optional.of(inv));
+
+        mockMvc.perform(get("/api/v1/invitations/my/" + ORDER).principal(buyerPrincipal))
                 .andExpect(status().isUnauthorized());
     }
 

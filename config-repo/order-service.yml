@@ -18,6 +18,7 @@ app:
       revised: order.revised
       revision-completed: revision.completed
       completed: order.completed
+      claimed: order.claimed
 
 spring:
   flyway:
