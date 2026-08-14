@@ -34,6 +34,109 @@
       </template>
     </div>
 
+    <!-- ─────────── KONTEN ─────────── -->
+    <section x-show="tab === 'content'" x-cloak class="space-y-6">
+      <form @submit.prevent="saveContent()" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 space-y-6">
+
+        <div>
+          <h2 class="text-sm font-semibold text-stone-700">Detail Undangan</h2>
+          <p class="text-xs text-stone-400 mt-1">
+            Perubahan langsung tampil di undanganmu. Untuk mengubah tema, warna, atau PIN, hubungi kami.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-stone-400">Mempelai</p>
+          <div>
+            <label for="cName" class="block text-xs text-stone-500 mb-1">Nama Pasangan</label>
+            <input id="cName" x-model="content.coupleName" placeholder="Budi &amp; Sari"
+                   class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+          </div>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label for="cGroom" class="block text-xs text-stone-500 mb-1">Nama Lengkap Mempelai Pria</label>
+              <input id="cGroom" x-model="content.groomFullName"
+                     class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+            </div>
+            <div>
+              <label for="cBride" class="block text-xs text-stone-500 mb-1">Nama Lengkap Mempelai Wanita</label>
+              <input id="cBride" x-model="content.brideFullName"
+                     class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4 pt-2 border-t border-stone-100">
+          <p class="text-xs font-semibold uppercase tracking-wide text-stone-400 pt-4">Pemberkatan</p>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label for="cMDate" class="block text-xs text-stone-500 mb-1">Tanggal</label>
+              <input id="cMDate" type="date" x-model="content.matrimonyDate"
+                     class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+            </div>
+            <div>
+              <label for="cMTime" class="block text-xs text-stone-500 mb-1">Waktu</label>
+              <input id="cMTime" type="time" x-model="content.matrimonyTime"
+                     class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+            </div>
+          </div>
+          <div>
+            <label for="cMVenue" class="block text-xs text-stone-500 mb-1">Lokasi</label>
+            <input id="cMVenue" x-model="content.matrimonyVenue"
+                   class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+          </div>
+        </div>
+
+        <div class="space-y-4 pt-2 border-t border-stone-100">
+          <p class="text-xs font-semibold uppercase tracking-wide text-stone-400 pt-4">Resepsi</p>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label for="cRDate" class="block text-xs text-stone-500 mb-1">Tanggal</label>
+              <input id="cRDate" type="date" x-model="content.receptionDate"
+                     class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+            </div>
+            <div>
+              <label for="cRTime" class="block text-xs text-stone-500 mb-1">Waktu</label>
+              <input id="cRTime" type="time" x-model="content.receptionTime"
+                     class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+            </div>
+          </div>
+          <div>
+            <label for="cRVenue" class="block text-xs text-stone-500 mb-1">Lokasi</label>
+            <input id="cRVenue" x-model="content.receptionVenue"
+                   class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+          </div>
+          <div>
+            <label for="cMaps" class="block text-xs text-stone-500 mb-1">Link Google Maps</label>
+            <input id="cMaps" x-model="content.mapsEmbedUrl" placeholder="https://maps.google.com/…"
+                   class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+          </div>
+        </div>
+
+        <div class="space-y-4 pt-2 border-t border-stone-100">
+          <p class="text-xs font-semibold uppercase tracking-wide text-stone-400 pt-4">Cerita &amp; Foto</p>
+          <div>
+            <label for="cStory" class="block text-xs text-stone-500 mb-1">Kisah Kami</label>
+            <textarea id="cStory" x-model="content.loveStory" rows="5"
+                      class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"></textarea>
+          </div>
+          <div>
+            <label for="cCover" class="block text-xs text-stone-500 mb-1">URL Foto Sampul</label>
+            <input id="cCover" x-model="content.coverPhotoUrl" placeholder="https://…"
+                   class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 pt-2 border-t border-stone-100">
+          <button type="submit" :disabled="savingContent"
+                  class="bg-rose-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-rose-700 disabled:opacity-50 mt-4"
+                  x-text="savingContent ? 'Menyimpan…' : 'Simpan Perubahan'"></button>
+          <p x-show="contentSaved" x-cloak class="text-sm text-emerald-600 mt-4">Tersimpan.</p>
+          <p x-show="contentError" x-cloak class="text-sm text-red-600 mt-4" x-text="contentError"></p>
+        </div>
+      </form>
+    </section>
+
     <!-- ─────────── TAMU ─────────── -->
     <section x-show="tab === 'guests'" x-cloak class="space-y-6">
       <form @submit.prevent="addGuest()" class="bg-white rounded-2xl border border-stone-100 shadow-sm p-5">
@@ -217,9 +320,10 @@
   <script>
     function kelolaApp(orderId) {
       return {
-        orderId, tab: 'guests', fatal: '',
+        orderId, tab: 'content', fatal: '',
         coupleSlug: '', coupleName: '',
         tabs: [
+          { id: 'content', label: 'Konten' },
           { id: 'guests', label: 'Tamu' },
           { id: 'rsvp', label: 'RSVP' },
           { id: 'attendance', label: 'Kehadiran' },
@@ -227,6 +331,7 @@
           { id: 'guestbook', label: 'Buku Tamu' }
         ],
         guests: [], rsvps: [], attendance: {}, gifts: {}, guestbook: [],
+        content: {}, savingContent: false, contentSaved: false, contentError: '',
         newGuest: { name: '', groupLabel: '', tableNo: '', allottedCount: 1 },
         savingGuest: false, guestError: '', copiedId: null,
         qrOpen: false, qrName: '', qrCode: '', qrInstance: null,
@@ -259,8 +364,33 @@
             const data = (await res.json()).data || {};
             this.coupleSlug = data.coupleSlug || '';
             this.coupleName = data.coupleName || '';
-            await Promise.all([this.loadGuests(), this.loadRsvp(), this.loadAttendance(), this.loadGifts(), this.loadGuestbook()]);
+            await Promise.all([this.loadContent(), this.loadGuests(), this.loadRsvp(), this.loadAttendance(), this.loadGifts(), this.loadGuestbook()]);
           } catch (e) { if (e.message !== 'unauthorized') this.fatal = e.message; }
+        },
+
+        async loadContent() {
+          const res = await this.api('/content');
+          if (!res.ok) return;
+          this.content = (await res.json()).data || {};
+        },
+        async saveContent() {
+          this.savingContent = true; this.contentError = ''; this.contentSaved = false;
+          try {
+            const res = await this.api('/content', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.content)
+            });
+            const data = await res.json();
+            if (!res.ok) { this.contentError = data.message || 'Gagal menyimpan perubahan.'; return; }
+            // Re-seed from the server so the form shows exactly what was stored.
+            this.content = data.data || this.content;
+            this.coupleName = this.content.coupleName || this.coupleName;
+            this.contentSaved = true;
+            setTimeout(() => { this.contentSaved = false; }, 3000);
+          } catch (e) {
+            if (e.message !== 'unauthorized') this.contentError = 'Terjadi kesalahan, coba lagi.';
+          } finally { this.savingContent = false; }
         },
 
         async loadGuests()    { try { const r = await this.api('/guests');     if (r.ok) this.guests    = (await r.json()).data || []; } catch (e) {} },

@@ -74,6 +74,18 @@ public class InvitationService {
     private static final Set<String> RESERVED_CONTENT_KEYS =
             Set.of("buyerId", "orderId", "slug", "coupleSlug");
 
+    /**
+     * The content the couple may edit themselves. Everything outside this set stays
+     * owner-controlled — notably {@code stylePreset} and {@code colorPalette}, which
+     * protect the visual quality that is the product, and {@code accessPin}, which is
+     * a security control rather than content.
+     */
+    private static final Set<String> CLIENT_EDITABLE_CONTENT_KEYS = Set.of(
+            "coupleName", "groomFullName", "brideFullName",
+            "matrimonyDate", "matrimonyTime", "matrimonyVenue",
+            "receptionDate", "receptionTime", "receptionVenue",
+            "loveStory", "coverPhotoUrl", "mapsEmbedUrl");
+
     private final InvitationRepository invitationRepository;
     private final RsvpResponseRepository rsvpRepository;
     private final GuestbookEntryRepository guestbookRepository;
@@ -176,6 +188,38 @@ public class InvitationService {
     @Transactional
     @CacheEvict(value = {"invitations", "guestbooks"}, allEntries = true)
     public Invitation updateContent(UUID id, JsonNode patch) {
+        return applyContentPatch(id, patch, null);
+    }
+
+    /**
+     * The couple editing their own invitation. Same merge as the admin path, but the
+     * patch is first narrowed to {@link #CLIENT_EDITABLE_CONTENT_KEYS}, so a client
+     * cannot reach theme, PIN or any other owner-controlled setting by hand-crafting a
+     * request. Unknown keys are dropped silently rather than rejected: the portal only
+     * ever sends the allowlisted fields, so a stray key is a client bug, not an attack
+     * worth failing an otherwise valid save for.
+     */
+    @Transactional
+    @CacheEvict(value = {"invitations", "guestbooks"}, allEntries = true)
+    public Invitation updateContentAsClient(UUID id, JsonNode patch) {
+        return applyContentPatch(id, patch, CLIENT_EDITABLE_CONTENT_KEYS);
+    }
+
+    /** The client-editable slice of an invitation's content, for the portal's editor. */
+    @Transactional(readOnly = true)
+    public JsonNode editableContent(UUID id) {
+        Invitation inv = invitationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
+        JsonNode content = inv.getContent();
+        ObjectNode editable = JsonNodeFactory.instance.objectNode();
+        if (content != null && content.isObject()) {
+            editable.setAll((ObjectNode) content.deepCopy());
+            editable.retain(CLIENT_EDITABLE_CONTENT_KEYS);
+        }
+        return editable;
+    }
+
+    private Invitation applyContentPatch(UUID id, JsonNode patch, Set<String> allowedKeys) {
         Invitation inv = invitationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
         if (patch == null || !patch.isObject()) {
@@ -183,6 +227,9 @@ public class InvitationService {
         }
         ObjectNode sanitized = (ObjectNode) patch.deepCopy();
         sanitized.remove(RESERVED_CONTENT_KEYS);
+        if (allowedKeys != null) {
+            sanitized.retain(allowedKeys);
+        }
 
         JsonNode existing = inv.getContent();
         ObjectNode merged = existing != null && existing.isObject()
