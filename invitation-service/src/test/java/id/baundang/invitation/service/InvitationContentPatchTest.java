@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -148,34 +149,41 @@ class InvitationContentPatchTest {
         assertEquals("Budi & Sari", invitation.getContent().get("coupleName").asText());
     }
 
-    // ── Client path ───────────────────────────────────────────────────────────
+    // ── Client path writes a draft, never live content ────────────────────────
 
     @Test
-    void clientPatch_appliesAllowlistedFields() {
+    void clientPatch_writesToDraftAndLeavesGuestsOnThePublishedVersion() {
         invitationService.updateContentAsClient(INVITATION_ID, patch(
                 "coupleName", "Budi & Sari Wijaya",
-                "receptionVenue", "Gedung Sabuga",
-                "loveStory", "Bertemu di Bandung"));
+                "receptionVenue", "Gedung Sabuga"));
 
-        JsonNode content = invitation.getContent();
-        assertEquals("Budi & Sari Wijaya", content.get("coupleName").asText());
-        assertEquals("Gedung Sabuga", content.get("receptionVenue").asText());
-        assertEquals("Bertemu di Bandung", content.get("loveStory").asText());
+        JsonNode draft = invitation.getDraftContent();
+        assertEquals("Budi & Sari Wijaya", draft.get("coupleName").asText());
+        assertEquals("Gedung Sabuga", draft.get("receptionVenue").asText());
+        // Live content — what guests see — is untouched until publish.
+        assertEquals("Budi & Sari", invitation.getContent().get("coupleName").asText());
     }
 
     @Test
-    void clientPatch_cannotChangeTheme() {
-        invitationService.updateContentAsClient(INVITATION_ID, patch(
-                "stylePreset", "GLORIA", "colorPalette", "neon"));
+    void clientPatch_successiveSavesAccumulateInOneDraft() {
+        invitationService.updateContentAsClient(INVITATION_ID, patch("coupleName", "Nama Baru"));
+        invitationService.updateContentAsClient(INVITATION_ID, patch("loveStory", "Bertemu di Bandung"));
 
+        JsonNode draft = invitation.getDraftContent();
+        assertEquals("Nama Baru", draft.get("coupleName").asText());
+        assertEquals("Bertemu di Bandung", draft.get("loveStory").asText());
+    }
+
+    @Test
+    void clientPatch_cannotChangeThemeOrPin() {
+        invitationService.updateContentAsClient(INVITATION_ID, patch(
+                "stylePreset", "GLORIA", "colorPalette", "neon", "accessPin", "000000"));
+
+        // Neither the draft nor live content picks up owner-controlled settings.
+        assertFalse(invitation.getDraftContent().has("stylePreset"));
+        assertFalse(invitation.getDraftContent().has("accessPin"));
         assertEquals("GRACE", invitation.getContent().get("stylePreset").asText());
         assertEquals("blush", invitation.getContent().get("colorPalette").asText());
-    }
-
-    @Test
-    void clientPatch_cannotChangeAccessPin() {
-        invitationService.updateContentAsClient(INVITATION_ID, patch("accessPin", "000000"));
-
         assertEquals("246813", invitation.getContent().get("accessPin").asText());
     }
 
@@ -185,7 +193,7 @@ class InvitationContentPatchTest {
                 patch("buyerId", "22222222-2222-2222-2222-222222222222"));
 
         assertEquals(OWNER, invitation.getBuyerId());
-        assertFalse(invitation.getContent().has("buyerId"));
+        assertFalse(invitation.getDraftContent().has("buyerId"));
     }
 
     @Test
@@ -193,8 +201,8 @@ class InvitationContentPatchTest {
         invitationService.updateContentAsClient(INVITATION_ID, patch(
                 "coupleName", "Nama Baru", "stylePreset", "GLORIA"));
 
-        assertEquals("Nama Baru", invitation.getContent().get("coupleName").asText());
-        assertEquals("GRACE", invitation.getContent().get("stylePreset").asText());
+        assertEquals("Nama Baru", invitation.getDraftContent().get("coupleName").asText());
+        assertFalse(invitation.getDraftContent().has("stylePreset"));
     }
 
     @Test
@@ -203,24 +211,112 @@ class InvitationContentPatchTest {
                 () -> invitationService.updateContentAsClient(INVITATION_ID, mapper.createArrayNode()));
     }
 
+    // ── Publish / discard ─────────────────────────────────────────────────────
+
+    @Test
+    void publish_movesDraftIntoLiveContentAndClearsIt() {
+        invitationService.updateContentAsClient(INVITATION_ID, patch("coupleName", "Nama Baru"));
+
+        invitationService.publishDraft(INVITATION_ID);
+
+        assertEquals("Nama Baru", invitation.getContent().get("coupleName").asText());
+        assertNull(invitation.getDraftContent());
+    }
+
+    @Test
+    void publish_preservesOwnerControlledKeys() {
+        invitationService.updateContentAsClient(INVITATION_ID, patch("coupleName", "Nama Baru"));
+
+        invitationService.publishDraft(INVITATION_ID);
+
+        assertEquals("GRACE", invitation.getContent().get("stylePreset").asText());
+        assertEquals("246813", invitation.getContent().get("accessPin").asText());
+    }
+
+    @Test
+    void publish_cannotSmuggleForbiddenKeysStoredInAnOlderDraft() {
+        // A draft written directly (e.g. before a key left the allowlist) is still
+        // filtered at publish time, so live content cannot pick it up.
+        ObjectNode rogue = mapper.createObjectNode();
+        rogue.put("coupleName", "Nama Baru");
+        rogue.put("stylePreset", "GLORIA");
+        rogue.put("accessPin", "000000");
+        invitation.setDraftContent(rogue);
+
+        invitationService.publishDraft(INVITATION_ID);
+
+        assertEquals("Nama Baru", invitation.getContent().get("coupleName").asText());
+        assertEquals("GRACE", invitation.getContent().get("stylePreset").asText());
+        assertEquals("246813", invitation.getContent().get("accessPin").asText());
+    }
+
+    @Test
+    void publish_withoutADraftIsRejected() {
+        assertThrows(ValidationException.class,
+                () -> invitationService.publishDraft(INVITATION_ID));
+    }
+
+    @Test
+    void discard_dropsPendingEditsAndLeavesLiveContentIntact() {
+        invitationService.updateContentAsClient(INVITATION_ID, patch("coupleName", "Nama Baru"));
+
+        invitationService.discardDraft(INVITATION_ID);
+
+        assertNull(invitation.getDraftContent());
+        assertEquals("Budi & Sari", invitation.getContent().get("coupleName").asText());
+    }
+
     // ── Editable projection ───────────────────────────────────────────────────
 
     @Test
     void editableContent_exposesOnlyClientEditableKeys() {
-        JsonNode editable = invitationService.editableContent(INVITATION_ID);
+        var editable = invitationService.editableContent(INVITATION_ID);
 
-        assertTrue(editable.has("coupleName"));
+        assertTrue(editable.content().has("coupleName"));
         // Owner-controlled settings, and the PIN in particular, never reach the portal.
-        assertFalse(editable.has("stylePreset"));
-        assertFalse(editable.has("colorPalette"));
-        assertFalse(editable.has("accessPin"));
-        assertFalse(editable.has("buyerId"));
+        assertFalse(editable.content().has("stylePreset"));
+        assertFalse(editable.content().has("colorPalette"));
+        assertFalse(editable.content().has("accessPin"));
+        assertFalse(editable.content().has("buyerId"));
+        assertFalse(editable.hasDraft());
+    }
+
+    @Test
+    void editableContent_prefersTheDraftAndFlagsIt() {
+        invitationService.updateContentAsClient(INVITATION_ID, patch("coupleName", "Nama Baru"));
+
+        var editable = invitationService.editableContent(INVITATION_ID);
+
+        assertEquals("Nama Baru", editable.content().get("coupleName").asText());
+        assertTrue(editable.hasDraft());
     }
 
     @Test
     void editableContent_handlesEmptyContent() {
         invitation.setContent(null);
 
-        assertTrue(invitationService.editableContent(INVITATION_ID).isObject());
+        assertTrue(invitationService.editableContent(INVITATION_ID).content().isObject());
+    }
+
+    // ── Preview ───────────────────────────────────────────────────────────────
+
+    @Test
+    void previewContent_layersDraftOverLiveWithoutPublishing() {
+        invitationService.updateContentAsClient(INVITATION_ID, patch("coupleName", "Nama Baru"));
+
+        JsonNode preview = invitationService.previewContent(INVITATION_ID);
+
+        assertEquals("Nama Baru", preview.get("coupleName").asText());
+        // Owner-only settings still render, so the preview is a faithful page.
+        assertEquals("GRACE", preview.get("stylePreset").asText());
+        // And publishing has not happened.
+        assertEquals("Budi & Sari", invitation.getContent().get("coupleName").asText());
+    }
+
+    @Test
+    void previewContent_withoutADraftMatchesLiveContent() {
+        JsonNode preview = invitationService.previewContent(INVITATION_ID);
+
+        assertEquals("Budi & Sari", preview.get("coupleName").asText());
     }
 }

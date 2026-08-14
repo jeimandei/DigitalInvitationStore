@@ -48,6 +48,14 @@ public class Invitation {
     @Column(columnDefinition = "jsonb", nullable = false)
     private JsonNode content;
 
+    /**
+     * Unpublished client edits. Null when there is nothing pending — guests always
+     * see {@link #content}, never this.
+     */
+    @Type(JsonBinaryType.class)
+    @Column(name = "draft_content", columnDefinition = "jsonb")
+    private JsonNode draftContent;
+
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "invitation_status_enum")
     @org.hibernate.annotations.JdbcType(org.hibernate.dialect.PostgreSQLEnumJdbcType.class)

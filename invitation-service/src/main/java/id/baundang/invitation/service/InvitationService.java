@@ -188,7 +188,18 @@ public class InvitationService {
     @Transactional
     @CacheEvict(value = {"invitations", "guestbooks"}, allEntries = true)
     public Invitation updateContent(UUID id, JsonNode patch) {
-        return applyContentPatch(id, patch, null);
+        // Validated before the lookup so a malformed patch costs no database round-trip.
+        if (patch == null || !patch.isObject()) {
+            throw new ValidationException("Konten undangan harus berupa objek JSON");
+        }
+        ObjectNode sanitized = (ObjectNode) patch.deepCopy();
+        sanitized.remove(RESERVED_CONTENT_KEYS);
+
+        Invitation inv = requireInvitation(id);
+        ObjectNode merged = objectCopy(inv.getContent());
+        merged.setAll(sanitized);
+        inv.setContent(merged);
+        return invitationRepository.save(inv);
     }
 
     /**
@@ -200,46 +211,98 @@ public class InvitationService {
      * worth failing an otherwise valid save for.
      */
     @Transactional
-    @CacheEvict(value = {"invitations", "guestbooks"}, allEntries = true)
     public Invitation updateContentAsClient(UUID id, JsonNode patch) {
-        return applyContentPatch(id, patch, CLIENT_EDITABLE_CONTENT_KEYS);
-    }
-
-    /** The client-editable slice of an invitation's content, for the portal's editor. */
-    @Transactional(readOnly = true)
-    public JsonNode editableContent(UUID id) {
-        Invitation inv = invitationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
-        JsonNode content = inv.getContent();
-        ObjectNode editable = JsonNodeFactory.instance.objectNode();
-        if (content != null && content.isObject()) {
-            editable.setAll((ObjectNode) content.deepCopy());
-            editable.retain(CLIENT_EDITABLE_CONTENT_KEYS);
-        }
-        return editable;
-    }
-
-    private Invitation applyContentPatch(UUID id, JsonNode patch, Set<String> allowedKeys) {
         // Validated before the lookup so a malformed patch costs no database round-trip.
         if (patch == null || !patch.isObject()) {
             throw new ValidationException("Konten undangan harus berupa objek JSON");
         }
         ObjectNode sanitized = (ObjectNode) patch.deepCopy();
         sanitized.remove(RESERVED_CONTENT_KEYS);
-        if (allowedKeys != null) {
-            sanitized.retain(allowedKeys);
-        }
+        sanitized.retain(CLIENT_EDITABLE_CONTENT_KEYS);
 
-        Invitation inv = invitationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
-        JsonNode existing = inv.getContent();
-        ObjectNode merged = existing != null && existing.isObject()
-                ? (ObjectNode) existing.deepCopy()
-                : JsonNodeFactory.instance.objectNode();
-        merged.setAll(sanitized);
-        inv.setContent(merged);
+        Invitation inv = requireInvitation(id);
+        // Layered over any existing draft so successive saves accumulate, seeded from
+        // live content on the first save so the draft is a complete editable picture.
+        // Narrowed to the allowlist either way, so a draft never carries owner-only keys.
+        ObjectNode draft = objectCopy(inv.getDraftContent() != null
+                ? inv.getDraftContent() : inv.getContent());
+        draft.retain(CLIENT_EDITABLE_CONTENT_KEYS);
+        draft.setAll(sanitized);
+        inv.setDraftContent(draft);
+        // No cache eviction: the live invitation guests see is unchanged by a draft save.
         return invitationRepository.save(inv);
     }
+
+    /**
+     * Publishes pending edits. Only the client-editable keys are copied across, so a
+     * draft written before a key moved out of the allowlist cannot smuggle it into
+     * live content at publish time.
+     */
+    @Transactional
+    @CacheEvict(value = {"invitations", "guestbooks"}, allEntries = true)
+    public Invitation publishDraft(UUID id) {
+        Invitation inv = requireInvitation(id);
+        JsonNode draft = inv.getDraftContent();
+        if (draft == null || !draft.isObject()) {
+            throw new ValidationException("Tidak ada perubahan untuk dipublikasikan");
+        }
+        ObjectNode publishable = objectCopy(draft);
+        publishable.retain(CLIENT_EDITABLE_CONTENT_KEYS);
+
+        ObjectNode live = objectCopy(inv.getContent());
+        live.setAll(publishable);
+        inv.setContent(live);
+        inv.setDraftContent(null);
+        return invitationRepository.save(inv);
+    }
+
+    /** Throws away pending edits, returning the editor to what guests currently see. */
+    @Transactional
+    public Invitation discardDraft(UUID id) {
+        Invitation inv = requireInvitation(id);
+        inv.setDraftContent(null);
+        return invitationRepository.save(inv);
+    }
+
+    /**
+     * What the portal's editor should show: the draft when one exists, otherwise live
+     * content. {@code hasDraft} tells the portal whether to offer Publish.
+     */
+    @Transactional(readOnly = true)
+    public EditableContentDTO editableContent(UUID id) {
+        Invitation inv = requireInvitation(id);
+        boolean hasDraft = inv.getDraftContent() != null && inv.getDraftContent().isObject();
+        ObjectNode editable = objectCopy(hasDraft ? inv.getDraftContent() : inv.getContent());
+        editable.retain(CLIENT_EDITABLE_CONTENT_KEYS);
+        return new EditableContentDTO(editable, hasDraft);
+    }
+
+    /** Live content with any pending draft layered on, for the owner's preview. */
+    @Transactional(readOnly = true)
+    public JsonNode previewContent(UUID id) {
+        Invitation inv = requireInvitation(id);
+        ObjectNode preview = objectCopy(inv.getContent());
+        if (inv.getDraftContent() != null && inv.getDraftContent().isObject()) {
+            ObjectNode draft = objectCopy(inv.getDraftContent());
+            draft.retain(CLIENT_EDITABLE_CONTENT_KEYS);
+            preview.setAll(draft);
+        }
+        return preview;
+    }
+
+    public record EditableContentDTO(JsonNode content, boolean hasDraft) {}
+
+    private Invitation requireInvitation(UUID id) {
+        return invitationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
+    }
+
+    private ObjectNode objectCopy(JsonNode node) {
+        return node != null && node.isObject()
+                ? (ObjectNode) node.deepCopy()
+                : JsonNodeFactory.instance.objectNode();
+    }
+
 
     @Transactional
     public Invitation updateStatus(UUID id, InvitationStatus status) {

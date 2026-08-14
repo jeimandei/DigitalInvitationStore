@@ -348,6 +348,12 @@
 <!-- The PIN gate is enforced server-side: a protected invitation never renders this
      page until the guest has cleared /i/{slug}/pin, so no PIN reaches the browser. -->
 
+<!-- Preview banner: only ever shown to an owner holding a signed preview link. -->
+<div th:if="${previewing}"
+     style="position:fixed;top:0;left:0;right:0;z-index:300;background:#8A5D18;color:#fff;padding:.55rem 1rem;text-align:center;font-family:sans-serif;font-size:.78rem;letter-spacing:.02em">
+    Pratinjau perubahan yang belum dipublikasikan — tamu masih melihat versi lama.
+</div>
+
 <!-- Cover -->
 <div class="cover" x-show="!opened">
     <img th:if="${coverPhotoUrl != ''}" th:src="${coverPhotoUrl}" alt="" class="cover-bg"/>

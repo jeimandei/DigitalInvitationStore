@@ -6,6 +6,7 @@ import id.baundang.invitation.config.GatewayHeaderFilter;
 import id.baundang.invitation.domain.Invitation;
 import id.baundang.invitation.service.InvitationService;
 import id.baundang.invitation.service.PinGateService;
+import id.baundang.invitation.service.PreviewTokenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -43,6 +44,9 @@ class InvitationPageControllerTest {
 
     @MockBean
     PinGateService pinGateService;
+
+    @MockBean
+    PreviewTokenService previewTokenService;
 
     @MockBean
     GatewayHeaderFilter gatewayHeaderFilter;
@@ -165,6 +169,73 @@ class InvitationPageControllerTest {
         mockMvc.perform(post("/i/secret-slug/pin").param("pin", PIN).param("to", "Budi Santoso"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/i/secret-slug?to=Budi+Santoso"));
+    }
+
+    // ── Draft preview ─────────────────────────────────────────────────────────
+
+    @Test
+    void preview_withValidToken_rendersDraftAndNotLiveContent() throws Exception {
+        Invitation inv = invitation(new ObjectMapper().createObjectNode());
+        ObjectNode draftView = new ObjectMapper().createObjectNode();
+        draftView.put("coupleName", "Budi & Sari");
+        draftView.put("loveStory", "Draf yang belum terbit");
+
+        when(invitationService.getBySlug("draft-slug")).thenReturn(inv);
+        when(invitationService.previewContent(inv.getId())).thenReturn(draftView);
+        when(previewTokenService.isValid("good-token", "draft-slug")).thenReturn(true);
+
+        mockMvc.perform(get("/i/draft-slug").param("preview", "good-token"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString("Draf yang belum terbit")));
+    }
+
+    @Test
+    void preview_doesNotCountAsAView() throws Exception {
+        Invitation inv = invitation(new ObjectMapper().createObjectNode());
+        when(invitationService.getBySlug("draft-slug")).thenReturn(inv);
+        when(invitationService.previewContent(inv.getId()))
+                .thenReturn(new ObjectMapper().createObjectNode());
+        when(previewTokenService.isValid("good-token", "draft-slug")).thenReturn(true);
+
+        mockMvc.perform(get("/i/draft-slug").param("preview", "good-token"))
+                .andExpect(status().isOk());
+
+        org.mockito.Mockito.verify(invitationService, org.mockito.Mockito.never())
+                .getBySlugAndIncrementView("draft-slug");
+    }
+
+    @Test
+    void preview_withInvalidToken_fallsBackToPublishedContent() throws Exception {
+        Invitation inv = invitation(new ObjectMapper().createObjectNode());
+        when(invitationService.getBySlug("draft-slug")).thenReturn(inv);
+        when(invitationService.getBySlugAndIncrementView("draft-slug")).thenReturn(inv);
+        when(previewTokenService.isValid("forged", "draft-slug")).thenReturn(false);
+
+        mockMvc.perform(get("/i/draft-slug").param("preview", "forged"))
+                .andExpect(status().isOk());
+
+        // A forged token gets the ordinary published page, draft never consulted.
+        org.mockito.Mockito.verify(invitationService, org.mockito.Mockito.never())
+                .previewContent(any());
+    }
+
+    @Test
+    void preview_withValidToken_bypassesThePinGate() throws Exception {
+        // The owner proofreading their own page should not have to enter their own PIN.
+        Invitation inv = invitation(protectedContent());
+        when(invitationService.getBySlug("secret-slug")).thenReturn(inv);
+        when(invitationService.previewContent(inv.getId())).thenReturn(protectedContent());
+        when(pinGateService.isProtected(PIN)).thenReturn(true);
+        when(pinGateService.hasValidPass(any(), anyString())).thenReturn(false);
+        when(previewTokenService.isValid("good-token", "secret-slug")).thenReturn(true);
+
+        mockMvc.perform(get("/i/secret-slug").param("preview", "good-token"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(SECRET_STORY)))
+                // Still never renders the PIN itself.
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString(PIN))));
     }
 
     @Test

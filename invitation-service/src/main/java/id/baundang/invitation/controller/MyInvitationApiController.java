@@ -13,6 +13,7 @@ import id.baundang.invitation.dto.GuestRequest;
 import id.baundang.invitation.dto.RsvpResponseDTO;
 import id.baundang.invitation.repository.InvitationRepository;
 import id.baundang.invitation.service.InvitationService;
+import id.baundang.invitation.service.PreviewTokenService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -42,6 +43,7 @@ public class MyInvitationApiController {
 
     private final InvitationService invitationService;
     private final InvitationRepository invitationRepository;
+    private final PreviewTokenService previewTokenService;
 
     // ── Guests ────────────────────────────────────────────────────────────────
 
@@ -131,20 +133,56 @@ public class MyInvitationApiController {
      * which keys are owner-controlled — the server is the single source of that truth.
      */
     @GetMapping("/{orderId}/content")
-    public ApiResponse<JsonNode> getEditableContent(@PathVariable UUID orderId, Principal principal) {
+    public ApiResponse<InvitationService.EditableContentDTO> getEditableContent(
+            @PathVariable UUID orderId, Principal principal) {
         Invitation inv = requireOwned(orderId, principal);
         return ApiResponse.ok(invitationService.editableContent(inv.getId()));
     }
 
+    /** Saves to the draft. Guests keep seeing the published version until Publish. */
     @PutMapping("/{orderId}/content")
-    public ApiResponse<JsonNode> updateContent(@PathVariable UUID orderId,
-                                               @RequestBody JsonNode patch,
-                                               Principal principal) {
+    public ApiResponse<InvitationService.EditableContentDTO> updateContent(
+            @PathVariable UUID orderId,
+            @RequestBody JsonNode patch,
+            Principal principal) {
         Invitation inv = requireOwned(orderId, principal);
         invitationService.updateContentAsClient(inv.getId(), patch);
         return ApiResponse.ok(invitationService.editableContent(inv.getId()),
-                "Perubahan tersimpan");
+                "Perubahan disimpan sebagai draf");
     }
+
+    @PostMapping("/{orderId}/content/publish")
+    public ApiResponse<InvitationService.EditableContentDTO> publishContent(
+            @PathVariable UUID orderId, Principal principal) {
+        Invitation inv = requireOwned(orderId, principal);
+        invitationService.publishDraft(inv.getId());
+        return ApiResponse.ok(invitationService.editableContent(inv.getId()),
+                "Perubahan berhasil dipublikasikan");
+    }
+
+    @DeleteMapping("/{orderId}/content/draft")
+    public ApiResponse<InvitationService.EditableContentDTO> discardDraft(
+            @PathVariable UUID orderId, Principal principal) {
+        Invitation inv = requireOwned(orderId, principal);
+        invitationService.discardDraft(inv.getId());
+        return ApiResponse.ok(invitationService.editableContent(inv.getId()),
+                "Perubahan draf dibatalkan");
+    }
+
+    /**
+     * Mints a short-lived link that renders the draft on the real invitation page.
+     * Ownership is checked here; the page itself only has to verify the signature.
+     */
+    @PostMapping("/{orderId}/content/preview-link")
+    public ApiResponse<PreviewLinkDTO> previewLink(@PathVariable UUID orderId, Principal principal) {
+        Invitation inv = requireOwned(orderId, principal);
+        String token = previewTokenService.issue(inv.getCoupleSlug());
+        return ApiResponse.ok(new PreviewLinkDTO(
+                "/i/" + inv.getCoupleSlug() + "?preview=" + token,
+                previewTokenService.ttlSeconds()));
+    }
+
+    public record PreviewLinkDTO(String url, long expiresInSeconds) {}
 
     // ── Ownership guard ───────────────────────────────────────────────────────
 

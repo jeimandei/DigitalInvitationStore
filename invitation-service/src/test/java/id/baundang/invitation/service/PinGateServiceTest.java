@@ -14,7 +14,7 @@ class PinGateServiceTest {
     private static final String SECRET = "test-secret-value-for-pin-gate";
     private static final String SLUG = "budi-sari-abc123";
 
-    private final PinGateService service = new PinGateService(SECRET, 720);
+    private final PinGateService service = new PinGateService(new HmacSigner(SECRET), 720);
 
     @Test
     void isProtected_onlyWhenPinPresent() {
@@ -66,7 +66,7 @@ class PinGateServiceTest {
 
     @Test
     void expiredPassIsRejected() {
-        PinGateService expired = new PinGateService(SECRET, -1);
+        PinGateService expired = new PinGateService(new HmacSigner(SECRET), -1);
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setCookies(new Cookie(expired.cookieName(SLUG), expired.issue(SLUG)));
 
@@ -75,7 +75,7 @@ class PinGateServiceTest {
 
     @Test
     void passForgedUnderADifferentSecretIsRejected() {
-        PinGateService attacker = new PinGateService("some-other-secret", 720);
+        PinGateService attacker = new PinGateService(new HmacSigner("some-other-secret"), 720);
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setCookies(new Cookie(service.cookieName(SLUG), attacker.issue(SLUG)));
 
