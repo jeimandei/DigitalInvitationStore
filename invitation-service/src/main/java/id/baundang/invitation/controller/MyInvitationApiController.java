@@ -124,6 +124,28 @@ public class MyInvitationApiController {
 
     public record MyInvitationDTO(UUID id, String coupleSlug, String coupleName, String status) {}
 
+    // ── Content the couple edits themselves ───────────────────────────────────
+
+    /**
+     * Returns only the fields the couple may edit, so the portal never has to know
+     * which keys are owner-controlled — the server is the single source of that truth.
+     */
+    @GetMapping("/{orderId}/content")
+    public ApiResponse<JsonNode> getEditableContent(@PathVariable UUID orderId, Principal principal) {
+        Invitation inv = requireOwned(orderId, principal);
+        return ApiResponse.ok(invitationService.editableContent(inv.getId()));
+    }
+
+    @PutMapping("/{orderId}/content")
+    public ApiResponse<JsonNode> updateContent(@PathVariable UUID orderId,
+                                               @RequestBody JsonNode patch,
+                                               Principal principal) {
+        Invitation inv = requireOwned(orderId, principal);
+        invitationService.updateContentAsClient(inv.getId(), patch);
+        return ApiResponse.ok(invitationService.editableContent(inv.getId()),
+                "Perubahan tersimpan");
+    }
+
     // ── Ownership guard ───────────────────────────────────────────────────────
 
     private Invitation requireOwned(UUID orderId, Principal principal) {
