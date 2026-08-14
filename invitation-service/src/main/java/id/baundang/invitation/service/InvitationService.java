@@ -220,8 +220,7 @@ public class InvitationService {
     }
 
     private Invitation applyContentPatch(UUID id, JsonNode patch, Set<String> allowedKeys) {
-        Invitation inv = invitationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
+        // Validated before the lookup so a malformed patch costs no database round-trip.
         if (patch == null || !patch.isObject()) {
             throw new ValidationException("Konten undangan harus berupa objek JSON");
         }
@@ -231,6 +230,8 @@ public class InvitationService {
             sanitized.retain(allowedKeys);
         }
 
+        Invitation inv = invitationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Invitation not found: " + id));
         JsonNode existing = inv.getContent();
         ObjectNode merged = existing != null && existing.isObject()
                 ? (ObjectNode) existing.deepCopy()

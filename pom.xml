@@ -141,5 +141,19 @@
         </plugin>
       </plugins>
     </pluginManagement>
+
+    <!--
+      Checkstyle is configured in pluginManagement above, but pluginManagement alone
+      binds nothing: without this declaration the checkstyle-validate execution never
+      ran, so `mvn clean verify` reported success while CI's `mvn checkstyle:check`
+      failed on the same commit. Declaring it here (inherited by every module) makes
+      the local build enforce the same rules as CI.
+    -->
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
+    </plugins>
   </build>
 </project>
