@@ -62,6 +62,9 @@ class MyInvitationApiControllerTest {
     InvitationRepository invitationRepository;
 
     @MockBean
+    id.baundang.invitation.service.PreviewTokenService previewTokenService;
+
+    @MockBean
     GatewayHeaderFilter gatewayHeaderFilter;
 
     private final Principal buyerPrincipal = () -> BUYER;

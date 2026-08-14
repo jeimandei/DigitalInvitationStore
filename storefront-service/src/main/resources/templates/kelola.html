@@ -41,8 +41,27 @@
         <div>
           <h2 class="text-sm font-semibold text-stone-700">Detail Undangan</h2>
           <p class="text-xs text-stone-400 mt-1">
-            Perubahan langsung tampil di undanganmu. Untuk mengubah tema, warna, atau PIN, hubungi kami.
+            Perubahan disimpan sebagai draf dulu — tamu baru melihatnya setelah kamu klik Publikasikan.
+            Untuk mengubah tema, warna, atau PIN, hubungi kami.
           </p>
+        </div>
+
+        <!-- Pending draft -->
+        <div x-show="hasDraft" x-cloak class="rounded-xl bg-amber-50 border border-amber-200 p-4">
+          <p class="text-sm font-medium text-amber-900">Ada perubahan yang belum dipublikasikan</p>
+          <p class="text-xs text-amber-700 mt-1">Tamu masih melihat versi sebelumnya.</p>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button type="button" @click="publishContent()" :disabled="publishing"
+                    class="bg-amber-600 text-white px-4 py-2 rounded-full text-xs font-medium hover:bg-amber-700 disabled:opacity-50"
+                    x-text="publishing ? 'Mempublikasikan…' : 'Publikasikan'"></button>
+            <button type="button" @click="openPreview()" :disabled="previewLoading"
+                    class="border border-amber-300 text-amber-800 px-4 py-2 rounded-full text-xs font-medium hover:bg-amber-100 disabled:opacity-50">
+              Pratinjau ↗
+            </button>
+            <button type="button" @click="discardDraft()" :disabled="discarding"
+                    class="text-amber-700 px-3 py-2 rounded-full text-xs font-medium hover:bg-amber-100 disabled:opacity-50"
+                    x-text="discarding ? 'Membatalkan…' : 'Batalkan Perubahan'"></button>
+          </div>
         </div>
 
         <div class="space-y-4">
@@ -130,8 +149,8 @@
         <div class="flex items-center gap-3 pt-2 border-t border-stone-100">
           <button type="submit" :disabled="savingContent"
                   class="bg-rose-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-rose-700 disabled:opacity-50 mt-4"
-                  x-text="savingContent ? 'Menyimpan…' : 'Simpan Perubahan'"></button>
-          <p x-show="contentSaved" x-cloak class="text-sm text-emerald-600 mt-4">Tersimpan.</p>
+                  x-text="savingContent ? 'Menyimpan…' : 'Simpan Draf'"></button>
+          <p x-show="contentSaved" x-cloak class="text-sm text-emerald-600 mt-4">Draf tersimpan.</p>
           <p x-show="contentError" x-cloak class="text-sm text-red-600 mt-4" x-text="contentError"></p>
         </div>
       </form>
@@ -332,6 +351,7 @@
         ],
         guests: [], rsvps: [], attendance: {}, gifts: {}, guestbook: [],
         content: {}, savingContent: false, contentSaved: false, contentError: '',
+        hasDraft: false, publishing: false, discarding: false, previewLoading: false,
         newGuest: { name: '', groupLabel: '', tableNo: '', allottedCount: 1 },
         savingGuest: false, guestError: '', copiedId: null,
         qrOpen: false, qrName: '', qrCode: '', qrInstance: null,
@@ -368,10 +388,17 @@
           } catch (e) { if (e.message !== 'unauthorized') this.fatal = e.message; }
         },
 
+        // The server decides which fields are editable and whether a draft is pending,
+        // so both always come from its response rather than being tracked locally.
+        applyContentResponse(payload) {
+          this.content = payload.content || {};
+          this.hasDraft = !!payload.hasDraft;
+          this.coupleName = this.content.coupleName || this.coupleName;
+        },
         async loadContent() {
           const res = await this.api('/content');
           if (!res.ok) return;
-          this.content = (await res.json()).data || {};
+          this.applyContentResponse((await res.json()).data || {});
         },
         async saveContent() {
           this.savingContent = true; this.contentError = ''; this.contentSaved = false;
@@ -383,14 +410,46 @@
             });
             const data = await res.json();
             if (!res.ok) { this.contentError = data.message || 'Gagal menyimpan perubahan.'; return; }
-            // Re-seed from the server so the form shows exactly what was stored.
-            this.content = data.data || this.content;
-            this.coupleName = this.content.coupleName || this.coupleName;
+            this.applyContentResponse(data.data || {});
             this.contentSaved = true;
             setTimeout(() => { this.contentSaved = false; }, 3000);
           } catch (e) {
             if (e.message !== 'unauthorized') this.contentError = 'Terjadi kesalahan, coba lagi.';
           } finally { this.savingContent = false; }
+        },
+        async publishContent() {
+          this.publishing = true; this.contentError = '';
+          try {
+            const res = await this.api('/content/publish', { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) { this.contentError = data.message || 'Gagal mempublikasikan.'; return; }
+            this.applyContentResponse(data.data || {});
+          } catch (e) {
+            if (e.message !== 'unauthorized') this.contentError = 'Terjadi kesalahan, coba lagi.';
+          } finally { this.publishing = false; }
+        },
+        async discardDraft() {
+          if (!confirm('Batalkan semua perubahan yang belum dipublikasikan?')) return;
+          this.discarding = true; this.contentError = '';
+          try {
+            const res = await this.api('/content/draft', { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) { this.contentError = data.message || 'Gagal membatalkan draf.'; return; }
+            this.applyContentResponse(data.data || {});
+          } catch (e) {
+            if (e.message !== 'unauthorized') this.contentError = 'Terjadi kesalahan, coba lagi.';
+          } finally { this.discarding = false; }
+        },
+        async openPreview() {
+          this.previewLoading = true; this.contentError = '';
+          try {
+            const res = await this.api('/content/preview-link', { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) { this.contentError = data.message || 'Gagal membuka pratinjau.'; return; }
+            window.open(data.data.url, '_blank', 'noopener');
+          } catch (e) {
+            if (e.message !== 'unauthorized') this.contentError = 'Terjadi kesalahan, coba lagi.';
+          } finally { this.previewLoading = false; }
         },
 
         async loadGuests()    { try { const r = await this.api('/guests');     if (r.ok) this.guests    = (await r.json()).data || []; } catch (e) {} },

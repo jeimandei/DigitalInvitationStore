@@ -6,35 +6,28 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.HexFormat;
 
 /**
  * Issues and verifies the pass that proves a guest cleared an invitation's PIN gate.
  *
  * <p>The PIN itself never leaves the server. On a correct submission the guest receives
- * an HttpOnly cookie holding {@code <expiryEpochSeconds>.<hmac>}, where the HMAC covers
- * the slug and the expiry under a server-side secret. That binds the pass to one
- * invitation and makes it unforgeable without the secret.
+ * an HttpOnly cookie holding a {@link HmacSigner} pass bound to the slug, so it cannot
+ * be forged without the secret or replayed against another invitation.
  */
 @Slf4j
 @Service
 public class PinGateService {
 
     private static final String COOKIE_PREFIX = "inv_pin_";
-    private static final String HMAC_ALGORITHM = "HmacSHA256";
 
-    private final byte[] secret;
+    private final HmacSigner signer;
     private final long ttlMinutes;
 
-    public PinGateService(@Value("${app.invitation.pin-secret}") String pinSecret,
+    public PinGateService(HmacSigner signer,
                           @Value("${app.invitation.pin-cookie-ttl-minutes:720}") long ttlMinutes) {
-        this.secret = pinSecret.getBytes(StandardCharsets.UTF_8);
+        this.signer = signer;
         this.ttlMinutes = ttlMinutes;
     }
 
@@ -58,15 +51,12 @@ public class PinGateService {
 
     /** Name of the pass cookie for a slug. Hashed so the raw slug is not echoed in headers. */
     public String cookieName(String slug) {
-        return COOKIE_PREFIX + HexFormat.of()
-                .formatHex(hmac(slug)).substring(0, 16);
+        return COOKIE_PREFIX + signer.tag(slug);
     }
 
     /** Value for a freshly issued pass. */
     public String issue(String slug) {
-        long expiry = Instant.now().plusSeconds(ttlMinutes * 60).getEpochSecond();
-        return expiry + "." + Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(hmac(slug + "." + expiry));
+        return signer.issue(slug, cookieMaxAgeSeconds());
     }
 
     /** Seconds the pass cookie should live for. */
@@ -82,46 +72,10 @@ public class PinGateService {
         }
         String expected = cookieName(slug);
         for (Cookie cookie : cookies) {
-            if (expected.equals(cookie.getName()) && isValidPass(cookie.getValue(), slug)) {
+            if (expected.equals(cookie.getName()) && signer.isValid(cookie.getValue(), slug)) {
                 return true;
             }
         }
         return false;
-    }
-
-    private boolean isValidPass(String value, String slug) {
-        if (value == null) {
-            return false;
-        }
-        int sep = value.indexOf('.');
-        if (sep <= 0) {
-            return false;
-        }
-        String expiryPart = value.substring(0, sep);
-        String signature = value.substring(sep + 1);
-        long expiry;
-        try {
-            expiry = Long.parseLong(expiryPart);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-        if (Instant.now().getEpochSecond() > expiry) {
-            return false;
-        }
-        String want = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(hmac(slug + "." + expiry));
-        return MessageDigest.isEqual(
-                want.getBytes(StandardCharsets.UTF_8),
-                signature.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private byte[] hmac(String data) {
-        try {
-            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
-            mac.init(new SecretKeySpec(secret, HMAC_ALGORITHM));
-            return mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to sign PIN gate pass", e);
-        }
     }
 }

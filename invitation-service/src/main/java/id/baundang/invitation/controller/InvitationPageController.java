@@ -8,6 +8,7 @@ import id.baundang.invitation.dto.EventDTO;
 import id.baundang.invitation.dto.GuestDTO;
 import id.baundang.invitation.service.InvitationService;
 import id.baundang.invitation.service.PinGateService;
+import id.baundang.invitation.service.PreviewTokenService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,6 +34,7 @@ public class InvitationPageController {
 
     private final InvitationService invitationService;
     private final PinGateService pinGateService;
+    private final PreviewTokenService previewTokenService;
 
     @org.springframework.beans.factory.annotation.Value("${app.midtrans.snap-js-url}")
     private String snapJsUrl;
@@ -43,6 +45,7 @@ public class InvitationPageController {
     @GetMapping("/{slug}")
     public String viewInvitation(@PathVariable String slug,
                                  @RequestParam(name = "to", required = false) String to,
+                                 @RequestParam(name = "preview", required = false) String preview,
                                  HttpServletRequest request,
                                  Model model) {
         String greeting = to != null ? to.trim() : "";
@@ -50,14 +53,22 @@ public class InvitationPageController {
         // Gate before anything is read into the model: a protected invitation must not
         // put its content — or its PIN — into the response at all.
         Invitation gated = invitationService.getBySlug(slug);
-        if (isGateClosed(gated, request, slug)) {
+        boolean previewing = previewTokenService.isValid(preview, slug);
+        // A valid preview token proves the owner minted this link, so it also stands in
+        // for the PIN — the couple should not have to enter their own gate to proofread.
+        if (!previewing && isGateClosed(gated, request, slug)) {
             return renderGate(gated, slug, greeting, false, model);
         }
 
-        Invitation inv = invitationService.getBySlugAndIncrementView(slug);
-        JsonNode content = inv.getContent();
+        // Previews are the owner proofreading their own page; they neither count as a
+        // view nor read from the cache, which still holds the published version.
+        Invitation inv = previewing ? gated : invitationService.getBySlugAndIncrementView(slug);
+        JsonNode content = previewing
+                ? invitationService.previewContent(inv.getId())
+                : inv.getContent();
 
         model.addAttribute("guestGreeting", greeting);
+        model.addAttribute("previewing", previewing);
 
         model.addAttribute("slug", slug);
         model.addAttribute("invitationId", inv.getId());
