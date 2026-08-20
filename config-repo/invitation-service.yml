@@ -25,6 +25,11 @@ app:
     # Signs the short-lived cookie issued once a guest passes an invitation's PIN gate.
     pin-secret: ${INVITATION_PIN_SECRET:${JWT_SECRET}}
     pin-cookie-ttl-minutes: 720
+  gifts:
+    # QRIS settlement fee, netted off gift totals so they reconcile against the
+    # couple's bank statement. Configurable because the scheme reprices independently.
+    qris-fee-threshold: ${QRIS_FEE_THRESHOLD:500000}
+    qris-fee-rate: ${QRIS_FEE_RATE:0.007}
   midtrans:
     client-key: ${MIDTRANS_CLIENT_KEY}
     snap-js-url: ${MIDTRANS_SNAP_JS_URL:https://app.sandbox.midtrans.com/snap/snap.js}

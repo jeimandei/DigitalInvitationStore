@@ -9,6 +9,8 @@ import id.baundang.invitation.dto.AdminGuestbookEntryDTO;
 import id.baundang.invitation.dto.AttendanceDTO;
 import id.baundang.invitation.dto.GiftSummaryDTO;
 import id.baundang.invitation.dto.GuestDTO;
+import id.baundang.invitation.dto.GuestImportRequest;
+import id.baundang.invitation.dto.GuestImportResultDTO;
 import id.baundang.invitation.dto.GuestRequest;
 import id.baundang.invitation.dto.RsvpResponseDTO;
 import id.baundang.invitation.repository.InvitationRepository;
@@ -59,6 +61,19 @@ public class MyInvitationApiController {
                                           Principal principal) {
         Invitation inv = requireOwned(orderId, principal);
         return ApiResponse.ok(invitationService.addGuest(inv.getId(), req), "Tamu berhasil ditambahkan");
+    }
+
+    /**
+     * Bulk import from a pasted list or spreadsheet. Returns the refreshed guest list
+     * alongside any duplicates skipped, so the portal can report exactly what happened.
+     */
+    @PostMapping("/{orderId}/guests/import")
+    public ApiResponse<GuestImportResultDTO> importGuests(@PathVariable UUID orderId,
+                                                          @Valid @RequestBody GuestImportRequest req,
+                                                          Principal principal) {
+        Invitation inv = requireOwned(orderId, principal);
+        GuestImportResultDTO result = invitationService.importGuests(inv.getId(), req.guests());
+        return ApiResponse.ok(result, result.imported() + " tamu berhasil ditambahkan");
     }
 
     @DeleteMapping("/{orderId}/guests/{guestId}")
