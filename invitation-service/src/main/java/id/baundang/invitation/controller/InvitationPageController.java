@@ -32,6 +32,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InvitationPageController {
 
+    /** Matches the youtu.be, /watch?v= and /live/ forms a couple is likely to paste. */
+    private static final java.util.regex.Pattern YOUTUBE_ID = java.util.regex.Pattern.compile(
+            "(?:youtube\\.com/(?:watch\\?(?:.*&)?v=|live/|embed/)|youtu\\.be/)([A-Za-z0-9_-]{6,})");
+
     private final InvitationService invitationService;
     private final PinGateService pinGateService;
     private final PreviewTokenService previewTokenService;
@@ -94,6 +98,10 @@ public class InvitationPageController {
         model.addAttribute("coverPhotoUrl", textOf(content, "coverPhotoUrl", ""));
         model.addAttribute("mapsEmbedUrl", textOf(content, "mapsEmbedUrl", ""));
         model.addAttribute("gallery", extractGallery(content));
+        String livestreamUrl = textOf(content, "livestreamUrl", "");
+        model.addAttribute("livestreamUrl", livestreamUrl);
+        model.addAttribute("livestreamEmbedUrl", toEmbedUrl(livestreamUrl));
+        model.addAttribute("livestreamNote", textOf(content, "livestreamNote", ""));
         model.addAttribute("events", extractEvents(content));
         model.addAttribute("christian", ChristianContentSchema.from(content));
 
@@ -212,6 +220,27 @@ public class InvitationPageController {
 
     private String textOf(JsonNode node, String field, String fallback) {
         return node != null && node.hasNonNull(field) ? node.get(field).asText(fallback) : fallback;
+    }
+
+    /**
+     * The embeddable form of a livestream URL, or empty when the host is not one we
+     * recognise.
+     *
+     * <p>The URL is client-editable, so it is never dropped straight into an iframe
+     * src: an arbitrary embed on a guest-facing page is a bigger risk than the
+     * feature is worth. Recognised hosts are embedded, everything else degrades to a
+     * plain link the guest chooses to follow.
+     */
+    private String toEmbedUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return "";
+        }
+        String trimmed = url.trim();
+        java.util.regex.Matcher youtube = YOUTUBE_ID.matcher(trimmed);
+        if (youtube.find()) {
+            return "https://www.youtube.com/embed/" + youtube.group(1);
+        }
+        return "";
     }
 
     /** Gallery photo URLs, tolerating a missing or malformed key rather than failing the page. */

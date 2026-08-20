@@ -58,6 +58,9 @@ public class PaymentEventPublisher {
                 "senderName", gift.getSenderName(),
                 "message", gift.getMessage() != null ? gift.getMessage() : "",
                 "amount", gift.getAmount(),
+                // Carried so invitation-service can net settlement fees off the
+                // couple's gift total; already captured from the Midtrans webhook.
+                "paymentMethod", gift.getPaymentMethod() != null ? gift.getPaymentMethod() : "",
                 "paidAt", gift.getPaidAt(),
                 "occurredAt", Instant.now()
         ));

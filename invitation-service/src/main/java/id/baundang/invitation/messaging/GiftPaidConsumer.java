@@ -24,9 +24,11 @@ public class GiftPaidConsumer {
             long amount = Long.parseLong(event.get("amount").toString());
             String message = event.containsKey("message") ? event.get("message").toString() : null;
             String midtransOrderId = event.get("midtransOrderId").toString();
+            String paymentMethod = event.containsKey("paymentMethod")
+                    ? event.get("paymentMethod").toString() : null;
 
             invitationService.recordGiftPaid(invitationId, senderName, amount,
-                    message, midtransOrderId);
+                    message, midtransOrderId, paymentMethod);
         } catch (Exception e) {
             log.error("Failed to handle gift.paid event: {}", e.getMessage(), e);
         }

@@ -40,6 +40,10 @@ public class Gift {
     @Column(name = "midtrans_order_id", nullable = false, unique = true, length = 255)
     private String midtransOrderId;
 
+    /** Midtrans payment_type, e.g. "qris". Null for gifts recorded before it was carried. */
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 }

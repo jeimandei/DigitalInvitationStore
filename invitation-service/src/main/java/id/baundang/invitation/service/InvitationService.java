@@ -24,6 +24,7 @@ import id.baundang.invitation.dto.GiftConfirmRequest;
 import id.baundang.invitation.dto.GiftEntryDTO;
 import id.baundang.invitation.dto.GiftSummaryDTO;
 import id.baundang.invitation.dto.GuestDTO;
+import id.baundang.invitation.dto.GuestImportResultDTO;
 import id.baundang.invitation.dto.GuestRequest;
 import id.baundang.invitation.dto.GuestbookEntryDTO;
 import id.baundang.invitation.dto.GuestbookRequest;
@@ -59,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -84,7 +86,8 @@ public class InvitationService {
             "coupleName", "groomFullName", "brideFullName",
             "matrimonyDate", "matrimonyTime", "matrimonyVenue",
             "receptionDate", "receptionTime", "receptionVenue",
-            "loveStory", "coverPhotoUrl", "mapsEmbedUrl", "gallery");
+            "loveStory", "coverPhotoUrl", "mapsEmbedUrl", "gallery",
+            "livestreamUrl", "livestreamNote");
 
     private final InvitationRepository invitationRepository;
     private final RsvpResponseRepository rsvpRepository;
@@ -94,6 +97,7 @@ public class InvitationService {
     private final GuestRepository guestRepository;
     private final GiftRepository giftRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final GiftFeeCalculator giftFeeCalculator;
 
     // Self-injection so @Cacheable on getBySlug is honoured when called internally
     @Autowired @Lazy
@@ -476,6 +480,56 @@ public class InvitationService {
                 .stream().map(GuestDTO::from).toList();
     }
 
+    /**
+     * Imports a pasted or uploaded guest list in one pass.
+     *
+     * <p>Guest lists arrive as spreadsheets and get corrected and re-imported, so a
+     * name already on the invitation is skipped and reported rather than inserted.
+     * Without that, a second import silently doubles the list — and every duplicate
+     * gets its own invite code, so the couple cannot tell which link they sent.
+     * Matching is case- and whitespace-insensitive, since spreadsheet names rarely
+     * come back byte-identical.
+     */
+    @Transactional
+    public GuestImportResultDTO importGuests(UUID invitationId, List<GuestRequest> requested) {
+        Invitation inv = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> new NotFoundException("Invitation not found: " + invitationId));
+
+        Set<String> existing = guestRepository.findAllByInvitationIdOrderByNameAsc(invitationId)
+                .stream().map(g -> normalizeName(g.getName())).collect(Collectors.toSet());
+
+        List<Guest> toSave = new ArrayList<>();
+        List<String> duplicates = new ArrayList<>();
+        for (GuestRequest req : requested) {
+            String key = normalizeName(req.name());
+            // Checked against names already added in this same batch too, so a
+            // spreadsheet that repeats a row does not slip through.
+            if (key.isEmpty() || !existing.add(key)) {
+                if (!key.isEmpty()) {
+                    duplicates.add(req.name().trim());
+                }
+                continue;
+            }
+            Guest guest = new Guest();
+            guest.setInvitation(inv);
+            guest.setName(req.name().trim());
+            guest.setInviteCode(generateInviteCode());
+            guest.setGroupLabel(req.groupLabel());
+            guest.setTableNo(req.tableNo());
+            guest.setAllottedCount(req.allottedCount() > 0 ? req.allottedCount() : (short) 1);
+            toSave.add(guest);
+        }
+
+        guestRepository.saveAll(toSave);
+        log.info("Imported {} guests ({} duplicates skipped) for invitation {}",
+                toSave.size(), duplicates.size(), invitationId);
+        return new GuestImportResultDTO(toSave.size(), duplicates, listGuests(invitationId));
+    }
+
+    private String normalizeName(String name) {
+        return name == null ? "" : name.trim().replaceAll("\\s+", " ").toLowerCase();
+    }
+
     @Transactional
     public void removeGuest(UUID invitationId, UUID guestId) {
         Guest guest = guestRepository.findById(guestId)
@@ -520,7 +574,7 @@ public class InvitationService {
 
     @Transactional
     public void recordGiftPaid(UUID invitationId, String senderName, long amount,
-                               String message, String midtransOrderId) {
+                               String message, String midtransOrderId, String paymentMethod) {
         Invitation inv = invitationRepository.findById(invitationId)
                 .orElseThrow(() -> new NotFoundException("Invitation not found: " + invitationId));
         Gift gift = new Gift();
@@ -529,6 +583,7 @@ public class InvitationService {
         gift.setAmount(amount);
         gift.setMessage(message);
         gift.setMidtransOrderId(midtransOrderId);
+        gift.setPaymentMethod(paymentMethod != null && !paymentMethod.isBlank() ? paymentMethod : null);
         giftRepository.save(gift);
         log.info("Recorded digital gift {} for invitation {}", midtransOrderId, invitationId);
     }
@@ -537,8 +592,13 @@ public class InvitationService {
     public GiftSummaryDTO getGiftSummary(UUID invitationId) {
         long count = giftRepository.countByInvitationId(invitationId);
         long total = giftRepository.sumAmountByInvitationId(invitationId);
-        List<GiftEntryDTO> entries = giftRepository.findAllByInvitationIdOrderByCreatedAtDesc(invitationId)
-                .stream().map(GiftEntryDTO::from).toList();
-        return new GiftSummaryDTO(count, total, entries);
+        // Fees are derived per gift rather than stored, so a rate change re-reports
+        // historic gifts correctly instead of freezing yesterday's arithmetic.
+        List<GiftEntryDTO> entries = giftRepository
+                .findAllByInvitationIdOrderByCreatedAtDesc(invitationId).stream()
+                .map(g -> GiftEntryDTO.from(g, giftFeeCalculator.feeFor(g.getAmount(), g.getPaymentMethod())))
+                .toList();
+        long totalFee = entries.stream().mapToLong(GiftEntryDTO::feeAmount).sum();
+        return new GiftSummaryDTO(count, total, totalFee, total - totalFee, entries);
     }
 }

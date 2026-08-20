@@ -220,7 +220,7 @@ class MyInvitationApiControllerTest {
 
     @Test
     void getGifts_owner_returns200() throws Exception {
-        when(invitationService.getGiftSummary(any())).thenReturn(new GiftSummaryDTO(0, 0, List.of()));
+        when(invitationService.getGiftSummary(any())).thenReturn(new GiftSummaryDTO(0, 0, 0, 0, List.of()));
         mockMvc.perform(get("/api/v1/invitations/my/" + ORDER + "/gifts").principal(buyerPrincipal))
                 .andExpect(status().isOk());
     }
