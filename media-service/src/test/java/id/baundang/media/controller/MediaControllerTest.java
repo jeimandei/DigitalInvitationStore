@@ -32,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         excludeAutoConfiguration = {SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class}
 )
 @AutoConfigureMockMvc(addFilters = false)
+@org.springframework.context.annotation.Import(id.baundang.common.GlobalExceptionHandler.class)
 class MediaControllerTest {
 
     @Autowired
@@ -90,6 +91,32 @@ class MediaControllerTest {
         mockMvc.perform(delete("/api/v1/media/some-file")
                         .param("objectKey", "couples/test/file.jpg"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void publicObject_streamsWithItsContentType() throws Exception {
+        byte[] bytes = "image-bytes".getBytes();
+        when(minioService.streamPublicObject("couples/budi-sari/abc-photo.jpg"))
+                .thenReturn(new MinioService.PublicObject(
+                        new java.io.ByteArrayInputStream(bytes), "image/jpeg", bytes.length));
+
+        mockMvc.perform(get("/api/v1/media/public/couples/budi-sari/abc-photo.jpg"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("Content-Type", "image/jpeg"));
+    }
+
+    @Test
+    void publicObject_passesTheFullKeyThroughForScopeChecking() throws Exception {
+        // The service, not the controller, decides what is public — so the controller
+        // must hand it the untruncated key including any traversal attempt.
+        when(minioService.streamPublicObject(any()))
+                .thenThrow(new id.baundang.common.exception.NotFoundException("nope"));
+
+        mockMvc.perform(get("/api/v1/media/public/admin/secret.pdf"))
+                .andExpect(status().isNotFound());
+
+        org.mockito.Mockito.verify(minioService).streamPublicObject("admin/secret.pdf");
     }
 
     @Test

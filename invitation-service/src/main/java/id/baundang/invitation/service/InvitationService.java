@@ -84,7 +84,7 @@ public class InvitationService {
             "coupleName", "groomFullName", "brideFullName",
             "matrimonyDate", "matrimonyTime", "matrimonyVenue",
             "receptionDate", "receptionTime", "receptionVenue",
-            "loveStory", "coverPhotoUrl", "mapsEmbedUrl");
+            "loveStory", "coverPhotoUrl", "mapsEmbedUrl", "gallery");
 
     private final InvitationRepository invitationRepository;
     private final RsvpResponseRepository rsvpRepository;

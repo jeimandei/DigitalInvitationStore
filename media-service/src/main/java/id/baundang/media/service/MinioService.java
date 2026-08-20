@@ -1,15 +1,19 @@
 package id.baundang.media.service;
 
+import id.baundang.common.exception.NotFoundException;
 import id.baundang.common.exception.ValidationException;
 import id.baundang.media.config.MediaProperties;
 import id.baundang.media.dto.PresignDownloadResponse;
 import id.baundang.media.dto.PresignUploadRequest;
 import id.baundang.media.dto.PresignUploadResponse;
 import id.baundang.media.dto.UploadedObjectResponse;
+import io.minio.GetObjectArgs;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+import io.minio.StatObjectArgs;
+import io.minio.StatObjectResponse;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +30,9 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class MinioService {
+
+    /** Only this prefix is publicly readable; everything else stays behind auth. */
+    private static final String COUPLES_PREFIX = "couples/";
 
     private final MinioClient minioClient;
     private final MediaProperties mediaProperties;
@@ -84,6 +91,33 @@ public class MinioService {
             throw new RuntimeException("Failed to generate presigned download URL", e);
         }
     }
+
+    /**
+     * Streams a couple's uploaded photo for public rendering on an invitation page.
+     *
+     * <p>Guests are unauthenticated and presigned GET URLs expire long before an
+     * invitation does, so gallery images cannot be served either of the existing ways.
+     * Access is restricted to the {@code couples/} prefix; keys are UUID-prefixed at
+     * upload, so they are not enumerable, and the photos are in any case shown to every
+     * guest holding the invitation link.
+     */
+    public PublicObject streamPublicObject(String objectKey) {
+        if (objectKey == null || !objectKey.startsWith(COUPLES_PREFIX) || objectKey.contains("..")) {
+            throw new NotFoundException("Object not found: " + objectKey);
+        }
+        try {
+            StatObjectResponse stat = minioClient.statObject(
+                    StatObjectArgs.builder().bucket(couplesBucket).object(objectKey).build());
+            InputStream stream = minioClient.getObject(
+                    GetObjectArgs.builder().bucket(couplesBucket).object(objectKey).build());
+            return new PublicObject(stream, stat.contentType(), stat.size());
+        } catch (Exception e) {
+            throw new NotFoundException("Object not found: " + objectKey);
+        }
+    }
+
+    /** An object opened for streaming, with the metadata needed to write response headers. */
+    public record PublicObject(InputStream stream, String contentType, long size) {}
 
     public void deleteObject(String objectKey) {
         String bucket = bucketForKey(objectKey);

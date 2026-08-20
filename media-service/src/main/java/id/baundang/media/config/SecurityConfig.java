@@ -26,6 +26,9 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/error").permitAll()
+                        // Couples' invitation photos, rendered for unauthenticated guests.
+                        // Scoped to the couples/ prefix inside MinioService.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/media/public/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/media/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/media/template/upload").hasRole("ADMIN")
                         .anyRequest().authenticated()

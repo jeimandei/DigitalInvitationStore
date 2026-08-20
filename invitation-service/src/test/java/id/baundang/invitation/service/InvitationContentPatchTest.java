@@ -211,6 +211,23 @@ class InvitationContentPatchTest {
                 () -> invitationService.updateContentAsClient(INVITATION_ID, mapper.createArrayNode()));
     }
 
+    @Test
+    void clientPatch_acceptsAGalleryArray() {
+        ObjectNode withGallery = mapper.createObjectNode();
+        withGallery.putArray("gallery")
+                .add("/api/v1/media/public/couples/budi-sari/a.jpg")
+                .add("/api/v1/media/public/couples/budi-sari/b.jpg");
+
+        invitationService.updateContentAsClient(INVITATION_ID, withGallery);
+        invitationService.publishDraft(INVITATION_ID);
+
+        JsonNode gallery = invitation.getContent().get("gallery");
+        assertTrue(gallery.isArray());
+        assertEquals(2, gallery.size());
+        // Order is the couple's arrangement and must survive the round trip.
+        assertEquals("/api/v1/media/public/couples/budi-sari/a.jpg", gallery.get(0).asText());
+    }
+
     // ── Publish / discard ─────────────────────────────────────────────────────
 
     @Test

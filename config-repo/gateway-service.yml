@@ -104,6 +104,14 @@ spring:
           filters:
             - JwtAuth
 
+        # Public before the authenticated catch-all: invitation photos must render
+        # for guests, who have no token.
+        - id: media-public
+          uri: http://media-service:1089
+          predicates:
+            - Path=/api/v1/media/public/**
+            - Method=GET
+
         - id: media-service
           uri: http://media-service:1089
           predicates:

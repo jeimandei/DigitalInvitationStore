@@ -6,10 +6,16 @@ import id.baundang.media.dto.PresignUploadRequest;
 import id.baundang.media.dto.PresignUploadResponse;
 import id.baundang.media.dto.UploadedObjectResponse;
 import id.baundang.media.service.MinioService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/v1/media")
@@ -35,6 +42,30 @@ public class MediaController {
         return ResponseEntity
                 .created(URI.create("/api/v1/media/download/" + resp.objectKey()))
                 .body(ApiResponse.ok(resp));
+    }
+
+    /**
+     * Public read for a couple's uploaded photos, so an invitation page can render them
+     * for unauthenticated guests. Restricted to the {@code couples/} prefix in
+     * {@link MinioService#streamPublicObject}; nothing else is reachable this way.
+     */
+    @GetMapping("/public/**")
+    public ResponseEntity<Resource> publicObject(HttpServletRequest request) {
+        String objectKey = new AntPathMatcher().extractPathWithinPattern(
+                "/api/v1/media/public/**",
+                request.getRequestURI().substring(request.getContextPath().length()));
+
+        MinioService.PublicObject object = minioService.streamPublicObject(objectKey);
+        MediaType contentType = object.contentType() != null
+                ? MediaType.parseMediaType(object.contentType())
+                : MediaType.APPLICATION_OCTET_STREAM;
+
+        return ResponseEntity.ok()
+                .contentType(contentType)
+                .contentLength(object.size())
+                // Keys are immutable (UUID-prefixed per upload), so these can cache hard.
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePublic())
+                .body(new InputStreamResource(object.stream()));
     }
 
     @GetMapping("/download/**")

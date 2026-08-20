@@ -93,6 +93,7 @@ public class InvitationPageController {
         model.addAttribute("loveStory", textOf(content, "loveStory", ""));
         model.addAttribute("coverPhotoUrl", textOf(content, "coverPhotoUrl", ""));
         model.addAttribute("mapsEmbedUrl", textOf(content, "mapsEmbedUrl", ""));
+        model.addAttribute("gallery", extractGallery(content));
         model.addAttribute("events", extractEvents(content));
         model.addAttribute("christian", ChristianContentSchema.from(content));
 
@@ -211,6 +212,25 @@ public class InvitationPageController {
 
     private String textOf(JsonNode node, String field, String fallback) {
         return node != null && node.hasNonNull(field) ? node.get(field).asText(fallback) : fallback;
+    }
+
+    /** Gallery photo URLs, tolerating a missing or malformed key rather than failing the page. */
+    private List<String> extractGallery(JsonNode content) {
+        List<String> photos = new ArrayList<>();
+        if (content == null || !content.hasNonNull("gallery")) {
+            return photos;
+        }
+        JsonNode arr = content.get("gallery");
+        if (!arr.isArray()) {
+            return photos;
+        }
+        for (JsonNode item : arr) {
+            String url = item.isTextual() ? item.asText("") : "";
+            if (!url.isBlank()) {
+                photos.add(url);
+            }
+        }
+        return photos;
     }
 
     private List<EventDTO> extractEvents(JsonNode content) {

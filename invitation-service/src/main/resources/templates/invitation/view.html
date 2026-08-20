@@ -476,6 +476,16 @@
         <p style="margin-top:1rem; white-space:pre-line" th:text="${loveStory}"></p>
     </section>
 
+    <!-- Gallery -->
+    <section th:if="${gallery != null and !#lists.isEmpty(gallery)}">
+        <p class="ornament">❖</p>
+        <h2>Galeri</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;margin-top:1.25rem">
+            <img th:each="photo : ${gallery}" th:src="${photo}" alt="" loading="lazy"
+                 style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px"/>
+        </div>
+    </section>
+
     <!-- RSVP -->
     <section class="section-alt">
         <p class="ornament">✉</p>

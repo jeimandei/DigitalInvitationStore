@@ -144,6 +144,48 @@
             <input id="cCover" x-model="content.coverPhotoUrl" placeholder="https://…"
                    class="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"/>
           </div>
+
+          <!-- Gallery -->
+          <div>
+            <div class="flex items-center justify-between gap-3 mb-2">
+              <label class="block text-xs text-stone-500">Galeri Foto</label>
+              <label class="text-xs text-rose-600 hover:text-rose-700 font-medium cursor-pointer">
+                <span x-text="uploading ? 'Mengunggah…' : '+ Tambah Foto'"></span>
+                <input type="file" accept="image/*" multiple class="hidden"
+                       :disabled="uploading" @change="uploadPhotos($event)"/>
+              </label>
+            </div>
+
+            <p x-show="uploadError" x-cloak class="text-xs text-red-600 mb-2" x-text="uploadError"></p>
+
+            <p x-show="!(content.gallery || []).length" x-cloak class="text-xs text-stone-400 py-4 text-center border border-dashed border-stone-200 rounded-lg">
+              Belum ada foto.
+            </p>
+
+            <div x-show="(content.gallery || []).length" x-cloak class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              <template x-for="(photo, i) in (content.gallery || [])" :key="photo">
+                <div class="relative group aspect-square">
+                  <img :src="photo" alt="" class="w-full h-full object-cover rounded-lg border border-stone-200"/>
+                  <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition rounded-lg flex flex-col items-center justify-center gap-1">
+                    <div class="flex gap-1">
+                      <button type="button" @click="movePhoto(i, -1)" :disabled="i === 0"
+                              class="text-white text-xs px-1.5 py-0.5 rounded hover:bg-white/20 disabled:opacity-30"
+                              aria-label="Geser kiri">←</button>
+                      <button type="button" @click="movePhoto(i, 1)"
+                              :disabled="i === (content.gallery || []).length - 1"
+                              class="text-white text-xs px-1.5 py-0.5 rounded hover:bg-white/20 disabled:opacity-30"
+                              aria-label="Geser kanan">→</button>
+                    </div>
+                    <button type="button" @click="setCover(photo)"
+                            class="text-white text-[10px] px-2 py-0.5 rounded hover:bg-white/20">Jadikan Sampul</button>
+                    <button type="button" @click="removePhoto(i)"
+                            class="text-red-300 text-[10px] px-2 py-0.5 rounded hover:bg-white/20">Hapus</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <p class="text-xs text-stone-400 mt-2">Foto tersimpan setelah kamu klik Simpan Draf.</p>
+          </div>
         </div>
 
         <div class="flex items-center gap-3 pt-2 border-t border-stone-100">
@@ -189,6 +231,9 @@
       <div class="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
         <div class="flex items-center justify-between px-5 py-4 border-b border-stone-100">
           <h2 class="text-sm font-semibold text-stone-700">Daftar Tamu (<span x-text="guests.length"></span>)</h2>
+          <button x-show="guests.length" @click="copyAllLinks()"
+                  class="text-xs text-rose-600 hover:text-rose-700 font-medium"
+                  x-text="allCopied ? 'Tersalin!' : 'Salin Semua Link'"></button>
         </div>
         <div x-show="guests.length === 0" x-cloak class="px-5 py-10 text-center text-stone-400 text-sm">Belum ada tamu.</div>
         <div x-show="guests.length > 0" class="divide-y divide-stone-100">
@@ -205,6 +250,7 @@
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 <button @click="copyLink(g)" class="text-xs border border-stone-200 px-3 py-1.5 rounded-full hover:bg-stone-50" x-text="copiedId === g.id ? 'Tersalin!' : 'Salin Link'"></button>
+                <button @click="shareWhatsapp(g)" class="text-xs border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-full hover:bg-emerald-50">WhatsApp</button>
                 <button @click="showQr(g)" class="text-xs border border-stone-200 px-3 py-1.5 rounded-full hover:bg-stone-50">QR</button>
                 <button @click="removeGuest(g)" class="text-xs text-red-500 hover:text-red-700 px-2">Hapus</button>
               </div>
@@ -352,8 +398,9 @@
         guests: [], rsvps: [], attendance: {}, gifts: {}, guestbook: [],
         content: {}, savingContent: false, contentSaved: false, contentError: '',
         hasDraft: false, publishing: false, discarding: false, previewLoading: false,
+        uploading: false, uploadError: '',
         newGuest: { name: '', groupLabel: '', tableNo: '', allottedCount: 1 },
-        savingGuest: false, guestError: '', copiedId: null,
+        savingGuest: false, guestError: '', copiedId: null, allCopied: false,
         qrOpen: false, qrName: '', qrCode: '', qrInstance: null,
 
         token() { return sessionStorage.getItem('buyer_token'); },
@@ -440,6 +487,61 @@
             if (e.message !== 'unauthorized') this.contentError = 'Terjadi kesalahan, coba lagi.';
           } finally { this.discarding = false; }
         },
+        // ── Gallery ──────────────────────────────────────────────────────────
+        // Upload goes straight to storage via a presigned URL, so the photo never
+        // passes through our services. The resulting public URL is added to the draft
+        // and persisted with the next Simpan Draf.
+        async uploadPhotos(event) {
+          const files = Array.from(event.target.files || []);
+          event.target.value = '';
+          if (!files.length) return;
+
+          this.uploading = true; this.uploadError = '';
+          try {
+            for (const file of files) {
+              const presignRes = await fetch('/api/v1/media/upload/presign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.token() },
+                body: JSON.stringify({
+                  filename: file.name,
+                  contentType: file.type,
+                  folder: 'couples/' + this.coupleSlug
+                })
+              });
+              if (!presignRes.ok) {
+                const err = await presignRes.json().catch(() => ({}));
+                this.uploadError = err.message || 'Gagal menyiapkan unggahan.';
+                return;
+              }
+              const { presignedUrl, objectKey } = (await presignRes.json()).data;
+
+              const putRes = await fetch(presignedUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': file.type },
+                body: file
+              });
+              if (!putRes.ok) { this.uploadError = 'Gagal mengunggah ' + file.name + '.'; return; }
+
+              if (!this.content.gallery) this.content.gallery = [];
+              this.content.gallery.push('/api/v1/media/public/' + objectKey);
+            }
+          } catch (e) {
+            this.uploadError = 'Terjadi kesalahan saat mengunggah.';
+          } finally { this.uploading = false; }
+        },
+        movePhoto(index, delta) {
+          const list = this.content.gallery || [];
+          const target = index + delta;
+          if (target < 0 || target >= list.length) return;
+          [list[index], list[target]] = [list[target], list[index]];
+        },
+        removePhoto(index) {
+          (this.content.gallery || []).splice(index, 1);
+        },
+        setCover(photo) {
+          this.content.coverPhotoUrl = photo;
+        },
+
         async openPreview() {
           this.previewLoading = true; this.contentError = '';
           try {
@@ -502,6 +604,28 @@
         async copyLink(g) {
           try { await navigator.clipboard.writeText(this.guestLink(g)); this.copiedId = g.id; setTimeout(() => { if (this.copiedId === g.id) this.copiedId = null; }, 1500); }
           catch (e) { prompt('Salin tautan:', this.guestLink(g)); }
+        },
+
+        // ── Share kit ────────────────────────────────────────────────────────
+        inviteText(g) {
+          return 'Kepada Yth. ' + g.name + ',\n\n'
+            + 'Dengan penuh sukacita kami mengundang Anda untuk hadir di hari bahagia kami, '
+            + (this.coupleName || 'kami') + '.\n\n'
+            + 'Undangan lengkap dapat dibuka di:\n' + this.guestLink(g) + '\n\n'
+            + 'Merupakan kehormatan bagi kami atas kehadiran dan doa restunya. Terima kasih.';
+        },
+        shareWhatsapp(g) {
+          // No number is attached to a guest, so this opens WhatsApp's contact picker
+          // with the message ready — the couple chooses who to send it to.
+          window.open('https://wa.me/?text=' + encodeURIComponent(this.inviteText(g)), '_blank', 'noopener');
+        },
+        async copyAllLinks() {
+          const text = this.guests.map(g => g.name + ': ' + this.guestLink(g)).join('\n');
+          try {
+            await navigator.clipboard.writeText(text);
+            this.allCopied = true;
+            setTimeout(() => { this.allCopied = false; }, 1500);
+          } catch (e) { prompt('Salin semua tautan:', text); }
         },
 
         checkinUrl(g) { return window.location.origin + '/i/' + this.coupleSlug + '/checkin/' + g.inviteCode; },
